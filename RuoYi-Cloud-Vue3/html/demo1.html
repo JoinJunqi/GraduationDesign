@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>佣金查询列表原型</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", sans-serif;
+        }
+        .container {
+            width: 100%;
+            padding: 20px;
+        }
+        .current-position {
+            margin-bottom: 20px;
+            color: #666;
+        }
+        .search-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .search-bar label {
+            margin-right: 10px;
+            color: #333;
+        }
+        .search-bar input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
+            width: 150px;
+        }
+        .search-bar button {
+            padding: 8px 15px;
+            background-color: #0099ff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .search-bar button.add {
+            margin-left: auto;
+            background-color: #00cc99;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+        .operation a {
+            margin-right: 10px;
+            text-decoration: none;
+            color: #0099ff;
+        }
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .pagination span, .pagination a {
+            padding: 5px 10px;
+            margin: 0 2px;
+            border: 1px solid #ddd;
+            text-decoration: none;
+            color: #333;
+        }
+        .pagination a.active {
+            background-color: #0099ff;
+            color: #fff;
+            border-color: #0099ff;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="current-position">当前位置: 佣金查询</div>
+    <div class="search-bar">
+        <label>签约客户：</label>
+        <input type="text" placeholder="请输入签约客户">
+        <label>单据编号：</label>
+        <input type="text" placeholder="请输入单据编号">
+        <label>结算日期：</label>
+        <input type="date" placeholder="请选择结算日期">
+        <button>搜索</button>
+        <button class="add">新增</button>
+    </div>
+    <table>
+        <thead>
+        <tr>
+            <th>签约客户</th>
+            <th>单据编号</th>
+            <th>结算日期</th>
+            <th>合同金额 A</th>
+            <th>租赁占比份额 (%) B</th>
+            <th>二级统筹人(租赁副经理)</th>
+            <th>二级统筹金额</th>
+            <th>三级级统筹人(租赁副总监)</th>
+            <th>三级级统筹金额</th>
+            <th>辅助奖励</th>
+            <th>团队经费</th>
+            <th>状态</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>竞优（广州）信息技术有限公司</td>
+            <td>DJ20190709001</td>
+            <td>2019-07-09</td>
+            <td>10000.00</td>
+            <td>50</td>
+            <td>张冬勇</td>
+            <td>1000.00</td>
+            <td>张友铭</td>
+            <td>1500.00</td>
+            <td>1000.00</td>
+            <td>500.00</td>
+            <td>未提交</td>
+            <td class="operation">
+                <a href="#">修改</a>
+                <a href="#">查看</a>
+                <a href="#">删除</a>
+            </td>
+        </tr>
+        <!-- 可根据需要重复添加行 -->
+        </tbody>
+    </table>
+    <div class="pagination">
+        <span>共 80 条</span>
+        <span>50 条/页</span>
+        <a href="#">上一页</a>
+        <a href="#" class="active">1</a>
+        <a href="#">2</a>
+        <a href="#">3</a>
+        <a href="#">4</a>
+        <a href="#">5</a>
+        <span>...</span>
+        <a href="#">50</a>
+        <a href="#">下一页</a>
+        <span>前往</span>
+        <input type="text" value="3" style="width: 30px; text-align: center;">
+        <span>页</span>
+    </div>
+</div>
+</body>
+</html>
