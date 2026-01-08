@@ -14,12 +14,19 @@ spring:
     nacos:
       discovery:
         # 服务注册地址
-        server-addr: 127.0.0.1:8848
+        server-addr: 192.168.233.128:8848
       config:
         # 配置中心地址
-        server-addr: 127.0.0.1:8848
+        server-addr: 192.168.233.128:8848
         # 配置文件格式
         file-extension: yml
         # 共享配置
         shared-configs:
           - application-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+  datasource:
+    dynamic:
+      datasource:
+        master:
+          url: jdbc:mysql://${spring.datasource.host}:3306/hospital_booking?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+          username: ${spring.datasource.username}
+          password: ${spring.datasource.password}

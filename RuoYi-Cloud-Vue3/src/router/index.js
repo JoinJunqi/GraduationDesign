@@ -83,6 +83,64 @@ export const constantRoutes = [
         meta: { title: '个人中心', icon: 'user' }
       }
     ]
+  },
+  // 医院管理-业务详情页路由配置
+  {
+    path: '/hospital/doctor',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'add',
+        component: () => import('@/views/hospital/doctor/components/DoctorForm'),
+        name: 'DoctorAdd',
+        meta: { title: '添加医生', activeMenu: '/hospital/doctor' }
+      },
+      {
+        path: 'edit/:id(\\d+)',
+        component: () => import('@/views/hospital/doctor/components/DoctorForm'),
+        name: 'DoctorEdit',
+        meta: { title: '修改医生', activeMenu: '/hospital/doctor' }
+      }
+    ]
+  },
+  {
+    path: '/hospital/patient',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'add',
+        component: () => import('@/views/hospital/patient/components/PatientForm'),
+        name: 'PatientAdd',
+        meta: { title: '添加患者', activeMenu: '/hospital/patient' }
+      },
+      {
+        path: 'edit/:id(\\d+)',
+        component: () => import('@/views/hospital/patient/components/PatientForm'),
+        name: 'PatientEdit',
+        meta: { title: '修改患者', activeMenu: '/hospital/patient' }
+      }
+    ]
+  },
+  {
+    path: '/hospital/record',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'add',
+        component: () => import('@/views/hospital/record/components/RecordForm'),
+        name: 'RecordAdd',
+        meta: { title: '添加病历', activeMenu: '/hospital/record' }
+      },
+      {
+        path: 'edit/:id(\\d+)',
+        component: () => import('@/views/hospital/record/components/RecordForm'),
+        name: 'RecordEdit',
+        meta: { title: '修改病历', activeMenu: '/hospital/record' }
+      }
+    ]
   }
 ]
 
