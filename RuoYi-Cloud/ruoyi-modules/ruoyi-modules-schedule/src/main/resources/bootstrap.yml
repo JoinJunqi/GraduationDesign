@@ -5,7 +5,7 @@ server:
 # Spring
 spring: 
   application:
-    name: ruoyi-modules-schedule
+    name: ruoyi-hospital-schedule
   profiles:
     active: dev
   cloud:

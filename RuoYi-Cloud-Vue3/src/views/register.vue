@@ -13,6 +13,39 @@
           <template #prefix><svg-icon icon-class="user" class="el-input__icon input-icon" /></template>
         </el-input>
       </el-form-item>
+      <el-form-item prop="name">
+        <el-input 
+          v-model="registerForm.name" 
+          type="text" 
+          size="large" 
+          auto-complete="off" 
+          placeholder="姓名"
+        >
+          <template #prefix><el-icon class="el-input__icon input-icon"><User /></el-icon></template>
+        </el-input>
+      </el-form-item>
+      <el-form-item prop="phone">
+        <el-input 
+          v-model="registerForm.phone" 
+          type="text" 
+          size="large" 
+          auto-complete="off" 
+          placeholder="手机号"
+        >
+          <template #prefix><el-icon class="el-input__icon input-icon"><Phone /></el-icon></template>
+        </el-input>
+      </el-form-item>
+      <el-form-item prop="idCard">
+        <el-input 
+          v-model="registerForm.idCard" 
+          type="text" 
+          size="large" 
+          auto-complete="off" 
+          placeholder="身份证号"
+        >
+          <template #prefix><el-icon class="el-input__icon input-icon"><Postcard /></el-icon></template>
+        </el-input>
+      </el-form-item>
       <el-form-item prop="password">
         <el-input
           v-model="registerForm.password"
@@ -78,8 +111,10 @@
 <script setup>
 import { ElMessageBox } from "element-plus"
 import { getCodeImg, register } from "@/api/login"
+import { registerPatient } from "@/api/hospital/patient"
 
 const title = '患者注册'
+const loginType = localStorage.getItem('loginType') || 'admin'
 import useSettingsStore from '@/store/modules/settings'
 useSettingsStore().setTitle(title)
 const router = useRouter()
@@ -87,6 +122,9 @@ const { proxy } = getCurrentInstance()
 
 const registerForm = ref({
   username: "",
+  name: "",
+  phone: "",
+  idCard: "",
   password: "",
   confirmPassword: "",
   code: "",
@@ -105,6 +143,17 @@ const registerRules = {
   username: [
     { required: true, trigger: "blur", message: "请输入您的账号" },
     { min: 2, max: 20, message: "用户账号长度必须介于 2 和 20 之间", trigger: "blur" }
+  ],
+  name: [
+    { required: true, trigger: "blur", message: "请输入您的姓名" }
+  ],
+  phone: [
+    { required: true, trigger: "blur", message: "请输入您的手机号" },
+    { pattern: /^1[3|4|5|6|7|8|9][0-9]\d{8}$/, message: "请输入正确的手机号码", trigger: "blur" }
+  ],
+  idCard: [
+    { required: true, trigger: "blur", message: "请输入您的身份证号" },
+    { pattern: /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/, message: "请输入正确的身份证号", trigger: "blur" }
   ],
   password: [
     { required: true, trigger: "blur", message: "请输入您的密码" },
@@ -126,7 +175,10 @@ function handleRegister() {
   proxy.$refs.registerRef.validate(valid => {
     if (valid) {
       loading.value = true
-      register(registerForm.value).then(res => {
+      // 如果是患者模式，使用患者注册接口
+      const registerPromise = loginType === 'patient' ? registerPatient(registerForm.value) : register(registerForm.value);
+      
+      registerPromise.then(res => {
         const username = registerForm.value.username
         ElMessageBox.alert("<font color='red'>恭喜你，您的账号 " + username + " 注册成功！</font>", "系统提示", {
           dangerouslyUseHTMLString: true,

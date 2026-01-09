@@ -1,4 +1,5 @@
 import auth from '@/plugins/auth'
+import useUserStore from '@/store/modules/user'
 import router, { constantRoutes, dynamicRoutes } from '@/router'
 import { getRouters } from '@/api/menu'
 import Layout from '@/layout/index'
@@ -34,11 +35,35 @@ const usePermissionStore = defineStore(
       },
       generateRoutes(roles) {
         return new Promise(resolve => {
+          const userStore = useUserStore()
+          const loginType = userStore.loginType
+          
+          // 如果是患者或医生，直接使用默认菜单，不请求后端（因为他们不在 sys_user 表中，后端会返回空）
+          if (loginType === 'patient' || loginType === 'doctor') {
+            const menuData = this.getDefaultMenuByLoginType(loginType)
+            const sdata = JSON.parse(JSON.stringify(menuData))
+            const rdata = JSON.parse(JSON.stringify(menuData))
+            const defaultData = JSON.parse(JSON.stringify(menuData))
+            const sidebarRoutes = filterAsyncRouter(sdata)
+            const rewriteRoutes = filterAsyncRouter(rdata, false, true)
+            const defaultRoutes = filterAsyncRouter(defaultData)
+            const asyncRoutes = filterDynamicRoutes(dynamicRoutes)
+            asyncRoutes.forEach(route => { router.addRoute(route) })
+            this.setRoutes(rewriteRoutes)
+            this.setSidebarRouters(constantRoutes.concat(sidebarRoutes))
+            this.setDefaultRoutes(sidebarRoutes)
+            this.setTopbarRoutes(defaultRoutes)
+            resolve(rewriteRoutes)
+            return
+          }
+
           // 向后端请求路由数据
           getRouters().then(res => {
-            const sdata = JSON.parse(JSON.stringify(res.data))
-            const rdata = JSON.parse(JSON.stringify(res.data))
-            const defaultData = JSON.parse(JSON.stringify(res.data))
+            let menuData = res.data
+            
+            const sdata = JSON.parse(JSON.stringify(menuData))
+            const rdata = JSON.parse(JSON.stringify(menuData))
+            const defaultData = JSON.parse(JSON.stringify(menuData))
             const sidebarRoutes = filterAsyncRouter(sdata)
             const rewriteRoutes = filterAsyncRouter(rdata, false, true)
             const defaultRoutes = filterAsyncRouter(defaultData)
@@ -51,6 +76,73 @@ const usePermissionStore = defineStore(
             resolve(rewriteRoutes)
           })
         })
+      },
+      getDefaultMenuByLoginType(type) {
+        if (type === 'patient') {
+          return [
+            {
+              name: 'Hospital',
+              path: '/hospital',
+              hidden: false,
+              redirect: 'noRedirect',
+              component: 'Layout',
+              alwaysShow: true,
+              meta: { title: '医院服务', icon: 'hospital', noCache: false, link: null },
+              children: [
+                {
+                  name: 'Appointment',
+                  path: 'appointment',
+                  hidden: false,
+                  component: 'hospital/appointment/index',
+                  meta: { title: '预约挂号', icon: 'list', noCache: false, link: null }
+                },
+                {
+                  name: 'Record',
+                  path: 'record',
+                  hidden: false,
+                  component: 'hospital/record/index',
+                  meta: { title: '我的病历', icon: 'form', noCache: false, link: null }
+                }
+              ]
+            }
+          ]
+        } else if (type === 'doctor') {
+          return [
+            {
+              name: 'Hospital',
+              path: '/hospital',
+              hidden: false,
+              redirect: 'noRedirect',
+              component: 'Layout',
+              alwaysShow: true,
+              meta: { title: '医疗业务', icon: 'hospital', noCache: false, link: null },
+              children: [
+                {
+                  name: 'Schedule',
+                  path: 'schedule',
+                  hidden: false,
+                  component: 'hospital/schedule/index',
+                  meta: { title: '我的排班', icon: 'date', noCache: false, link: null }
+                },
+                {
+                  name: 'Appointment',
+                  path: 'appointment',
+                  hidden: false,
+                  component: 'hospital/appointment/index',
+                  meta: { title: '预约列表', icon: 'list', noCache: false, link: null }
+                },
+                {
+                  name: 'Record',
+                  path: 'record',
+                  hidden: false,
+                  component: 'hospital/record/index',
+                  meta: { title: '病历管理', icon: 'form', noCache: false, link: null }
+                }
+              ]
+            }
+          ]
+        }
+        return []
       }
     }
   })

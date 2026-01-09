@@ -11,18 +11,16 @@ import com.ruoyi.appointment.domain.Appointment;
 import com.ruoyi.appointment.service.IAppointmentService;
 
 @RestController
-@RequestMapping("/appointment")
 public class AppointmentController extends BaseController
 {
     @Autowired
     private IAppointmentService appointmentService;
 
     @GetMapping("/list")
-    public TableDataInfo list(Appointment appointment)
+    public ResultVO<List<Appointment>> list(Appointment appointment)
     {
-        startPage();
         List<Appointment> list = appointmentService.selectAppointmentList(appointment);
-        return getDataTable(list);
+        return ResultVO.success(list);
     }
 
     @GetMapping(value = "/{id}")
@@ -35,6 +33,12 @@ public class AppointmentController extends BaseController
     public ResultVO<Boolean> create(@RequestBody Appointment appointment)
     {
         return ResultVO.success(appointmentService.createAppointment(appointment));
+    }
+
+    @PutMapping
+    public ResultVO<Boolean> edit(@RequestBody Appointment appointment)
+    {
+        return ResultVO.success(appointmentService.updateById(appointment));
     }
 
     @PostMapping("/cancel/{id}")

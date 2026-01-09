@@ -11,18 +11,16 @@ import com.ruoyi.department.domain.Department;
 import com.ruoyi.department.service.IDepartmentService;
 
 @RestController
-@RequestMapping("/department")
 public class DepartmentController extends BaseController
 {
     @Autowired
     private IDepartmentService departmentService;
 
     @GetMapping("/list")
-    public TableDataInfo list(Department department)
+    public ResultVO<List<Department>> list(Department department)
     {
-        startPage();
         List<Department> list = departmentService.list();
-        return getDataTable(list);
+        return ResultVO.success(list);
     }
 
     @GetMapping(value = "/{id}")

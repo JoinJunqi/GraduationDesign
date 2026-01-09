@@ -53,7 +53,19 @@
 </template>
 
 <script setup name="Index">
+import useUserStore from '@/store/modules/user'
+
 const version = ref('1.0.0')
+const userStore = useUserStore()
+const router = useRouter()
+
+onMounted(() => {
+  if (userStore.loginType === 'patient') {
+    router.push('/hospital/appointment')
+  } else if (userStore.loginType === 'doctor') {
+    router.push('/hospital/schedule')
+  }
+})
 
 function goTarget(url) {
   window.open(url, '__blank')

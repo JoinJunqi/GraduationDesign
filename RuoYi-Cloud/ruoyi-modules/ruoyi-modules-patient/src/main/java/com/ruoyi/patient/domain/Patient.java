@@ -1,6 +1,7 @@
 package com.ruoyi.patient.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -34,6 +35,17 @@ public class Patient implements Serializable {
     /** 身份证号 */
     private String idCard;
 
+    /** 头像 */
+    private String avatar;
+
     /** 创建时间 */
     private Date createdAt;
+
+    /** 验证码 */
+    @TableField(exist = false)
+    private String code;
+
+    /** 唯一标识 */
+    @TableField(exist = false)
+    private String uuid;
 }

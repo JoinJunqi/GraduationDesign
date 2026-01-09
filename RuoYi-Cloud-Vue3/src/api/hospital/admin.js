@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 查询管理员列表
 export function listAdmin(query) {
   return request({
-    url: '/ruoyi-hospital-admin/admin/list',
+    url: '/system/admin/list',
     method: 'get',
     params: query
   })
@@ -12,7 +12,7 @@ export function listAdmin(query) {
 // 查询管理员详细
 export function getAdmin(id) {
   return request({
-    url: '/ruoyi-hospital-admin/admin/' + id,
+    url: '/system/admin/' + id,
     method: 'get'
   })
 }
@@ -20,7 +20,7 @@ export function getAdmin(id) {
 // 新增管理员
 export function addAdmin(data) {
   return request({
-    url: '/ruoyi-hospital-admin/admin',
+    url: '/system/admin',
     method: 'post',
     data: data
   })
@@ -29,7 +29,7 @@ export function addAdmin(data) {
 // 修改管理员
 export function updateAdmin(data) {
   return request({
-    url: '/ruoyi-hospital-admin/admin',
+    url: '/system/admin',
     method: 'put',
     data: data
   })
@@ -38,7 +38,7 @@ export function updateAdmin(data) {
 // 删除管理员
 export function delAdmin(id) {
   return request({
-    url: '/ruoyi-hospital-admin/admin/' + id,
+    url: '/system/admin/' + id,
     method: 'delete'
   })
 }

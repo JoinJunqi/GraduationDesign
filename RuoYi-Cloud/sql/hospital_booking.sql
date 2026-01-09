@@ -11,7 +11,7 @@
  Target Server Version : 50732 (5.7.32-log)
  File Encoding         : 65001
 
- Date: 09/01/2026 01:14:16
+ Date: 09/01/2026 17:37:02
 */
 
 SET NAMES utf8mb4;
@@ -68,11 +68,16 @@ CREATE TABLE `department`  (
   `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `name`(`name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '科室信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '科室信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of department
 -- ----------------------------
+INSERT INTO `department` VALUES (1, '内科', '2026-01-09 02:44:31');
+INSERT INTO `department` VALUES (2, '外科', '2026-01-09 02:44:31');
+INSERT INTO `department` VALUES (3, '儿科', '2026-01-09 02:44:31');
+INSERT INTO `department` VALUES (4, '妇科', '2026-01-09 02:44:31');
+INSERT INTO `department` VALUES (5, '眼科', '2026-01-09 02:44:31');
 
 -- ----------------------------
 -- Table structure for doctor
@@ -91,11 +96,14 @@ CREATE TABLE `doctor`  (
   UNIQUE INDEX `username`(`username`) USING BTREE,
   INDEX `dept_id`(`dept_id`) USING BTREE,
   CONSTRAINT `doctor_ibfk_1` FOREIGN KEY (`dept_id`) REFERENCES `department` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '医生信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '医生信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of doctor
 -- ----------------------------
+INSERT INTO `doctor` VALUES (1, 1, 'doc1', '$2a$10$7JB720yubVSZv5w8vng2i.kY.1/w.Z.A.h.A.u.k.k.k.k.k.k', '张内科', '主任医师', 1, '2026-01-09 02:44:31');
+INSERT INTO `doctor` VALUES (2, 2, 'doc_surgery', '$2a$10$7JB720yubVSZv5w8vng2i.kY.1/w.Z.A.h.A.u.k.k.k.k.k.k', '李外科', '副主任医师', 1, '2026-01-09 02:44:31');
+INSERT INTO `doctor` VALUES (3, 3, 'doc_pediatrics', '$2a$10$7JB720yubVSZv5w8vng2i.kY.1/w.Z.A.h.A.u.k.k.k.k.k.k', '王儿科', '主治医师', 1, '2026-01-09 02:44:31');
 
 -- ----------------------------
 -- Table structure for medical_record
@@ -135,15 +143,18 @@ CREATE TABLE `patient`  (
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '姓名',
   `phone` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '手机号',
   `id_card` char(18) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '身份证号',
+  `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '头像地址',
   `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `username`(`username`) USING BTREE,
   UNIQUE INDEX `id_card`(`id_card`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '患者信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '患者信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of patient
 -- ----------------------------
+INSERT INTO `patient` VALUES (1, 'patient1', '$2a$10$7JB720yubVSZv5w8vng2i.kY.1/w.Z.A.h.A.u.k.k.k.k.k.k', '赵患者', '13800138000', '110101199001011234', NULL, '2026-01-09 02:44:31');
+INSERT INTO `patient` VALUES (2, 'patient002', '$2a$10$7JB720yubVSZv5w8vng2i.kY.1/w.Z.A.h.A.u.k.k.k.k.k.k', '钱患者', '13900139000', '110101199505055678', NULL, '2026-01-09 02:44:31');
 
 -- ----------------------------
 -- Table structure for schedule
@@ -160,11 +171,14 @@ CREATE TABLE `schedule`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_doctor_date_slot`(`doctor_id`, `work_date`, `time_slot`) USING BTREE,
   CONSTRAINT `schedule_ibfk_1` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '医生排班表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '医生排班表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of schedule
 -- ----------------------------
+INSERT INTO `schedule` VALUES (1, 1, '2026-01-09', '上午', 20, 20, '2026-01-09 02:44:31');
+INSERT INTO `schedule` VALUES (2, 1, '2026-01-09', '下午', 20, 20, '2026-01-09 02:44:31');
+INSERT INTO `schedule` VALUES (3, 2, '2026-01-10', '上午', 15, 15, '2026-01-09 02:44:31');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -201,17 +215,17 @@ CREATE TABLE `sys_menu`  (
 -- ----------------------------
 -- Records of sys_menu
 -- ----------------------------
-INSERT INTO `sys_menu` VALUES (1, '医院管理', 0, 10, 'hospital', NULL, '1', '0', 'M', '0', '0', '', 'hospital', 'admin', '2026-01-08 16:14:48', '', NULL, '医院管理系统菜单');
-INSERT INTO `sys_menu` VALUES (2, '管理员管理', 1, 1, 'admin', 'hospital/admin/index', '1', '0', 'C', '0', '0', 'hospital:admin:list', 'user', 'admin', '2026-01-08 16:14:48', '', NULL, '');
-INSERT INTO `sys_menu` VALUES (3, '科室管理', 1, 2, 'department', 'hospital/department/index', '1', '0', 'C', '0', '0', 'hospital:department:list', 'tree', 'admin', '2026-01-08 16:14:48', '', NULL, '');
-INSERT INTO `sys_menu` VALUES (4, '医生管理', 1, 3, 'doctor', 'hospital/doctor/index', '1', '0', 'C', '0', '0', 'hospital:doctor:list', 'peoples', 'admin', '2026-01-08 16:14:48', '', NULL, '');
-INSERT INTO `sys_menu` VALUES (5, '患者管理', 1, 4, 'patient', 'hospital/patient/index', '1', '0', 'C', '0', '0', 'hospital:patient:list', 'user', 'admin', '2026-01-08 16:14:48', '', NULL, '');
-INSERT INTO `sys_menu` VALUES (6, '排班管理', 1, 5, 'schedule', 'hospital/schedule/index', '1', '0', 'C', '0', '0', 'hospital:schedule:list', 'date', 'admin', '2026-01-08 16:14:48', '', NULL, '');
-INSERT INTO `sys_menu` VALUES (7, '预约管理', 1, 6, 'appointment', 'hospital/appointment/index', '1', '0', 'C', '0', '0', 'hospital:appointment:list', 'list', 'admin', '2026-01-08 16:14:48', '', NULL, '');
-INSERT INTO `sys_menu` VALUES (8, '病历管理', 1, 7, 'record', 'hospital/record/index', '1', '0', 'C', '0', '0', 'hospital:record:list', 'form', 'admin', '2026-01-08 16:14:48', '', NULL, '');
-INSERT INTO `sys_menu` VALUES (9, '医生查询', 4, 1, '#', '', '1', '0', 'F', '0', '0', 'hospital:doctor:query', '#', 'admin', '2026-01-08 16:14:48', '', NULL, '');
-INSERT INTO `sys_menu` VALUES (10, '医生新增', 4, 2, '#', '', '1', '0', 'F', '0', '0', 'hospital:doctor:add', '#', 'admin', '2026-01-08 16:14:48', '', NULL, '');
-INSERT INTO `sys_menu` VALUES (11, '医生修改', 4, 3, '#', '', '1', '0', 'F', '0', '0', 'hospital:doctor:edit', '#', 'admin', '2026-01-08 16:14:48', '', NULL, '');
-INSERT INTO `sys_menu` VALUES (12, '医生删除', 4, 4, '#', '', '1', '0', 'F', '0', '0', 'hospital:doctor:remove', '#', 'admin', '2026-01-08 16:14:48', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1, '医院管理', 0, 10, 'hospital', NULL, NULL, '', '1', '0', 'M', '0', '0', '', 'hospital', 'admin', '2026-01-08 16:14:48', '', NULL, '医院管理系统菜单');
+INSERT INTO `sys_menu` VALUES (2, '管理员管理', 1, 1, 'admin', 'hospital/admin/index', NULL, '', '1', '0', 'C', '0', '0', 'hospital:admin:list', 'user', 'admin', '2026-01-08 16:14:48', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (3, '科室管理', 1, 2, 'department', 'hospital/department/index', NULL, '', '1', '0', 'C', '0', '0', 'hospital:department:list', 'tree', 'admin', '2026-01-08 16:14:48', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (4, '医生管理', 1, 3, 'doctor', 'hospital/doctor/index', NULL, '', '1', '0', 'C', '0', '0', 'hospital:doctor:list', 'peoples', 'admin', '2026-01-08 16:14:48', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (5, '患者管理', 1, 4, 'patient', 'hospital/patient/index', NULL, '', '1', '0', 'C', '0', '0', 'hospital:patient:list', 'user', 'admin', '2026-01-08 16:14:48', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (6, '排班管理', 1, 5, 'schedule', 'hospital/schedule/index', NULL, '', '1', '0', 'C', '0', '0', 'hospital:schedule:list', 'date', 'admin', '2026-01-08 16:14:48', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (7, '预约管理', 1, 6, 'appointment', 'hospital/appointment/index', NULL, '', '1', '0', 'C', '0', '0', 'hospital:appointment:list', 'list', 'admin', '2026-01-08 16:14:48', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (8, '病历管理', 1, 7, 'record', 'hospital/record/index', NULL, '', '1', '0', 'C', '0', '0', 'hospital:record:list', 'form', 'admin', '2026-01-08 16:14:48', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (9, '医生查询', 4, 1, '#', '', NULL, '', '1', '0', 'F', '0', '0', 'hospital:doctor:query', '#', 'admin', '2026-01-08 16:14:48', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (10, '医生新增', 4, 2, '#', '', NULL, '', '1', '0', 'F', '0', '0', 'hospital:doctor:add', '#', 'admin', '2026-01-08 16:14:48', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (11, '医生修改', 4, 3, '#', '', NULL, '', '1', '0', 'F', '0', '0', 'hospital:doctor:edit', '#', 'admin', '2026-01-08 16:14:48', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (12, '医生删除', 4, 4, '#', '', NULL, '', '1', '0', 'F', '0', '0', 'hospital:doctor:remove', '#', 'admin', '2026-01-08 16:14:48', '', NULL, '');
 
 SET FOREIGN_KEY_CHECKS = 1;

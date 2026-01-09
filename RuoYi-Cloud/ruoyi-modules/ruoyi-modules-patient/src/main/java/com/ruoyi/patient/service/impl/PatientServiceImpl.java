@@ -22,7 +22,50 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
 
     @Override
     public boolean registerPatient(Patient patient) {
+        if (!checkUsernameUnique(patient.getUsername())) {
+            return false;
+        }
+        if (!checkPhoneUnique(patient)) {
+            return false;
+        }
+        if (!checkIdCardUnique(patient)) {
+            return false;
+        }
         patient.setPasswordHash(SecurityUtils.encryptPassword(patient.getPasswordHash()));
         return this.save(patient);
+    }
+
+    @Override
+    public boolean checkUsernameUnique(String username) {
+        Long count = patientMapper.selectCount(new LambdaQueryWrapper<Patient>().eq(Patient::getUsername, username));
+        return count == 0;
+    }
+
+    @Override
+    public boolean checkPhoneUnique(Patient patient) {
+        Long patientId = patient.getId() == null ? -1L : patient.getId();
+        Patient info = patientMapper.selectOne(new LambdaQueryWrapper<Patient>().eq(Patient::getPhone, patient.getPhone()));
+        if (info != null && !info.getId().equals(patientId)) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean checkIdCardUnique(Patient patient) {
+        Long patientId = patient.getId() == null ? -1L : patient.getId();
+        Patient info = patientMapper.selectOne(new LambdaQueryWrapper<Patient>().eq(Patient::getIdCard, patient.getIdCard()));
+        if (info != null && !info.getId().equals(patientId)) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int resetPatientPwd(Long userId, String password) {
+        Patient patient = new Patient();
+        patient.setId(userId);
+        patient.setPasswordHash(password);
+        return patientMapper.updateById(patient);
     }
 }

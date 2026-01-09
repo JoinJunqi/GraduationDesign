@@ -11,18 +11,16 @@ import com.ruoyi.schedule.domain.Schedule;
 import com.ruoyi.schedule.service.IScheduleService;
 
 @RestController
-@RequestMapping("/schedule")
 public class ScheduleController extends BaseController
 {
     @Autowired
     private IScheduleService scheduleService;
 
     @GetMapping("/list")
-    public TableDataInfo list(Schedule schedule)
+    public ResultVO<List<Schedule>> list(Schedule schedule)
     {
-        startPage();
         List<Schedule> list = scheduleService.selectScheduleList(schedule);
-        return getDataTable(list);
+        return ResultVO.success(list);
     }
 
     @GetMapping(value = "/{id}")
@@ -31,7 +29,7 @@ public class ScheduleController extends BaseController
         return ResultVO.success(scheduleService.getById(id));
     }
 
-    @PostMapping("/add")
+    @PostMapping
     public ResultVO<Boolean> add(@RequestBody Schedule schedule)
     {
         return ResultVO.success(scheduleService.addSchedule(schedule));

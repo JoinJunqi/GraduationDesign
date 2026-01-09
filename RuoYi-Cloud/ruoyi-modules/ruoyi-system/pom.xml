@@ -71,6 +71,12 @@
             <artifactId>ruoyi-common-swagger</artifactId>
         </dependency>
 
+        <!-- RuoYi Common Security -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-common-security</artifactId>
+        </dependency>
+
         <!-- MyBatis Plus -->
         <dependency>
             <groupId>com.baomidou</groupId>

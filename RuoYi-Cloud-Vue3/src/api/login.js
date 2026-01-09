@@ -51,6 +51,18 @@ export function register(data) {
   })
 }
 
+// 患者注册
+export function registerPatient(data) {
+  return request({
+    url: '/patient/register',
+    headers: {
+      isToken: false
+    },
+    method: 'post',
+    data: data
+  })
+}
+
 // 刷新方法
 export function refreshToken() {
   return request({
@@ -61,11 +73,11 @@ export function refreshToken() {
 
 // 获取用户详细信息
 export function getInfo() {
-  const port = window.location.port
+  const loginType = localStorage.getItem('loginType') || 'admin'
   let url = '/system/user/getInfo'
-  if (port === '3001') {
+  if (loginType === 'patient') {
     url = '/patient/profile'
-  } else if (port === '3002') {
+  } else if (loginType === 'doctor') {
     url = '/doctor/profile'
   }
   return request({

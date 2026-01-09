@@ -5,7 +5,7 @@ server:
 # Spring
 spring: 
   application:
-    name: ruoyi-modules-patient
+    name: ruoyi-hospital-patient
   profiles:
     active: dev
   cloud:

@@ -6,10 +6,12 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.ruoyi.common.core.web.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.apache.ibatis.type.Alias;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("admin")
+@Alias("HospitalAdminEntity")
 public class Admin extends BaseEntity {
     private static final long serialVersionUID = 1L;
 

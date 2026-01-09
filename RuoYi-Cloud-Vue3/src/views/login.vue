@@ -2,6 +2,15 @@
   <div class="login">
     <el-form ref="loginRef" :model="loginForm" :rules="loginRules" class="login-form">
       <h3 class="title">{{ currentTitle }}</h3>
+      
+      <div style="text-align: center; margin-bottom: 20px;">
+        <el-radio-group v-model="loginType" @change="handleTypeChange">
+          <el-radio-button label="admin">管理员</el-radio-button>
+          <el-radio-button label="patient">患者</el-radio-button>
+          <el-radio-button label="doctor">医生</el-radio-button>
+        </el-radio-group>
+      </div>
+
       <el-form-item prop="username">
         <el-input
           v-model="loginForm.username"
@@ -25,7 +34,7 @@
           <template #prefix><svg-icon icon-class="password" class="el-input__icon input-icon" /></template>
         </el-input>
       </el-form-item>
-      <el-form-item prop="code" v-if="captchaEnabled && loginType === 'admin'">
+      <el-form-item prop="code" v-if="captchaEnabled">
         <el-input
           v-model="loginForm.code"
           size="large"
@@ -52,7 +61,7 @@
           <span v-if="!loading">登 录</span>
           <span v-else>登 录 中...</span>
         </el-button>
-        <div style="float: right;" v-if="loginType === 'patient'">
+        <div style="margin-top: 10px; text-align: right;" v-if="loginType === 'patient'">
           <router-link class="link-type" :to="'/register'">立即注册</router-link>
         </div>
       </el-form-item>
@@ -77,39 +86,46 @@ const route = useRoute()
 const router = useRouter()
 const { proxy } = getCurrentInstance()
 
-// 根据端口判断登录类型
-const port = window.location.port
-let loginType = 'admin'
-let currentTitle = import.meta.env.VITE_APP_TITLE
-let accountPlaceholder = '账号'
+// 登录类型管理
+const loginType = ref(userStore.loginType || 'admin')
+const currentTitle = ref('')
+const accountPlaceholder = ref('账号')
 
-if (port === '3001') {
-  loginType = 'patient'
-  currentTitle = '患者登录'
-  accountPlaceholder = '身份证号/手机号'
-} else if (port === '3002') {
-  loginType = 'doctor'
-  currentTitle = '医生登录'
-  accountPlaceholder = '工号/用户名'
-} else {
-  currentTitle = '管理员登录'
+function handleTypeChange(val) {
+  userStore.setLoginType(val)
+  updateUI(val)
 }
 
-useSettingsStore().setTitle(currentTitle)
+function updateUI(type) {
+  if (type === 'patient') {
+    currentTitle.value = '患者登录'
+    accountPlaceholder.value = '身份证号/手机号'
+  } else if (type === 'doctor') {
+    currentTitle.value = '医生登录'
+    accountPlaceholder.value = '工号/用户名'
+  } else {
+    currentTitle.value = '管理员登录'
+    accountPlaceholder.value = '账号'
+  }
+  useSettingsStore().setTitle(currentTitle.value)
+}
+
+// 初始化 UI
+updateUI(loginType.value)
 
 const loginForm = ref({
-  username: loginType === 'admin' ? "admin" : "",
-  password: loginType === 'admin' ? "admin123" : "",
+  username: loginType.value === 'admin' ? "admin" : "",
+  password: loginType.value === 'admin' ? "admin123" : "",
   rememberMe: false,
   code: "",
   uuid: ""
 })
 
-const loginRules = {
+const loginRules = computed(() => ({
   username: [{ required: true, trigger: "blur", message: "请输入您的账号" }],
   password: [{ required: true, trigger: "blur", message: "请输入您的密码" }],
-  code: [{ required: loginType === 'admin', trigger: "change", message: "请输入验证码" }]
-}
+  code: [{ required: captchaEnabled.value, trigger: "change", message: "请输入验证码" }]
+}))
 
 const codeUrl = ref("")
 const loading = ref(false)
@@ -137,9 +153,9 @@ function handleLogin() {
       
       // 根据类型调用不同登录方法
       let loginPromise;
-      if (loginType === 'patient') {
+      if (loginType.value === 'patient') {
         loginPromise = userStore.loginPatient(loginForm.value)
-      } else if (loginType === 'doctor') {
+      } else if (loginType.value === 'doctor') {
         loginPromise = userStore.loginDoctor(loginForm.value)
       } else {
         loginPromise = userStore.login(loginForm.value)
@@ -153,10 +169,21 @@ function handleLogin() {
           }
           return acc
         }, {})
-        router.push({ path: redirect.value || "/", query: otherQueryParams })
+        
+        // 根据登录类型决定默认跳转页面
+        let targetPath = redirect.value || "/";
+        if (targetPath === "/" || targetPath === "/index") {
+          if (loginType.value === 'patient') {
+            targetPath = "/hospital/appointment";
+          } else if (loginType.value === 'doctor') {
+            targetPath = "/hospital/schedule";
+          }
+        }
+        
+        router.push({ path: targetPath, query: otherQueryParams })
       }).catch(() => {
         loading.value = false
-        if (loginType === 'admin' && captchaEnabled.value) {
+        if (captchaEnabled.value) {
           getCode()
         }
       })
@@ -165,7 +192,6 @@ function handleLogin() {
 }
 
 function getCode() {
-  if (loginType !== 'admin') return;
   getCodeImg().then(res => {
     captchaEnabled.value = res.captchaEnabled === undefined ? true : res.captchaEnabled
     if (captchaEnabled.value) {

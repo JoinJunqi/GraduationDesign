@@ -11,18 +11,16 @@ import com.ruoyi.record.domain.MedicalRecord;
 import com.ruoyi.record.service.IMedicalRecordService;
 
 @RestController
-@RequestMapping("/record")
 public class MedicalRecordController extends BaseController
 {
     @Autowired
     private IMedicalRecordService medicalRecordService;
 
     @GetMapping("/list")
-    public TableDataInfo list(MedicalRecord medicalRecord)
+    public ResultVO<List<MedicalRecord>> list(MedicalRecord medicalRecord)
     {
-        startPage();
         List<MedicalRecord> list = medicalRecordService.list();
-        return getDataTable(list);
+        return ResultVO.success(list);
     }
 
     @GetMapping(value = "/{id}")

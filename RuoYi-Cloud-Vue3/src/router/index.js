@@ -70,7 +70,6 @@ export const constantRoutes = [
       }
     ]
   },
-/*
   {
     path: '/user',
     component: Layout,
@@ -78,14 +77,13 @@ export const constantRoutes = [
     redirect: 'noredirect',
     children: [
       {
-        path: 'profile/:activeTab?',
+        path: 'profile',
         component: () => import('@/views/system/user/profile/index'),
         name: 'Profile',
         meta: { title: '个人中心', icon: 'user' }
       }
     ]
   },
-*/
   // 医院管理-业务详情页路由配置
   {
     path: '/hospital/doctor',

@@ -1,17 +1,17 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="账号" prop="username">
+      <el-form-item label="账号" prop="userName">
         <el-input
-          v-model="queryParams.username"
+          v-model="queryParams.userName"
           placeholder="请输入登录账号"
           clearable
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="姓名" prop="name">
+      <el-form-item label="姓名" prop="nickName">
         <el-input
-          v-model="queryParams.name"
+          v-model="queryParams.nickName"
           placeholder="请输入管理员姓名"
           clearable
           @keyup.enter="handleQuery"
@@ -58,19 +58,19 @@
 
     <el-table v-loading="loading" :data="adminList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="ID" align="center" prop="id" />
-      <el-table-column label="登录账号" align="center" prop="username" />
-      <el-table-column label="姓名" align="center" prop="name" />
-      <el-table-column label="状态" align="center" prop="isActive">
+      <el-table-column label="ID" align="center" prop="userId" />
+      <el-table-column label="登录账号" align="center" prop="userName" />
+      <el-table-column label="姓名" align="center" prop="nickName" />
+      <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
-          <el-tag :type="scope.row.isActive === 1 ? 'success' : 'danger'">
-            {{ scope.row.isActive === 1 ? '启用' : '禁用' }}
+          <el-tag :type="scope.row.status === '0' ? 'success' : 'danger'">
+            {{ scope.row.status === '0' ? '启用' : '禁用' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createdAt" width="180">
+      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
         <template #default="scope">
-          <span>{{ parseTime(scope.row.createdAt) }}</span>
+          <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
@@ -84,19 +84,19 @@
     <!-- 添加或修改管理员对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
       <el-form ref="adminRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="登录账号" prop="username">
-          <el-input v-model="form.username" placeholder="请输入登录账号" />
+        <el-form-item label="登录账号" prop="userName">
+          <el-input v-model="form.userName" placeholder="请输入登录账号" />
         </el-form-item>
-        <el-form-item label="登录密码" prop="passwordHash" v-if="!form.id">
-          <el-input v-model="form.passwordHash" placeholder="请输入登录密码" type="password" show-password/>
+        <el-form-item label="登录密码" prop="password" v-if="!form.userId">
+          <el-input v-model="form.password" placeholder="请输入登录密码" type="password" show-password/>
         </el-form-item>
-        <el-form-item label="姓名" prop="name">
-          <el-input v-model="form.name" placeholder="请输入姓名" />
+        <el-form-item label="姓名" prop="nickName">
+          <el-input v-model="form.nickName" placeholder="请输入姓名" />
         </el-form-item>
-        <el-form-item label="状态" prop="isActive">
-          <el-radio-group v-model="form.isActive">
-            <el-radio :label="1">启用</el-radio>
-            <el-radio :label="0">禁用</el-radio>
+        <el-form-item label="状态" prop="status">
+          <el-radio-group v-model="form.status">
+            <el-radio label="0">启用</el-radio>
+            <el-radio label="1">禁用</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -127,17 +127,17 @@ const title = ref("");
 const data = reactive({
   form: {},
   queryParams: {
-    username: null,
-    name: null
+    userName: null,
+    nickName: null
   },
   rules: {
-    username: [
+    userName: [
       { required: true, message: "登录账号不能为空", trigger: "blur" }
     ],
-    name: [
+    nickName: [
       { required: true, message: "姓名不能为空", trigger: "blur" }
     ],
-    passwordHash: [
+    password: [
       { required: true, message: "密码不能为空", trigger: "blur" }
     ]
   }
@@ -163,11 +163,11 @@ function cancel() {
 /** 表单重置 */
 function reset() {
   form.value = {
-    id: null,
-    username: null,
-    passwordHash: null,
-    name: null,
-    isActive: 1
+    userId: null,
+    userName: null,
+    password: null,
+    nickName: null,
+    status: "0"
   };
   proxy.resetForm("adminRef");
 }
@@ -185,7 +185,7 @@ function resetQuery() {
 
 /** 多选框选中数据 */
 function handleSelectionChange(selection) {
-  ids.value = selection.map(item => item.id);
+  ids.value = selection.map(item => item.userId);
   single.value = selection.length != 1;
   multiple.value = !selection.length;
 }
@@ -200,8 +200,8 @@ function handleAdd() {
 /** 修改按钮操作 */
 function handleUpdate(row) {
   reset();
-  const id = row.id || ids.value;
-  getAdmin(id).then(response => {
+  const userId = row.userId || ids.value;
+  getAdmin(userId).then(response => {
     form.value = response.data;
     open.value = true;
     title.value = "修改管理员";
@@ -212,7 +212,7 @@ function handleUpdate(row) {
 function submitForm() {
   proxy.$refs["adminRef"].validate(valid => {
     if (valid) {
-      if (form.value.id != null) {
+      if (form.value.userId != null) {
         updateAdmin(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功");
           open.value = false;
@@ -231,9 +231,9 @@ function submitForm() {
 
 /** 删除按钮操作 */
 function handleDelete(row) {
-  const adminIds = row.id || ids.value;
-  proxy.$modal.confirm('是否确认删除管理员编号为"' + adminIds + '"的数据项？').then(function() {
-    return delAdmin(adminIds);
+  const userIds = row.userId || ids.value;
+  proxy.$modal.confirm('是否确认删除管理员编号为"' + userIds + '"的数据项？').then(function() {
+    return delAdmin(userIds);
   }).then(() => {
     getList();
     proxy.$modal.msgSuccess("删除成功");

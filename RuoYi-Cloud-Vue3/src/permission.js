@@ -23,11 +23,32 @@ router.beforeEach((to, from, next) => {
     to.meta.title && useSettingsStore().setTitle(to.meta.title)
     /* has token*/
     if (to.path === '/login') {
-      next({ path: '/' })
+      const loginType = useUserStore().loginType;
+      let targetPath = '/';
+      if (loginType === 'patient') {
+        targetPath = '/hospital/appointment';
+      } else if (loginType === 'doctor') {
+        targetPath = '/hospital/schedule';
+      }
+      next({ path: targetPath })
       NProgress.done()
     } else if (isWhiteList(to.path)) {
       next()
     } else {
+      // 核心：无论是否已加载权限，只要是访问根路径或首页，根据角色强制重定向
+      if (to.path === '/' || to.path === '/index') {
+        const loginType = useUserStore().loginType;
+        if (loginType === 'patient') {
+          next({ path: '/hospital/appointment' })
+          NProgress.done()
+          return
+        } else if (loginType === 'doctor') {
+          next({ path: '/hospital/schedule' })
+          NProgress.done()
+          return
+        }
+      }
+
       if (useUserStore().roles.length === 0) {
         isRelogin.show = true
         // 判断当前用户是否已拉取完user_info信息

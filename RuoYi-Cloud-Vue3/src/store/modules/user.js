@@ -10,6 +10,7 @@ const useUserStore = defineStore(
   {
     state: () => ({
       token: getToken(),
+      loginType: localStorage.getItem('loginType') || 'admin',
       id: '',
       name: '',
       nickName: '',
@@ -18,6 +19,10 @@ const useUserStore = defineStore(
       permissions: []
     }),
     actions: {
+      setLoginType(type) {
+        this.loginType = type;
+        localStorage.setItem('loginType', type);
+      },
       // 登录
       login(userInfo) {
         const username = userInfo.username.trim()
@@ -29,6 +34,7 @@ const useUserStore = defineStore(
             let data = res.data
             setToken(data.access_token)
             this.token = data.access_token
+            this.setLoginType('admin')
             resolve()
           }).catch(error => {
             reject(error)
@@ -39,11 +45,14 @@ const useUserStore = defineStore(
       loginPatient(userInfo) {
         const username = userInfo.username.trim()
         const password = userInfo.password
+        const code = userInfo.code
+        const uuid = userInfo.uuid
         return new Promise((resolve, reject) => {
-          loginPatient({ username, passwordHash: password }).then(res => {
+          loginPatient({ username, passwordHash: password, code, uuid }).then(res => {
             let data = res.data
             setToken(data.token)
             this.token = data.token
+            this.setLoginType('patient')
             resolve()
           }).catch(error => {
             reject(error)
@@ -54,11 +63,14 @@ const useUserStore = defineStore(
       loginDoctor(userInfo) {
         const username = userInfo.username.trim()
         const password = userInfo.password
+        const code = userInfo.code
+        const uuid = userInfo.uuid
         return new Promise((resolve, reject) => {
-          loginDoctor({ username, passwordHash: password }).then(res => {
+          loginDoctor({ username, passwordHash: password, code, uuid }).then(res => {
             let data = res.data
             setToken(data.token)
             this.token = data.token
+            this.setLoginType('doctor')
             resolve()
           }).catch(error => {
             reject(error)
@@ -78,8 +90,7 @@ const useUserStore = defineStore(
             const avatar = (isEmpty(user.avatar)) ? defAva : user.avatar
             
             // 简单处理权限，如果是患者或医生，给予默认权限
-            const port = window.location.port
-            if (port === '3001' || port === '3002') {
+            if (this.loginType === 'patient' || this.loginType === 'doctor') {
                 this.roles = ['ROLE_USER']
                 this.permissions = ['*:*:*'] // 暂时给全部权限，后续细化
                 this.id = user.id

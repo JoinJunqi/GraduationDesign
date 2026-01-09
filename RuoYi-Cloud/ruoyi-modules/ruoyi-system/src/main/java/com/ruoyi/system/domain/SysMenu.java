@@ -7,6 +7,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.apache.ibatis.type.Alias;
 import com.ruoyi.common.core.web.domain.BaseEntity;
 
 /**
@@ -14,6 +15,7 @@ import com.ruoyi.common.core.web.domain.BaseEntity;
  * 
  * @author ruoyi
  */
+@Alias("SysMenu")
 public class SysMenu extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
