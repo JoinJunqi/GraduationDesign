@@ -39,28 +39,12 @@ public interface ISysMenuService
     public Set<String> selectMenuPermsByUserId(Long userId);
 
     /**
-     * 根据角色ID查询权限
-     * 
-     * @param roleId 角色ID
-     * @return 权限列表
-     */
-    public Set<String> selectMenuPermsByRoleId(Long roleId);
-
-    /**
      * 根据用户ID查询菜单树信息
      * 
      * @param userId 用户ID
      * @return 菜单列表
      */
     public List<SysMenu> selectMenuTreeByUserId(Long userId);
-
-    /**
-     * 根据角色ID查询菜单树信息
-     * 
-     * @param roleId 角色ID
-     * @return 选中菜单列表
-     */
-    public List<Long> selectMenuListByRoleId(Long roleId);
 
     /**
      * 构建前端路由所需要的菜单
@@ -101,14 +85,6 @@ public interface ISysMenuService
      * @return 结果 true 存在 false 不存在
      */
     public boolean hasChildByMenuId(Long menuId);
-
-    /**
-     * 查询菜单是否存在角色
-     * 
-     * @param menuId 菜单ID
-     * @return 结果 true 存在 false 不存在
-     */
-    public boolean checkMenuExistRole(Long menuId);
 
     /**
      * 新增保存菜单信息

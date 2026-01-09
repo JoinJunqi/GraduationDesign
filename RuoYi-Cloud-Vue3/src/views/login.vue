@@ -1,14 +1,14 @@
 <template>
   <div class="login">
     <el-form ref="loginRef" :model="loginForm" :rules="loginRules" class="login-form">
-      <h3 class="title">{{ title }}</h3>
+      <h3 class="title">{{ currentTitle }}</h3>
       <el-form-item prop="username">
         <el-input
           v-model="loginForm.username"
           type="text"
           size="large"
           auto-complete="off"
-          placeholder="账号"
+          :placeholder="accountPlaceholder"
         >
           <template #prefix><svg-icon icon-class="user" class="el-input__icon input-icon" /></template>
         </el-input>
@@ -25,7 +25,7 @@
           <template #prefix><svg-icon icon-class="password" class="el-input__icon input-icon" /></template>
         </el-input>
       </el-form-item>
-      <el-form-item prop="code" v-if="captchaEnabled">
+      <el-form-item prop="code" v-if="captchaEnabled && loginType === 'admin'">
         <el-input
           v-model="loginForm.code"
           size="large"
@@ -52,7 +52,7 @@
           <span v-if="!loading">登 录</span>
           <span v-else>登 录 中...</span>
         </el-button>
-        <div style="float: right;" v-if="register">
+        <div style="float: right;" v-if="loginType === 'patient'">
           <router-link class="link-type" :to="'/register'">立即注册</router-link>
         </div>
       </el-form-item>
@@ -69,16 +69,37 @@ import { getCodeImg } from "@/api/login"
 import Cookies from "js-cookie"
 import { encrypt, decrypt } from "@/utils/jsencrypt"
 import useUserStore from '@/store/modules/user'
+import useSettingsStore from '@/store/modules/settings'
+import { loginPatient, loginDoctor } from "@/api/login" 
 
-const title = import.meta.env.VITE_APP_TITLE
 const userStore = useUserStore()
 const route = useRoute()
 const router = useRouter()
 const { proxy } = getCurrentInstance()
 
+// 根据端口判断登录类型
+const port = window.location.port
+let loginType = 'admin'
+let currentTitle = import.meta.env.VITE_APP_TITLE
+let accountPlaceholder = '账号'
+
+if (port === '3001') {
+  loginType = 'patient'
+  currentTitle = '患者登录'
+  accountPlaceholder = '身份证号/手机号'
+} else if (port === '3002') {
+  loginType = 'doctor'
+  currentTitle = '医生登录'
+  accountPlaceholder = '工号/用户名'
+} else {
+  currentTitle = '管理员登录'
+}
+
+useSettingsStore().setTitle(currentTitle)
+
 const loginForm = ref({
-  username: "admin",
-  password: "admin123",
+  username: loginType === 'admin' ? "admin" : "",
+  password: loginType === 'admin' ? "admin123" : "",
   rememberMe: false,
   code: "",
   uuid: ""
@@ -87,15 +108,13 @@ const loginForm = ref({
 const loginRules = {
   username: [{ required: true, trigger: "blur", message: "请输入您的账号" }],
   password: [{ required: true, trigger: "blur", message: "请输入您的密码" }],
-  code: [{ required: true, trigger: "change", message: "请输入验证码" }]
+  code: [{ required: loginType === 'admin', trigger: "change", message: "请输入验证码" }]
 }
 
 const codeUrl = ref("")
 const loading = ref(false)
 // 验证码开关
 const captchaEnabled = ref(true)
-// 注册开关
-const register = ref(false)
 const redirect = ref(undefined)
 
 watch(route, (newRoute) => {
@@ -106,19 +125,27 @@ function handleLogin() {
   proxy.$refs.loginRef.validate(valid => {
     if (valid) {
       loading.value = true
-      // 勾选了需要记住密码设置在 cookie 中设置记住用户名和密码
       if (loginForm.value.rememberMe) {
         Cookies.set("username", loginForm.value.username, { expires: 30 })
         Cookies.set("password", encrypt(loginForm.value.password), { expires: 30 })
         Cookies.set("rememberMe", loginForm.value.rememberMe, { expires: 30 })
       } else {
-        // 否则移除
         Cookies.remove("username")
         Cookies.remove("password")
         Cookies.remove("rememberMe")
       }
-      // 调用action的登录方法
-      userStore.login(loginForm.value).then(() => {
+      
+      // 根据类型调用不同登录方法
+      let loginPromise;
+      if (loginType === 'patient') {
+        loginPromise = userStore.loginPatient(loginForm.value)
+      } else if (loginType === 'doctor') {
+        loginPromise = userStore.loginDoctor(loginForm.value)
+      } else {
+        loginPromise = userStore.login(loginForm.value)
+      }
+
+      loginPromise.then(() => {
         const query = route.query
         const otherQueryParams = Object.keys(query).reduce((acc, cur) => {
           if (cur !== "redirect") {
@@ -129,8 +156,7 @@ function handleLogin() {
         router.push({ path: redirect.value || "/", query: otherQueryParams })
       }).catch(() => {
         loading.value = false
-        // 重新获取验证码
-        if (captchaEnabled.value) {
+        if (loginType === 'admin' && captchaEnabled.value) {
           getCode()
         }
       })
@@ -139,6 +165,7 @@ function handleLogin() {
 }
 
 function getCode() {
+  if (loginType !== 'admin') return;
   getCodeImg().then(res => {
     captchaEnabled.value = res.captchaEnabled === undefined ? true : res.captchaEnabled
     if (captchaEnabled.value) {

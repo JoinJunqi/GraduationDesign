@@ -7,6 +7,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:admin": "vite --port 3000",
+    "dev:patient": "vite --port 3001",
+    "dev:doctor": "vite --port 3002",
     "build:prod": "vite build",
     "build:stage": "vite build --mode staging",
     "preview": "vite preview"

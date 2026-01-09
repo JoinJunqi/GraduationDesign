@@ -8,11 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import com.ruoyi.common.core.constant.UserConstants;
 import com.ruoyi.common.core.utils.StringUtils;
-import com.ruoyi.system.api.domain.SysRole;
 import com.ruoyi.system.api.domain.SysUser;
 import com.ruoyi.system.service.ISysMenuService;
 import com.ruoyi.system.service.ISysPermissionService;
-import com.ruoyi.system.service.ISysRoleService;
 
 /**
  * 用户权限处理
@@ -22,9 +20,6 @@ import com.ruoyi.system.service.ISysRoleService;
 @Service
 public class SysPermissionServiceImpl implements ISysPermissionService
 {
-    @Autowired
-    private ISysRoleService roleService;
-
     @Autowired
     private ISysMenuService menuService;
 
@@ -42,10 +37,6 @@ public class SysPermissionServiceImpl implements ISysPermissionService
         if (user.isAdmin())
         {
             roles.add("admin");
-        }
-        else
-        {
-            roles.addAll(roleService.selectRolePermissionByUserId(user.getUserId()));
         }
         return roles;
     }
@@ -67,24 +58,7 @@ public class SysPermissionServiceImpl implements ISysPermissionService
         }
         else
         {
-            List<SysRole> roles = user.getRoles();
-            if (!CollectionUtils.isEmpty(roles))
-            {
-                // 多角色设置permissions属性，以便数据权限匹配权限
-                for (SysRole role : roles)
-                {
-                    if (StringUtils.equals(role.getStatus(), UserConstants.ROLE_NORMAL) && !role.isAdmin())
-                    {
-                        Set<String> rolePerms = menuService.selectMenuPermsByRoleId(role.getRoleId());
-                        role.setPermissions(rolePerms);
-                        perms.addAll(rolePerms);
-                    }
-                }
-            }
-            else
-            {
-                perms.addAll(menuService.selectMenuPermsByUserId(user.getUserId()));
-            }
+            perms.addAll(menuService.selectMenuPermsByUserId(user.getUserId()));
         }
         return perms;
     }

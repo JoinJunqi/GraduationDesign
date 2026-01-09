@@ -10,16 +10,12 @@
 
     <modules>
         <module>ruoyi-system</module>
-        <module>ruoyi-gen</module>
-        <module>ruoyi-job</module>
-        <module>ruoyi-file</module>
-        <module>ruoyi-hospital-admin</module>
-        <module>ruoyi-hospital-patient</module>
-        <module>ruoyi-hospital-doctor</module>
-        <module>ruoyi-hospital-record</module>
-        <module>ruoyi-hospital-appointment</module>
-        <module>ruoyi-hospital-department</module>
-        <module>ruoyi-hospital-schedule</module>
+        <module>ruoyi-modules-doctor</module>
+        <module>ruoyi-modules-patient</module>
+        <module>ruoyi-modules-department</module>
+        <module>ruoyi-modules-schedule</module>
+        <module>ruoyi-modules-appointment</module>
+        <module>ruoyi-modules-record</module>
     </modules>
 
     <artifactId>ruoyi-modules</artifactId>

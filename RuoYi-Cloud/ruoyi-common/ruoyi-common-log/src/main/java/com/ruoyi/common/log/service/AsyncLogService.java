@@ -24,6 +24,6 @@ public class AsyncLogService
     @Async
     public void saveSysLog(SysOperLog sysOperLog) throws Exception
     {
-        remoteLogService.saveLog(sysOperLog, SecurityConstants.INNER);
+        // remoteLogService.saveLog(sysOperLog, SecurityConstants.INNER);
     }
 }

@@ -1,7 +1,7 @@
 import request from '@/utils/request'
 
 // 登录方法
-export function login(username, password, code, uuid) {
+export function login(data) {
   return request({
     url: '/auth/login',
     headers: {
@@ -9,7 +9,33 @@ export function login(username, password, code, uuid) {
       repeatSubmit: false
     },
     method: 'post',
-    data: { username, password, code, uuid }
+    data: data
+  })
+}
+
+// 患者登录
+export function loginPatient(data) {
+  return request({
+    url: '/patient/login',
+    headers: {
+      isToken: false,
+      repeatSubmit: false
+    },
+    method: 'post',
+    data: data
+  })
+}
+
+// 医生登录
+export function loginDoctor(data) {
+  return request({
+    url: '/doctor/login',
+    headers: {
+      isToken: false,
+      repeatSubmit: false
+    },
+    method: 'post',
+    data: data
   })
 }
 
@@ -35,8 +61,15 @@ export function refreshToken() {
 
 // 获取用户详细信息
 export function getInfo() {
+  const port = window.location.port
+  let url = '/system/user/getInfo'
+  if (port === '3001') {
+    url = '/patient/profile'
+  } else if (port === '3002') {
+    url = '/doctor/profile'
+  }
   return request({
-    url: '/system/user/getInfo',
+    url: url,
     method: 'get'
   })
 }

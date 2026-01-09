@@ -37,6 +37,5 @@ public class RemoteLogFallbackFactory implements FallbackFactory<RemoteLogServic
                 return R.fail("保存登录日志失败:" + throwable.getMessage());
             }
         };
-
     }
 }

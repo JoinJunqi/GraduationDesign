@@ -1,6 +1,6 @@
 import router from '@/router'
 import { ElMessageBox, } from 'element-plus'
-import { login, logout, getInfo } from '@/api/login'
+import { login, loginPatient, loginDoctor, logout, getInfo } from '@/api/login'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import { isEmpty } from "@/utils/validate"
 import defAva from '@/assets/images/profile.jpg'
@@ -25,10 +25,40 @@ const useUserStore = defineStore(
         const code = userInfo.code
         const uuid = userInfo.uuid
         return new Promise((resolve, reject) => {
-          login(username, password, code, uuid).then(res => {
+          login({ username, password, code, uuid }).then(res => {
             let data = res.data
             setToken(data.access_token)
             this.token = data.access_token
+            resolve()
+          }).catch(error => {
+            reject(error)
+          })
+        })
+      },
+      // 患者登录
+      loginPatient(userInfo) {
+        const username = userInfo.username.trim()
+        const password = userInfo.password
+        return new Promise((resolve, reject) => {
+          loginPatient({ username, passwordHash: password }).then(res => {
+            let data = res.data
+            setToken(data.token)
+            this.token = data.token
+            resolve()
+          }).catch(error => {
+            reject(error)
+          })
+        })
+      },
+      // 医生登录
+      loginDoctor(userInfo) {
+        const username = userInfo.username.trim()
+        const password = userInfo.password
+        return new Promise((resolve, reject) => {
+          loginDoctor({ username, passwordHash: password }).then(res => {
+            let data = res.data
+            setToken(data.token)
+            this.token = data.token
             resolve()
           }).catch(error => {
             reject(error)
@@ -39,25 +69,41 @@ const useUserStore = defineStore(
       getInfo() {
         return new Promise((resolve, reject) => {
           getInfo().then(res => {
-            const user = res.user
-            const avatar = (isEmpty(user.avatar)) ? defAva : user.avatar
-            if (res.roles && res.roles.length > 0) { // 验证返回的roles是否是一个非空数组
-              this.roles = res.roles
-              this.permissions = res.permissions
-            } else {
-              this.roles = ['ROLE_DEFAULT']
+            let user = res.data || res.user
+            // 兼容 RuoYi 标准返回和自定义模块返回
+            if (res.user) {
+                user = res.user
             }
-            this.id = user.userId
-            this.name = user.userName
-            this.nickName = user.nickName
+            
+            const avatar = (isEmpty(user.avatar)) ? defAva : user.avatar
+            
+            // 简单处理权限，如果是患者或医生，给予默认权限
+            const port = window.location.port
+            if (port === '3001' || port === '3002') {
+                this.roles = ['ROLE_USER']
+                this.permissions = ['*:*:*'] // 暂时给全部权限，后续细化
+                this.id = user.id
+                this.name = user.username
+                this.nickName = user.name
+            } else {
+                if (res.roles && res.roles.length > 0) {
+                  this.roles = res.roles
+                  this.permissions = res.permissions
+                } else {
+                  this.roles = ['ROLE_DEFAULT']
+                }
+                this.id = user.userId
+                this.name = user.userName
+                this.nickName = user.nickName
+            }
+            
             this.avatar = avatar
-            /* 初始密码提示 */
+            
             if(res.isDefaultModifyPwd) {
               ElMessageBox.confirm('您的密码还是初始密码，请修改密码！',  '安全提示', {  confirmButtonText: '确定',  cancelButtonText: '取消',  type: 'warning' }).then(() => {
                 router.push({ name: 'Profile', params: { activeTab: 'resetPwd' } })
               }).catch(() => {})
             }
-            /* 过期密码提示 */
             if(!res.isDefaultModifyPwd && res.isPasswordExpired) {
               ElMessageBox.confirm('您的密码已过期，请尽快修改密码！',  '安全提示', {  confirmButtonText: '确定',  cancelButtonText: '取消',  type: 'warning' }).then(() => {
                 router.push({ name: 'Profile', params: { activeTab: 'resetPwd' } })

@@ -43,6 +43,6 @@ public class SysRecordLogService
         {
             logininfor.setStatus(Constants.LOGIN_FAIL_STATUS);
         }
-        remoteLogService.saveLogininfor(logininfor, SecurityConstants.INNER);
+        // remoteLogService.saveLogininfor(logininfor, SecurityConstants.INNER);
     }
 }

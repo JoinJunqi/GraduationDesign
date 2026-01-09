@@ -7,7 +7,7 @@ import com.ruoyi.common.core.annotation.Excel.ColumnType;
 import com.ruoyi.common.core.web.domain.BaseEntity;
 
 /**
- * 操作日志记录表 oper_log
+ * 操作日志记录表 sys_oper_log
  * 
  * @author ruoyi
  */
@@ -19,7 +19,7 @@ public class SysOperLog extends BaseEntity
     @Excel(name = "操作序号", cellType = ColumnType.NUMERIC)
     private Long operId;
 
-    /** 操作模块 */
+    /** 模块标题 */
     @Excel(name = "操作模块")
     private String title;
 
@@ -30,8 +30,8 @@ public class SysOperLog extends BaseEntity
     /** 业务类型数组 */
     private Integer[] businessTypes;
 
-    /** 请求方法 */
-    @Excel(name = "请求方法")
+    /** 方法名称 */
+    @Excel(name = "方法名称")
     private String method;
 
     /** 请求方式 */
@@ -50,13 +50,17 @@ public class SysOperLog extends BaseEntity
     @Excel(name = "部门名称")
     private String deptName;
 
-    /** 请求url */
+    /** 请求URL */
     @Excel(name = "请求地址")
     private String operUrl;
 
-    /** 操作地址 */
+    /** 主机地址 */
     @Excel(name = "操作地址")
     private String operIp;
+
+    /** 操作地点 */
+    @Excel(name = "操作地点")
+    private String operLocation;
 
     /** 请求参数 */
     @Excel(name = "请求参数")
@@ -191,6 +195,16 @@ public class SysOperLog extends BaseEntity
     public void setOperIp(String operIp)
     {
         this.operIp = operIp;
+    }
+
+    public String getOperLocation()
+    {
+        return operLocation;
+    }
+
+    public void setOperLocation(String operLocation)
+    {
+        this.operLocation = operLocation;
     }
 
     public String getOperParam()

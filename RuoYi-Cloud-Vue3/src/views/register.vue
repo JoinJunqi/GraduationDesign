@@ -79,7 +79,9 @@
 import { ElMessageBox } from "element-plus"
 import { getCodeImg, register } from "@/api/login"
 
-const title = import.meta.env.VITE_APP_TITLE
+const title = '患者注册'
+import useSettingsStore from '@/store/modules/settings'
+useSettingsStore().setTitle(title)
 const router = useRouter()
 const { proxy } = getCurrentInstance()
 

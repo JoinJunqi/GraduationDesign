@@ -70,6 +70,7 @@ export const constantRoutes = [
       }
     ]
   },
+/*
   {
     path: '/user',
     component: Layout,
@@ -84,6 +85,7 @@ export const constantRoutes = [
       }
     ]
   },
+*/
   // 医院管理-业务详情页路由配置
   {
     path: '/hospital/doctor',
@@ -146,6 +148,7 @@ export const constantRoutes = [
 
 // 动态路由，基于用户权限动态去加载
 export const dynamicRoutes = [
+/*
   {
     path: '/system/user-auth',
     component: Layout,
@@ -216,6 +219,7 @@ export const dynamicRoutes = [
       }
     ]
   }
+*/
 ]
 
 const router = createRouter({
