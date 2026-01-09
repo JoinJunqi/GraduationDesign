@@ -1,0 +1,115 @@
+# Tomcat
+server:
+  port: 8080
+
+# Spring
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          lowerCaseServiceId: true
+          enabled: true
+      routes:
+        # 认证中心
+        - id: ruoyi-auth
+          uri: lb://ruoyi-auth
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=1
+        # 系统模块
+        - id: ruoyi-system
+          uri: lb://ruoyi-system
+          predicates:
+            - Path=/system/**
+          filters:
+            - StripPrefix=1
+        # 代码生成
+        - id: ruoyi-gen
+          uri: lb://ruoyi-gen
+          predicates:
+            - Path=/code/**
+          filters:
+            - StripPrefix=1
+        # 定时任务
+        - id: ruoyi-job
+          uri: lb://ruoyi-job
+          predicates:
+            - Path=/schedule/job/**
+          filters:
+            - StripPrefix=1
+        # 文件服务
+        - id: ruoyi-file
+          uri: lb://ruoyi-file
+          predicates:
+            - Path=/file/**
+          filters:
+            - StripPrefix=1
+        # 医院管理模块
+        - id: ruoyi-hospital-admin
+          uri: lb://ruoyi-hospital-admin
+          predicates:
+            - Path=/admin/**
+          filters:
+            - StripPrefix=1
+        # 医院医生模块
+        - id: ruoyi-hospital-doctor
+          uri: lb://ruoyi-hospital-doctor
+          predicates:
+            - Path=/doctor/**
+          filters:
+            - StripPrefix=1
+        # 医院患者模块
+        - id: ruoyi-hospital-patient
+          uri: lb://ruoyi-hospital-patient
+          predicates:
+            - Path=/patient/**
+          filters:
+            - StripPrefix=1
+        # 医院病历模块
+        - id: ruoyi-hospital-record
+          uri: lb://ruoyi-hospital-record
+          predicates:
+            - Path=/record/**
+          filters:
+            - StripPrefix=1
+        # 医院预约模块
+        - id: ruoyi-hospital-appointment
+          uri: lb://ruoyi-hospital-appointment
+          predicates:
+            - Path=/appointment/**
+          filters:
+            - StripPrefix=1
+        # 医院科室模块
+        - id: ruoyi-hospital-department
+          uri: lb://ruoyi-hospital-department
+          predicates:
+            - Path=/department/**
+          filters:
+            - StripPrefix=1
+        # 医院排班模块
+        - id: ruoyi-hospital-schedule
+          uri: lb://ruoyi-hospital-schedule
+          predicates:
+            - Path=/schedule/**
+          filters:
+            - StripPrefix=1
+
+# 安全配置
+security:
+  # 验证码配置
+  captcha:
+    enabled: true
+    type: math
+  ignore:
+    whites:
+      - /auth/logout
+      - /auth/login
+      - /auth/register
+      - /patient/login
+      - /patient/register
+      - /doctor/login
+      - /*/v2/api-docs
+      - /csrf
+      - /code

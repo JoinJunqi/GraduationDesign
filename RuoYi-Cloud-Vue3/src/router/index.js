@@ -122,25 +122,6 @@ export const constantRoutes = [
         meta: { title: '修改患者', activeMenu: '/hospital/patient' }
       }
     ]
-  },
-  {
-    path: '/hospital/record',
-    component: Layout,
-    hidden: true,
-    children: [
-      {
-        path: 'add',
-        component: () => import('@/views/hospital/record/components/RecordForm'),
-        name: 'RecordAdd',
-        meta: { title: '添加病历', activeMenu: '/hospital/record' }
-      },
-      {
-        path: 'edit/:id(\\d+)',
-        component: () => import('@/views/hospital/record/components/RecordForm'),
-        name: 'RecordEdit',
-        meta: { title: '修改病历', activeMenu: '/hospital/record' }
-      }
-    ]
   }
 ]
 

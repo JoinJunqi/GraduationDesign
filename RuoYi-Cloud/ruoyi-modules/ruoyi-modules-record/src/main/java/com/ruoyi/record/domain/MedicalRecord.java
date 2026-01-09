@@ -1,14 +1,16 @@
 package com.ruoyi.record.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import java.io.Serializable;
 import java.util.Date;
 
 /**
- * 病历对象 medical_record
+ * 电子病历对象 medical_record
  */
 @Data
 @TableName("medical_record")
@@ -38,8 +40,22 @@ public class MedicalRecord implements Serializable {
     private String notes;
 
     /** 就诊时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date visitTime;
 
     /** 创建时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createdAt;
+
+    /** 医生姓名 (非表字段) */
+    @TableField(exist = false)
+    private String doctorName;
+
+    /** 患者姓名 (非表字段) */
+    @TableField(exist = false)
+    private String patientName;
+
+    /** 科室名称 (非表字段) */
+    @TableField(exist = false)
+    private String deptName;
 }

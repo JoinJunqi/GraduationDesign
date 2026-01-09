@@ -58,6 +58,11 @@ public class PatientController extends BaseController
         loginUser.setUsername(user.getUsername());
         loginUser.setToken(IdUtils.fastUUID());
         
+        // 设置角色
+        java.util.Set<String> roles = new java.util.HashSet<>();
+        roles.add("patient");
+        loginUser.setRoles(roles);
+        
         // 必须设置 sysUser 否则 TokenService 会抛 NPE
         SysUser sysUser = new SysUser();
         sysUser.setUserId(user.getId());
