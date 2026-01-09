@@ -211,4 +211,17 @@ public interface ISysUserService
      * @return 结果
      */
     public String importUser(List<SysUser> userList, Boolean isUpdateSupport, String operName);
+
+    /**
+     * 修改密码
+     * 
+     * @param oldPassword 旧密码
+     * @param newPassword 新密码
+     * @return 结果
+     */
+    public boolean updatePassword(String oldPassword, String newPassword);
+    /**
+     * 获取用户信息用于个人中心
+     */
+    public java.util.Map<String, Object> selectUserProfile();
 }

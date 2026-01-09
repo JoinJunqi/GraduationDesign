@@ -2,18 +2,35 @@ package com.ruoyi.doctor.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruoyi.common.core.exception.ServiceException;
+import com.ruoyi.common.core.utils.uuid.IdUtils;
+import com.ruoyi.common.security.service.TokenService;
+import com.ruoyi.common.security.utils.SecurityUtils;
 import com.ruoyi.doctor.domain.Doctor;
 import com.ruoyi.doctor.mapper.DoctorMapper;
 import com.ruoyi.doctor.service.IDoctorService;
+import com.ruoyi.system.api.domain.SysUser;
+import com.ruoyi.system.api.model.LoginUser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> implements IDoctorService {
 
+    private static final Logger log = LoggerFactory.getLogger(DoctorServiceImpl.class);
+
     @Autowired
     private DoctorMapper doctorMapper;
+
+    @Autowired
+    private TokenService tokenService;
 
     @Override
     public Doctor selectDoctorByUsername(String username) {
@@ -23,5 +40,62 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
     @Override
     public List<Doctor> selectDoctorsByDeptId(Long deptId) {
         return doctorMapper.selectList(new LambdaQueryWrapper<Doctor>().eq(Doctor::getDeptId, deptId));
+    }
+
+    @Override
+    public Map<String, Object> login(Doctor doctor) {
+        log.info("医生登录尝试: username={}", doctor.getUsername());
+        Doctor user = selectDoctorByUsername(doctor.getUsername());
+        if (user == null) {
+            log.warn("医生登录失败: 用户不存在, username={}", doctor.getUsername());
+            throw new ServiceException("用户名或密码错误");
+        }
+
+        if (!SecurityUtils.matchesPassword(doctor.getPasswordHash(), user.getPasswordHash())) {
+            log.warn("医生登录失败: 密码不匹配, username={}", doctor.getUsername());
+            throw new ServiceException("用户名或密码错误");
+        }
+
+        log.info("医生登录成功: username={}", doctor.getUsername());
+        // 创建登录用户信息
+        LoginUser loginUser = new LoginUser();
+        loginUser.setUserid(user.getId());
+        loginUser.setUsername(user.getUsername());
+        loginUser.setToken(IdUtils.fastUUID());
+
+        // 设置角色
+        Set<String> roles = new HashSet<>();
+        roles.add("doctor");
+        loginUser.setRoles(roles);
+
+        // 必须设置 sysUser 否则 TokenService 会抛 NPE
+        SysUser sysUser = new SysUser();
+        sysUser.setUserId(user.getId());
+        sysUser.setUserName(user.getUsername());
+        sysUser.setNickName(user.getName());
+        loginUser.setSysUser(sysUser);
+
+        // 保存到 Redis 并生成令牌
+        Map<String, Object> tokenMap = tokenService.createToken(loginUser);
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("token", tokenMap.get("access_token"));
+        return map;
+    }
+
+    @Override
+    public boolean insertDoctor(Doctor doctor) {
+        if (doctor.getPasswordHash() != null && !doctor.getPasswordHash().isEmpty()) {
+            doctor.setPasswordHash(SecurityUtils.encryptPassword(doctor.getPasswordHash()));
+        }
+        return save(doctor);
+    }
+
+    @Override
+    public boolean updateDoctor(Doctor doctor) {
+        if (doctor.getPasswordHash() != null && !doctor.getPasswordHash().isEmpty()) {
+            doctor.setPasswordHash(SecurityUtils.encryptPassword(doctor.getPasswordHash()));
+        }
+        return updateById(doctor);
     }
 }

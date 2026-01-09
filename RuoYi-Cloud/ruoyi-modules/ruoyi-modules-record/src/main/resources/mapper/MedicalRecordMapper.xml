@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.record.mapper.MedicalRecordMapper">
+
+    <resultMap type="com.ruoyi.record.domain.MedicalRecord" id="MedicalRecordResult">
+        <result property="id" column="id"/>
+        <result property="appointmentId" column="appointment_id"/>
+        <result property="patientId" column="patient_id"/>
+        <result property="doctorId" column="doctor_id"/>
+        <result property="diagnosis" column="diagnosis"/>
+        <result property="prescription" column="prescription"/>
+        <result property="notes" column="notes"/>
+        <result property="visitTime" column="visit_time"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="doctorName" column="doctor_name"/>
+        <result property="patientName" column="patient_name"/>
+        <result property="deptName" column="dept_name"/>
+    </resultMap>
+
+    <select id="selectMedicalRecordList" parameterType="com.ruoyi.record.domain.MedicalRecord" resultMap="MedicalRecordResult">
+        SELECT mr.*, d.name as doctor_name, p.name as patient_name, dept.name as dept_name
+        FROM medical_record mr
+        LEFT JOIN doctor d ON mr.doctor_id = d.id
+        LEFT JOIN patient p ON mr.patient_id = p.id
+        LEFT JOIN department dept ON d.dept_id = dept.id
+        <where>
+            <if test="patientId != null"> AND mr.patient_id = #{patientId}</if>
+            <if test="doctorId != null"> AND mr.doctor_id = #{doctorId}</if>
+            <if test="diagnosis != null and diagnosis != ''"> AND mr.diagnosis LIKE concat('%', #{diagnosis}, '%')</if>
+            <if test="doctorName != null and doctorName != ''"> AND d.name LIKE concat('%', #{doctorName}, '%')</if>
+            <if test="patientName != null and patientName != ''"> AND p.name LIKE concat('%', #{patientName}, '%')</if>
+        </where>
+        ORDER BY mr.visit_time DESC
+    </select>
+
+</mapper>

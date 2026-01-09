@@ -5,13 +5,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.common.core.web.controller.BaseController;
-import java.util.Map;
-// import com.ruoyi.department.domain.Department;
-// import com.ruoyi.doctor.domain.Doctor;
-// import com.ruoyi.patient.domain.Patient;
-// 假设有对应的Service接口，实际需注入DepartmentService等，这里为演示简化
-// import com.ruoyi.system.service.IDepartmentService; 
-
 import com.ruoyi.system.api.domain.SysUser;
 import com.ruoyi.system.service.ISysUserService;
 import com.ruoyi.common.security.utils.SecurityUtils;
@@ -50,11 +43,6 @@ public class AdminController extends BaseController
     @PostMapping
     public ResultVO<Boolean> add(@RequestBody SysUser user)
     {
-        if (user.getUserName() != null && !userService.checkUserNameUnique(user))
-        {
-            return ResultVO.error("新增管理员'" + user.getUserName() + "'失败，登录账号已存在");
-        }
-        user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
         return ResultVO.success(userService.insertUser(user) > 0);
     }
 
@@ -64,9 +52,6 @@ public class AdminController extends BaseController
     @PutMapping
     public ResultVO<Boolean> edit(@RequestBody SysUser user)
     {
-        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
-            user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
-        }
         return ResultVO.success(userService.updateUser(user) > 0);
     }
 
@@ -79,21 +64,13 @@ public class AdminController extends BaseController
         return ResultVO.success(userService.deleteUserByIds(userIds) > 0);
     }
 
-    @Autowired
-    private com.ruoyi.system.service.ISysPermissionService permissionService;
-
     /**
      * 查询个人信息
      */
     @GetMapping("/profile")
-    public com.ruoyi.common.core.web.domain.AjaxResult profile()
+    public ResultVO<java.util.Map<String, Object>> profile()
     {
-        Long userId = SecurityUtils.getUserId();
-        SysUser user = userService.selectUserById(userId);
-        com.ruoyi.common.core.web.domain.AjaxResult ajax = com.ruoyi.common.core.web.domain.AjaxResult.success(user);
-        ajax.put("roleGroup", userService.selectUserRoleGroup(user.getUserName()));
-        ajax.put("postGroup", userService.selectUserPostGroup(user.getUserName()));
-        return ajax;
+        return ResultVO.success(userService.selectUserProfile());
     }
 
     /**
@@ -102,10 +79,6 @@ public class AdminController extends BaseController
     @PutMapping("/profile")
     public ResultVO<Boolean> updateProfile(@RequestBody SysUser user)
     {
-        user.setUserId(SecurityUtils.getUserId());
-        // 不允许修改账号和密码
-        user.setUserName(null);
-        user.setPassword(null);
         return ResultVO.success(userService.updateUserProfile(user));
     }
 
@@ -115,22 +88,7 @@ public class AdminController extends BaseController
     @PutMapping("/profile/updatePwd")
     public ResultVO<Boolean> updatePwd(@RequestParam("oldPassword") String oldPassword, @RequestParam("newPassword") String newPassword)
     {
-        String username = SecurityUtils.getUsername();
-        SysUser user = userService.selectUserByUserName(username);
-        String password = user.getPassword();
-        if (!SecurityUtils.matchesPassword(oldPassword, password))
-        {
-            return ResultVO.error("修改密码失败，旧密码错误");
-        }
-        if (SecurityUtils.matchesPassword(newPassword, password))
-        {
-            return ResultVO.error("新密码不能与旧密码相同");
-        }
-        if (userService.resetUserPwd(user.getUserId(), SecurityUtils.encryptPassword(newPassword)) > 0)
-        {
-            return ResultVO.success(true);
-        }
-        return ResultVO.error("修改密码异常，请联系管理员");
+        return ResultVO.success(userService.updatePassword(oldPassword, newPassword));
     }
 
     /**
@@ -142,7 +100,6 @@ public class AdminController extends BaseController
         if (!file.isEmpty())
         {
             // 这里应该调用文件服务上传头像，暂且模拟返回一个路径
-            // String avatar = userService.updateUserAvatar(username, file);
             String avatar = "/profile/avatar/default.png"; 
             if (userService.updateUserAvatar(SecurityUtils.getUserId(), avatar))
             {

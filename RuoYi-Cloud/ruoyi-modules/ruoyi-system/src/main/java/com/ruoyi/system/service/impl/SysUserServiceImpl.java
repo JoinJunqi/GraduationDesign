@@ -222,6 +222,11 @@ public class SysUserServiceImpl implements ISysUserService
     @Transactional(rollbackFor = Exception.class)
     public int insertUser(SysUser user)
     {
+        if (user.getUserName() != null && !checkUserNameUnique(user))
+        {
+            throw new ServiceException("新增管理员'" + user.getUserName() + "'失败，登录账号已存在");
+        }
+        user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
         // 新增用户信息
         int rows = userMapper.insertUser(user);
         return rows;
@@ -236,6 +241,7 @@ public class SysUserServiceImpl implements ISysUserService
     @Override
     public boolean registerUser(SysUser user)
     {
+        user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
         return userMapper.insertUser(user) > 0;
     }
 
@@ -249,6 +255,9 @@ public class SysUserServiceImpl implements ISysUserService
     @Transactional(rollbackFor = Exception.class)
     public int updateUser(SysUser user)
     {
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+            user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
+        }
         return userMapper.updateUser(user);
     }
 
@@ -474,4 +483,36 @@ public class SysUserServiceImpl implements ISysUserService
         return successMsg.toString();
     }
 
+    @Override
+    public boolean updatePassword(String oldPassword, String newPassword)
+    {
+        String username = SecurityUtils.getUsername();
+        SysUser user = userMapper.selectUserByUserName(username);
+        if (StringUtils.isNull(user))
+        {
+            throw new ServiceException("用户不存在");
+        }
+        String password = user.getPassword();
+        if (!SecurityUtils.matchesPassword(oldPassword, password))
+        {
+            throw new ServiceException("修改密码失败，旧密码错误");
+        }
+        if (SecurityUtils.matchesPassword(newPassword, password))
+        {
+            throw new ServiceException("新密码不能与旧密码相同");
+        }
+        return userMapper.resetUserPwd(user.getUserId(), SecurityUtils.encryptPassword(newPassword)) > 0;
+    }
+
+    @Override
+    public java.util.Map<String, Object> selectUserProfile()
+    {
+        Long userId = SecurityUtils.getUserId();
+        SysUser user = userMapper.selectUserById(userId);
+        java.util.Map<String, Object> map = new java.util.HashMap<>();
+        map.put("user", user);
+        map.put("roleGroup", selectUserRoleGroup(user.getUserName()));
+        map.put("postGroup", selectUserPostGroup(user.getUserName()));
+        return map;
+    }
 }
