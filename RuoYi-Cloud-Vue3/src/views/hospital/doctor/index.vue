@@ -59,20 +59,15 @@
     <el-table v-loading="loading" :data="doctorList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="id" />
-      <el-table-column label="科室ID" align="center" prop="deptId" />
-      <el-table-column label="登录账号" align="center" prop="username" />
       <el-table-column label="姓名" align="center" prop="name" />
+      <el-table-column label="科室" align="center" prop="deptName" />
       <el-table-column label="职称" align="center" prop="title" />
+      <el-table-column label="账号" align="center" prop="username" />
       <el-table-column label="状态" align="center" prop="isActive">
         <template #default="scope">
-          <el-tag :type="scope.row.isActive === 1 ? 'success' : 'danger'">
-            {{ scope.row.isActive === 1 ? '在职' : '离职' }}
+          <el-tag :type="scope.row.isActive ? 'success' : 'danger'">
+            {{ scope.row.isActive ? '在职' : '离职' }}
           </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createdAt" width="180">
-        <template #default="scope">
-          <span>{{ parseTime(scope.row.createdAt) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">

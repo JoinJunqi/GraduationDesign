@@ -15,10 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+
+import java.util.*;
 
 @Service
 public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> implements IPatientService {
@@ -33,7 +31,25 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
 
     @Override
     public Patient selectPatientByUsername(String username) {
-        return patientMapper.selectOne(new LambdaQueryWrapper<Patient>().eq(Patient::getUsername, username));
+        return patientMapper.selectOne(new LambdaQueryWrapper<Patient>()
+                .eq(Patient::getUsername, username)
+                .or().eq(Patient::getPhone, username)
+                .or().eq(Patient::getIdCard, username));
+    }
+
+    @Override
+    public List<Patient> selectPatientList(Patient patient) {
+        LambdaQueryWrapper<Patient> queryWrapper = new LambdaQueryWrapper<>();
+        if (patient.getName() != null && !patient.getName().isEmpty()) {
+            queryWrapper.like(Patient::getName, patient.getName());
+        }
+        if (patient.getPhone() != null && !patient.getPhone().isEmpty()) {
+            queryWrapper.eq(Patient::getPhone, patient.getPhone());
+        }
+        if (patient.getIdCard() != null && !patient.getIdCard().isEmpty()) {
+            queryWrapper.eq(Patient::getIdCard, patient.getIdCard());
+        }
+        return patientMapper.selectList(queryWrapper);
     }
 
     @Override
@@ -140,6 +156,11 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
             patient.setPasswordHash(SecurityUtils.encryptPassword(patient.getPasswordHash()));
         }
         return updateById(patient);
+    }
+
+    @Override
+    public boolean deletePatientByIds(Long[] ids) {
+        return removeBatchByIds(Arrays.asList(ids));
     }
 
     @Override

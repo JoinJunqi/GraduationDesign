@@ -1,10 +1,8 @@
-package com.ruoyi.schedule.domain;
+package com.ruoyi.hospital.api.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import java.io.Serializable;
 import java.util.Date;
@@ -25,7 +23,6 @@ public class Schedule implements Serializable {
     private Long doctorId;
 
     /** 出诊日期 */
-    @JsonFormat(pattern = "yyyy-MM-dd")
     private Date workDate;
 
     /** 班次(上午,下午,全天) */
@@ -38,18 +35,5 @@ public class Schedule implements Serializable {
     private Integer availableSlots;
 
     /** 创建时间 */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createdAt;
-
-    /** 医生姓名 (展示用) */
-    @TableField(exist = false)
-    private String doctorName;
-
-    /** 科室名称 (展示用) */
-    @TableField(exist = false)
-    private String deptName;
-
-    /** 科室ID (查询用) */
-    @TableField(exist = false)
-    private Long deptId;
 }

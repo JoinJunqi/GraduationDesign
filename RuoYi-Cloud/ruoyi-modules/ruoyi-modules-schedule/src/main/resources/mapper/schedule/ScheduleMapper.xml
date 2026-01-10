@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.schedule.mapper.ScheduleMapper">
+    
+    <resultMap type="com.ruoyi.schedule.domain.Schedule" id="ScheduleResult">
+        <result property="id"    column="id"    />
+        <result property="doctorId"    column="doctor_id"    />
+        <result property="workDate"    column="work_date"    />
+        <result property="timeSlot"    column="time_slot"    />
+        <result property="totalCapacity"    column="total_capacity"    />
+        <result property="availableSlots"    column="available_slots"    />
+        <result property="createdAt"    column="created_at"    />
+        <result property="doctorName"   column="doctor_name"   />
+        <result property="deptName"     column="dept_name"     />
+        <result property="deptId"       column="dept_id"       />
+    </resultMap>
+
+    <sql id="selectScheduleVo">
+        select s.id, s.doctor_id, s.work_date, s.time_slot, s.total_capacity, s.available_slots, s.created_at,
+               d.name as doctor_name,
+               dept.name as dept_name,
+               d.dept_id
+        from schedule s
+        left join doctor d on s.doctor_id = d.id
+        left join department dept on d.dept_id = dept.id
+    </sql>
+
+    <select id="selectScheduleList" parameterType="com.ruoyi.schedule.domain.Schedule" resultMap="ScheduleResult">
+        <include refid="selectScheduleVo"/>
+        <where>  
+            <if test="doctorId != null "> and s.doctor_id = #{doctorId}</if>
+            <if test="workDate != null "> and s.work_date = #{workDate}</if>
+            <if test="timeSlot != null  and timeSlot != ''"> and s.time_slot = #{timeSlot}</if>
+            <if test="deptId != null "> and d.dept_id = #{deptId}</if>
+        </where>
+    </select>
+    
+</mapper>

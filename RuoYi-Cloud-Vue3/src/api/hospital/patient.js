@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 查询患者列表
 export function listPatient(query) {
   return request({
-    url: '/patient/list',
+    url: '/ruoyi-hospital-patient/patient/list',
     method: 'get',
     params: query
   })
@@ -12,7 +12,7 @@ export function listPatient(query) {
 // 查询患者详细
 export function getPatient(id) {
   return request({
-    url: '/patient/' + id,
+    url: '/ruoyi-hospital-patient/patient/' + id,
     method: 'get'
   })
 }
@@ -20,7 +20,7 @@ export function getPatient(id) {
 // 新增患者
 export function addPatient(data) {
   return request({
-    url: '/patient',
+    url: '/ruoyi-hospital-patient/patient',
     method: 'post',
     data: data
   })
@@ -29,7 +29,7 @@ export function addPatient(data) {
 // 修改患者
 export function updatePatient(data) {
   return request({
-    url: '/patient',
+    url: '/ruoyi-hospital-patient/patient',
     method: 'put',
     data: data
   })
@@ -38,7 +38,7 @@ export function updatePatient(data) {
 // 删除患者
 export function delPatient(id) {
   return request({
-    url: '/patient/' + id,
+    url: '/ruoyi-hospital-patient/patient/' + id,
     method: 'delete'
   })
 }
@@ -46,7 +46,7 @@ export function delPatient(id) {
 // 患者注册
 export function registerPatient(data) {
   return request({
-    url: '/patient/register',
+    url: '/ruoyi-hospital-patient/patient/register',
     headers: {
       isToken: false
     },
@@ -58,7 +58,7 @@ export function registerPatient(data) {
 // 获取患者个人信息
 export function getPatientProfile() {
   return request({
-    url: '/patient/profile',
+    url: '/ruoyi-hospital-patient/patient/profile',
     method: 'get'
   })
 }
@@ -66,7 +66,7 @@ export function getPatientProfile() {
 // 修改患者个人信息
 export function updatePatientProfile(data) {
   return request({
-    url: '/patient/profile',
+    url: '/ruoyi-hospital-patient/patient/profile',
     method: 'put',
     data: data
   })
@@ -79,7 +79,7 @@ export function updatePatientPwd(oldPassword, newPassword) {
     newPassword
   }
   return request({
-    url: '/patient/profile/updatePwd',
+    url: '/ruoyi-hospital-patient/patient/profile/updatePwd',
     method: 'put',
     params: data
   })

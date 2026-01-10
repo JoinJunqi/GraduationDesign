@@ -9,6 +9,14 @@ import java.util.Map;
 public interface IDoctorService extends IService<Doctor> {
     Doctor selectDoctorByUsername(String username);
 
+    /**
+     * 查询医生列表
+     */
+    public List<Doctor> selectDoctorList(Doctor doctor);
+
+    /**
+     * 根据科室ID查询医生列表
+     */
     List<Doctor> selectDoctorsByDeptId(Long deptId);
 
     /**
@@ -28,4 +36,14 @@ public interface IDoctorService extends IService<Doctor> {
      * 修改医生
      */
     boolean updateDoctor(Doctor doctor);
+
+    /**
+     * 批量删除医生
+     */
+    boolean deleteDoctorByIds(Long[] ids);
+
+    /**
+     * 校验用户名是否唯一
+     */
+    boolean checkUsernameUnique(String username);
 }

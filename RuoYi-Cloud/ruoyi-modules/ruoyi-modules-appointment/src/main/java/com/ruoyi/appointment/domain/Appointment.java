@@ -1,8 +1,10 @@
 package com.ruoyi.appointment.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import java.io.Serializable;
 import java.util.Date;
@@ -29,5 +31,27 @@ public class Appointment implements Serializable {
     private String status;
 
     /** 预约时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date bookedAt;
+
+    /** 医生ID (查询用) */
+    @TableField(exist = false)
+    private Long doctorId;
+
+    /** 患者姓名 (展示用) */
+    @TableField(exist = false)
+    private String patientName;
+
+    /** 医生姓名 (展示用) */
+    @TableField(exist = false)
+    private String doctorName;
+
+    /** 出诊日期 (展示用) */
+    @TableField(exist = false)
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private Date workDate;
+
+    /** 班次 (展示用) */
+    @TableField(exist = false)
+    private String timeSlot;
 }

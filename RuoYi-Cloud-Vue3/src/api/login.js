@@ -16,7 +16,7 @@ export function login(data) {
 // 患者登录
 export function loginPatient(data) {
   return request({
-    url: '/patient/login',
+    url: '/ruoyi-hospital-patient/patient/login',
     headers: {
       isToken: false,
       repeatSubmit: false
@@ -29,7 +29,7 @@ export function loginPatient(data) {
 // 医生登录
 export function loginDoctor(data) {
   return request({
-    url: '/doctor/login',
+    url: '/ruoyi-hospital-doctor/doctor/login',
     headers: {
       isToken: false,
       repeatSubmit: false
@@ -54,7 +54,7 @@ export function register(data) {
 // 患者注册
 export function registerPatient(data) {
   return request({
-    url: '/patient/register',
+    url: '/ruoyi-hospital-patient/patient/register',
     headers: {
       isToken: false
     },
@@ -76,9 +76,9 @@ export function getInfo() {
   const loginType = localStorage.getItem('loginType') || 'admin'
   let url = '/system/user/getInfo'
   if (loginType === 'patient') {
-    url = '/patient/profile'
+    url = '/ruoyi-hospital-patient/patient/profile'
   } else if (loginType === 'doctor') {
-    url = '/doctor/profile'
+    url = '/ruoyi-hospital-doctor/doctor/profile'
   }
   return request({
     url: url,

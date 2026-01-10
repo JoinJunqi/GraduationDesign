@@ -2,6 +2,7 @@ package com.ruoyi.patient.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ruoyi.patient.domain.Patient;
+import java.util.List;
 import java.util.Map;
 
 public interface IPatientService extends IService<Patient> {
@@ -21,6 +22,11 @@ public interface IPatientService extends IService<Patient> {
     Map<String, Object> login(Patient patient);
 
     /**
+     * 查询患者列表
+     */
+    public List<Patient> selectPatientList(Patient patient);
+
+    /**
      * 患者注册
      */
     boolean register(Patient patient);
@@ -34,6 +40,11 @@ public interface IPatientService extends IService<Patient> {
      * 修改患者
      */
     boolean updatePatient(Patient patient);
+
+    /**
+     * 删除患者
+     */
+    boolean deletePatientByIds(Long[] ids);
 
     /**
      * 修改患者个人信息

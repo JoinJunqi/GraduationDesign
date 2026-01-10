@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.doctor.mapper.DoctorMapper">
+    
+    <resultMap type="com.ruoyi.doctor.domain.Doctor" id="DoctorResult">
+        <result property="id"    column="id"    />
+        <result property="deptId"    column="dept_id"    />
+        <result property="username"    column="username"    />
+        <result property="passwordHash"    column="password_hash"    />
+        <result property="name"    column="name"    />
+        <result property="title"    column="title"    />
+        <result property="isActive"    column="is_active"    />
+        <result property="createdAt"    column="created_at"    />
+        <result property="deptName"    column="dept_name"    />
+    </resultMap>
+
+    <sql id="selectDoctorVo">
+        select d.id, d.dept_id, d.username, d.password_hash, d.name, d.title, d.is_active, d.created_at,
+               dept.name as dept_name
+        from doctor d
+        left join department dept on d.dept_id = dept.id
+    </sql>
+
+    <select id="selectDoctorList" parameterType="com.ruoyi.doctor.domain.Doctor" resultMap="DoctorResult">
+        <include refid="selectDoctorVo"/>
+        <where>  
+            <if test="name != null  and name != ''"> and d.name like concat('%', #{name}, '%')</if>
+            <if test="deptId != null "> and d.dept_id = #{deptId}</if>
+            <if test="username != null  and username != ''"> and d.username = #{username}</if>
+            <if test="title != null  and title != ''"> and d.title = #{title}</if>
+            <if test="isActive != null "> and d.is_active = #{isActive}</if>
+        </where>
+    </select>
+    
+</mapper>

@@ -50,49 +50,49 @@ spring:
         - id: ruoyi-hospital-admin
           uri: lb://ruoyi-hospital-admin
           predicates:
-            - Path=/admin/**
+            - Path=/ruoyi-hospital-admin/**
           filters:
             - StripPrefix=1
         # 医院医生模块
         - id: ruoyi-hospital-doctor
           uri: lb://ruoyi-hospital-doctor
           predicates:
-            - Path=/doctor/**
+            - Path=/ruoyi-hospital-doctor/**
           filters:
             - StripPrefix=1
         # 医院患者模块
         - id: ruoyi-hospital-patient
           uri: lb://ruoyi-hospital-patient
           predicates:
-            - Path=/patient/**
+            - Path=/ruoyi-hospital-patient/**
           filters:
             - StripPrefix=1
         # 医院病历模块
         - id: ruoyi-hospital-record
           uri: lb://ruoyi-hospital-record
           predicates:
-            - Path=/record/**
+            - Path=/ruoyi-hospital-record/**
           filters:
             - StripPrefix=1
         # 医院预约模块
         - id: ruoyi-hospital-appointment
           uri: lb://ruoyi-hospital-appointment
           predicates:
-            - Path=/appointment/**
+            - Path=/ruoyi-hospital-appointment/**
           filters:
             - StripPrefix=1
         # 医院科室模块
         - id: ruoyi-hospital-department
           uri: lb://ruoyi-hospital-department
           predicates:
-            - Path=/department/**
+            - Path=/ruoyi-hospital-department/**
           filters:
             - StripPrefix=1
         # 医院排班模块
         - id: ruoyi-hospital-schedule
           uri: lb://ruoyi-hospital-schedule
           predicates:
-            - Path=/schedule/**
+            - Path=/ruoyi-hospital-schedule/**
           filters:
             - StripPrefix=1
 
@@ -104,12 +104,19 @@ security:
     type: math
   ignore:
     whites:
-      - /auth/logout
-      - /auth/login
-      - /auth/register
-      - /patient/login
-      - /patient/register
-      - /doctor/login
-      - /*/v2/api-docs
-      - /csrf
-      - /code
+      - "/auth/logout"
+      - "/auth/login"
+      - "/auth/register"
+      - "/ruoyi-hospital-patient/patient/login"
+      - "/ruoyi-hospital-patient/patient/register"
+      - "/ruoyi-hospital-doctor/doctor/login"
+      - "/ruoyi-hospital-admin/admin/login"
+      - "/patient/login"
+      - "/patient/register"
+      - "/doctor/login"
+      - "/admin/login"
+      - "/*/v2/api-docs"
+      - "/csrf"
+      - "/code"
+      - "/ruoyi-hospital-*/**/login"
+      - "/ruoyi-hospital-*/**/register"

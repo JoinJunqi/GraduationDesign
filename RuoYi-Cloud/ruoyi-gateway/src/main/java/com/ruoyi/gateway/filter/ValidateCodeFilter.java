@@ -26,7 +26,14 @@ import reactor.core.publisher.Mono;
 @Component
 public class ValidateCodeFilter extends AbstractGatewayFilterFactory<Object>
 {
-    private final static String[] VALIDATE_URL = new String[] { "/auth/login", "/auth/register", "/patient/login", "/patient/register", "/doctor/login" };
+    private final static String[] VALIDATE_URL = new String[] { 
+        "/auth/login", "/auth/register", 
+        "/patient/login", "/patient/register", 
+        "/doctor/login", "/admin/login",
+        "/ruoyi-hospital-patient/patient/login", "/ruoyi-hospital-patient/patient/register",
+        "/ruoyi-hospital-doctor/doctor/login",
+        "/ruoyi-hospital-admin/admin/login"
+    };
 
     @Autowired
     private ValidateCodeService validateCodeService;

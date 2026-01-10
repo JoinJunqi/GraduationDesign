@@ -60,7 +60,8 @@
     <el-table v-loading="loading" :data="scheduleList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="id" />
-      <el-table-column label="医生ID" align="center" prop="doctorId" />
+      <el-table-column label="科室" align="center" prop="deptName" />
+      <el-table-column label="医生" align="center" prop="doctorName" />
       <el-table-column label="出诊日期" align="center" prop="workDate" width="120">
         <template #default="scope">
           <span>{{ parseTime(scope.row.workDate, '{y}-{m}-{d}') }}</span>
@@ -69,11 +70,6 @@
       <el-table-column label="班次" align="center" prop="timeSlot" />
       <el-table-column label="总号源" align="center" prop="totalCapacity" />
       <el-table-column label="剩余号源" align="center" prop="availableSlots" />
-      <el-table-column label="创建时间" align="center" prop="createdAt" width="180">
-        <template #default="scope">
-          <span>{{ parseTime(scope.row.createdAt) }}</span>
-        </template>
-      </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:schedule:edit']">修改</el-button>

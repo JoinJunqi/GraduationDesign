@@ -11,6 +11,7 @@ import com.ruoyi.department.domain.Department;
 import com.ruoyi.department.service.IDepartmentService;
 
 @RestController
+@RequestMapping("/department")
 public class DepartmentController extends BaseController
 {
     @Autowired
@@ -19,7 +20,7 @@ public class DepartmentController extends BaseController
     @GetMapping("/list")
     public ResultVO<List<Department>> list(Department department)
     {
-        List<Department> list = departmentService.list();
+        List<Department> list = departmentService.selectDepartmentList(department);
         return ResultVO.success(list);
     }
 
@@ -32,18 +33,18 @@ public class DepartmentController extends BaseController
     @PostMapping
     public ResultVO<Boolean> add(@RequestBody Department department)
     {
-        return ResultVO.success(departmentService.save(department));
+        return ResultVO.success(departmentService.insertDepartment(department));
     }
 
     @PutMapping
     public ResultVO<Boolean> edit(@RequestBody Department department)
     {
-        return ResultVO.success(departmentService.updateById(department));
+        return ResultVO.success(departmentService.updateDepartment(department));
     }
 
     @DeleteMapping("/{ids}")
     public ResultVO<Boolean> remove(@PathVariable Long[] ids)
     {
-        return ResultVO.success(departmentService.removeBatchByIds(Arrays.asList(ids)));
+        return ResultVO.success(departmentService.deleteDepartmentByIds(ids));
     }
 }

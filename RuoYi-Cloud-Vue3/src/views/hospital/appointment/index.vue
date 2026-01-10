@@ -58,8 +58,14 @@
     <el-table v-loading="loading" :data="appointmentList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="id" />
-      <el-table-column label="患者ID" align="center" prop="patientId" />
-      <el-table-column label="排班ID" align="center" prop="scheduleId" />
+      <el-table-column label="患者" align="center" prop="patientName" />
+      <el-table-column label="医生" align="center" prop="doctorName" />
+      <el-table-column label="就诊日期" align="center" prop="workDate">
+        <template #default="scope">
+          <span>{{ parseTime(scope.row.workDate, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="班次" align="center" prop="timeSlot" />
       <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
           <el-tag :type="scope.row.status === '已完成' ? 'success' : (scope.row.status === '已取消' ? 'info' : 'warning')">
@@ -75,6 +81,7 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:appointment:edit']">修改</el-button>
+          <el-button link type="danger" icon="CircleClose" @click="handleCancel(scope.row)" v-if="scope.row.status === '待就诊'">取消</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hospital:appointment:remove']">删除</el-button>
         </template>
       </el-table-column>
@@ -108,7 +115,7 @@
 </template>
 
 <script setup name="Appointment">
-import { listAppointment, getAppointment, delAppointment, addAppointment, updateAppointment } from "@/api/hospital/appointment";
+import { listAppointment, getAppointment, delAppointment, addAppointment, updateAppointment, cancelAppointment } from "@/api/hospital/appointment";
 
 const { proxy } = getCurrentInstance();
 
@@ -220,6 +227,17 @@ function submitForm() {
       }
     }
   });
+}
+
+/** 取消预约操作 */
+function handleCancel(row) {
+  const id = row.id;
+  proxy.$modal.confirm('是否确认取消预约编号为"' + id + '"的预约？').then(function() {
+    return cancelAppointment(id);
+  }).then(() => {
+    getList();
+    proxy.$modal.msgSuccess("取消成功");
+  }).catch(() => {});
 }
 
 /** 删除按钮操作 */

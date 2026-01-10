@@ -17,12 +17,37 @@ export function getAppointment(id) {
   })
 }
 
-// 新增预约
+// 新增预约 (改为调用 create 接口)
 export function addAppointment(data) {
   return request({
-    url: '/ruoyi-hospital-appointment/appointment',
+    url: '/ruoyi-hospital-appointment/appointment/create',
     method: 'post',
     data: data
+  })
+}
+
+// 取消预约
+export function cancelAppointment(id) {
+  return request({
+    url: '/ruoyi-hospital-appointment/appointment/cancel/' + id,
+    method: 'post'
+  })
+}
+
+// 更新预约状态
+export function updateAppointmentStatus(id, status) {
+  return request({
+    url: '/ruoyi-hospital-appointment/appointment/status',
+    method: 'put',
+    params: { id, status }
+  })
+}
+
+// 查询预约统计
+export function getAppointmentStats() {
+  return request({
+    url: '/ruoyi-hospital-appointment/appointment/stats',
+    method: 'get'
   })
 }
 

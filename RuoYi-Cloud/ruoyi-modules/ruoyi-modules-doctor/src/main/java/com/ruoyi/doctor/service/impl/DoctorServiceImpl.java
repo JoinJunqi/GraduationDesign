@@ -15,11 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+
+import java.util.*;
 
 @Service
 public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> implements IDoctorService {
@@ -34,7 +31,14 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
 
     @Override
     public Doctor selectDoctorByUsername(String username) {
-        return doctorMapper.selectOne(new LambdaQueryWrapper<Doctor>().eq(Doctor::getUsername, username));
+        return doctorMapper.selectOne(new LambdaQueryWrapper<Doctor>()
+                .eq(Doctor::getUsername, username)
+                .or().eq(Doctor::getName, username));
+    }
+
+    @Override
+    public List<Doctor> selectDoctorList(Doctor doctor) {
+        return doctorMapper.selectDoctorList(doctor);
     }
 
     @Override
@@ -54,6 +58,10 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
         if (!SecurityUtils.matchesPassword(doctor.getPasswordHash(), user.getPasswordHash())) {
             log.warn("医生登录失败: 密码不匹配, username={}", doctor.getUsername());
             throw new ServiceException("用户名或密码错误");
+        }
+
+        if (user.getIsActive() != null && !user.getIsActive()) {
+            throw new ServiceException("账号已停用");
         }
 
         log.info("医生登录成功: username={}", doctor.getUsername());
@@ -85,8 +93,14 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
 
     @Override
     public boolean insertDoctor(Doctor doctor) {
+        if (!checkUsernameUnique(doctor.getUsername())) {
+            throw new ServiceException("新增失败，账号 '" + doctor.getUsername() + "' 已存在");
+        }
         if (doctor.getPasswordHash() != null && !doctor.getPasswordHash().isEmpty()) {
             doctor.setPasswordHash(SecurityUtils.encryptPassword(doctor.getPasswordHash()));
+        } else {
+            // 默认密码
+            doctor.setPasswordHash(SecurityUtils.encryptPassword("123456"));
         }
         return save(doctor);
     }
@@ -97,5 +111,16 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
             doctor.setPasswordHash(SecurityUtils.encryptPassword(doctor.getPasswordHash()));
         }
         return updateById(doctor);
+    }
+
+    @Override
+    public boolean deleteDoctorByIds(Long[] ids) {
+        return removeBatchByIds(Arrays.asList(ids));
+    }
+
+    @Override
+    public boolean checkUsernameUnique(String username) {
+        Long count = doctorMapper.selectCount(new LambdaQueryWrapper<Doctor>().eq(Doctor::getUsername, username));
+        return count == 0;
     }
 }

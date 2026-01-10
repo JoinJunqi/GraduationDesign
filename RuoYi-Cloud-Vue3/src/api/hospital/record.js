@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 查询病历列表
 export function listRecord(query) {
   return request({
-    url: '/record/record/list',
+    url: '/ruoyi-hospital-record/record/list',
     method: 'get',
     params: query
   })
@@ -12,7 +12,7 @@ export function listRecord(query) {
 // 查询病历详细
 export function getRecord(id) {
   return request({
-    url: '/record/record/' + id,
+    url: '/ruoyi-hospital-record/record/' + id,
     method: 'get'
   })
 }
@@ -20,7 +20,7 @@ export function getRecord(id) {
 // 新增病历
 export function addRecord(data) {
   return request({
-    url: '/record/record',
+    url: '/ruoyi-hospital-record/record',
     method: 'post',
     data: data
   })
@@ -29,7 +29,7 @@ export function addRecord(data) {
 // 修改病历
 export function updateRecord(data) {
   return request({
-    url: '/record/record',
+    url: '/ruoyi-hospital-record/record',
     method: 'put',
     data: data
   })
@@ -38,7 +38,7 @@ export function updateRecord(data) {
 // 删除病历
 export function delRecord(ids) {
   return request({
-    url: '/record/record/' + ids,
+    url: '/ruoyi-hospital-record/record/' + ids,
     method: 'delete'
   })
 }

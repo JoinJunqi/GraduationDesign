@@ -2,35 +2,159 @@ package com.ruoyi.appointment.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruoyi.common.core.domain.ResultVO;
+import com.ruoyi.common.core.exception.ServiceException;
+import com.ruoyi.hospital.api.RemoteScheduleService;
+import com.ruoyi.hospital.api.domain.Schedule;
 import com.ruoyi.appointment.domain.Appointment;
 import com.ruoyi.appointment.mapper.AppointmentMapper;
 import com.ruoyi.appointment.service.IAppointmentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import com.ruoyi.common.security.utils.SecurityUtils;
+import com.ruoyi.system.api.model.LoginUser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.ruoyi.common.redis.service.RedisService;
 
 @Service
 public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appointment> implements IAppointmentService {
 
+    private static final Logger log = LoggerFactory.getLogger(AppointmentServiceImpl.class);
+
     @Autowired
     private AppointmentMapper appointmentMapper;
+
+    @Autowired
+    private RemoteScheduleService remoteScheduleService;
+
+    @Autowired
+    private RedisService redisService;
+
+    private static final String SCHEDULE_SLOTS_KEY = "hospital:schedule:slots:";
+
+    private String getScheduleRedisKey(Long scheduleId) {
+        return SCHEDULE_SLOTS_KEY + scheduleId;
+    }
+
+    private boolean hasRole(String role) {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (loginUser == null || loginUser.getRoles() == null) {
+            return false;
+        }
+        return loginUser.getRoles().contains(role);
+    }
+
+    @Override
+    public List<Appointment> selectAppointmentList(Appointment appointment) {
+        Long userId = SecurityUtils.getUserId();
+        if (hasRole("admin")) {
+            // 管理员可以看所有
+        } else if (hasRole("doctor")) {
+            // 医生看自己的患者预约
+            appointment.setDoctorId(userId);
+        } else if (hasRole("patient")) {
+            // 患者看自己的预约
+            appointment.setPatientId(userId);
+        } else {
+            // 默认患者视角
+            appointment.setPatientId(userId);
+        }
+        return appointmentMapper.selectAppointmentList(appointment);
+    }
+
+    @Override
+    public Map<String, Object> selectAppointmentStats() {
+        Map<String, Object> stats = new HashMap<>();
+        
+        // 总预约数
+        stats.put("totalCount", this.count());
+        
+        // 待就诊数
+        stats.put("pendingCount", this.count(new LambdaQueryWrapper<Appointment>().eq(Appointment::getStatus, "待就诊")));
+        
+        // 已完成数
+        stats.put("completedCount", this.count(new LambdaQueryWrapper<Appointment>().eq(Appointment::getStatus, "已完成")));
+        
+        // 已取消数
+        stats.put("cancelledCount", this.count(new LambdaQueryWrapper<Appointment>().eq(Appointment::getStatus, "已取消")));
+        
+        return stats;
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean createAppointment(Appointment appointment) {
-        // 1. 检查排班是否存在及剩余号源 (需通过Feign调用ScheduleService)
-        // Schedule schedule = scheduleMapper.selectById(appointment.getScheduleId());
-        // if (schedule == null || schedule.getAvailableSlots() <= 0) {
-        //     throw new RuntimeException("号源不足或排班不存在");
-        // }
+        // 0. 设置患者ID (如果是患者角色，强制设置为当前登录用户)
+        if (hasRole("patient")) {
+            appointment.setPatientId(SecurityUtils.getUserId());
+        }
+        
+        if (appointment.getPatientId() == null) {
+            throw new ServiceException("患者信息不能为空");
+        }
 
-        // 2. 扣减号源 (需通过Feign调用ScheduleService)
-        // schedule.setAvailableSlots(schedule.getAvailableSlots() - 1);
-        // scheduleMapper.updateById(schedule);
+        // 1. 检查是否重复预约 (同一个排班不能重复预约)
+        Long count = this.count(new LambdaQueryWrapper<Appointment>()
+                .eq(Appointment::getPatientId, appointment.getPatientId())
+                .eq(Appointment::getScheduleId, appointment.getScheduleId())
+                .ne(Appointment::getStatus, "已取消"));
+        if (count > 0) {
+            throw new ServiceException("您已预约过该时段，请勿重复预约");
+        }
 
-        // 3. 创建预约
+        // 2. 检查排班是否存在及剩余号源 (Redis 优先)
+        Long scheduleId = appointment.getScheduleId();
+        String redisKey = getScheduleRedisKey(scheduleId);
+        
+        // 使用 Redis 递减操作 (原子性)
+        Long remaining = redisService.redisTemplate.opsForValue().decrement(redisKey);
+        
+        if (remaining != null && remaining < 0) {
+            // 如果 decrement 返回负数，说明之前没有这个 key 或者已经没号了
+            // 尝试加载一次 (防止缓存过期导致的 -1)
+            ResultVO<Schedule> scheduleResult = remoteScheduleService.getById(scheduleId);
+            if (scheduleResult != null && scheduleResult.getData() != null) {
+                Schedule schedule = scheduleResult.getData();
+                if (schedule.getAvailableSlots() > 0) {
+                    // 重新设置 Redis (这里可能存在微小的并发问题，但比直接报错强)
+                    int newRemaining = schedule.getAvailableSlots() - 1;
+                    redisService.setCacheObject(redisKey, newRemaining, 24L, java.util.concurrent.TimeUnit.HOURS);
+                    remaining = (long) newRemaining;
+                } else {
+                    // 确实没号了，回退递减
+                    redisService.redisTemplate.opsForValue().increment(redisKey);
+                    throw new ServiceException("号源已满");
+                }
+            } else {
+                // 排班不存在，回退递减
+                redisService.redisTemplate.opsForValue().increment(redisKey);
+                throw new ServiceException("排班信息不存在");
+            }
+        } else if (remaining == null) {
+            throw new ServiceException("系统繁忙，请稍后再试");
+        }
+
+        // 3. 同步到排班服务 (异步或后续同步，这里简单处理)
+        Schedule updateSchedule = new Schedule();
+        updateSchedule.setId(scheduleId);
+        updateSchedule.setAvailableSlots(remaining.intValue());
+        ResultVO<Boolean> updateResult = remoteScheduleService.update(updateSchedule);
+        if (updateResult == null || !updateResult.getData()) {
+            // 数据库更新失败，回退 Redis
+            redisService.redisTemplate.opsForValue().increment(redisKey);
+            throw new ServiceException("系统繁忙，请稍后再试");
+        }
+
+        // 4. 创建预约
         appointment.setStatus("待就诊");
         appointment.setBookedAt(new Date());
         return this.save(appointment);
@@ -41,23 +165,42 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     public boolean cancelAppointment(Long appointmentId) {
         Appointment appointment = this.getById(appointmentId);
         if (appointment == null) {
-            throw new RuntimeException("预约不存在");
+            throw new ServiceException("预约记录不存在");
         }
         
-        // 1. 恢复号源 (需通过Feign调用ScheduleService)
-        // Schedule schedule = scheduleMapper.selectById(appointment.getScheduleId());
-        // schedule.setAvailableSlots(schedule.getAvailableSlots() + 1);
-        // scheduleMapper.updateById(schedule);
+        if (!"待就诊".equals(appointment.getStatus())) {
+            throw new ServiceException("当前状态不可取消");
+        }
 
-        // 2. 更新状态
+        // 1. 归还号源 (Redis 优先)
+        Long scheduleId = appointment.getScheduleId();
+        String redisKey = getScheduleRedisKey(scheduleId);
+        
+        Long remaining;
+        // 先检查 Redis key 是否存在
+        if (Boolean.TRUE.equals(redisService.redisTemplate.hasKey(redisKey))) {
+            remaining = redisService.redisTemplate.opsForValue().increment(redisKey);
+        } else {
+            // Redis 不存在，从数据库加载并加1
+            ResultVO<Schedule> scheduleResult = remoteScheduleService.getById(scheduleId);
+            if (scheduleResult != null && scheduleResult.getData() != null) {
+                remaining = (long) (scheduleResult.getData().getAvailableSlots() + 1);
+                redisService.setCacheObject(redisKey, remaining.intValue(), 24L, java.util.concurrent.TimeUnit.HOURS);
+            } else {
+                throw new ServiceException("排班信息不存在");
+            }
+        }
+
+        // 2. 同步到排班服务
+        Schedule updateSchedule = new Schedule();
+        updateSchedule.setId(scheduleId);
+        updateSchedule.setAvailableSlots(remaining != null ? remaining.intValue() : 0);
+        remoteScheduleService.update(updateSchedule);
+
+        // 3. 更新预约状态
         appointment.setStatus("已取消");
         return this.updateById(appointment);
     }
 
-    @Override
-    public List<Appointment> selectAppointmentList(Appointment appointment) {
-        return appointmentMapper.selectList(new LambdaQueryWrapper<Appointment>()
-                .eq(appointment.getPatientId() != null, Appointment::getPatientId, appointment.getPatientId())
-                .eq(appointment.getScheduleId() != null, Appointment::getScheduleId, appointment.getScheduleId()));
-    }
+
 }

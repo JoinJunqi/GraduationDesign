@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RestController
+@RequestMapping("/doctor")
 public class DoctorController extends BaseController
 {
     private static final Logger log = LoggerFactory.getLogger(DoctorController.class);
@@ -41,7 +42,7 @@ public class DoctorController extends BaseController
     @GetMapping("/list")
     public ResultVO<List<Doctor>> list(Doctor doctor)
     {
-        return ResultVO.success(doctorService.list());
+        return ResultVO.success(doctorService.selectDoctorList(doctor));
     }
 
     @GetMapping(value = "/{id}")
@@ -65,14 +66,20 @@ public class DoctorController extends BaseController
     @DeleteMapping("/{ids}")
     public ResultVO<Boolean> remove(@PathVariable Long[] ids)
     {
-        return ResultVO.success(doctorService.removeByIds(Arrays.asList(ids)));
+        return ResultVO.success(doctorService.deleteDoctorByIds(ids));
     }
 
     @GetMapping("/profile")
-    public ResultVO<Doctor> profile()
+    public ResultVO<Map<String, Object>> profile()
     {
-        Long userId = SecurityUtils.getUserId();
-        return ResultVO.success(doctorService.getById(userId));
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        Map<String, Object> ajax = new HashMap<>();
+        ajax.put("user", loginUser.getSysUser());
+        ajax.put("roles", loginUser.getRoles());
+        ajax.put("permissions", loginUser.getPermissions());
+        // 额外提供完整的医生信息
+        ajax.put("doctor", doctorService.getById(loginUser.getUserid()));
+        return ResultVO.success(ajax);
     }
 
     @GetMapping("/list/{deptId}")

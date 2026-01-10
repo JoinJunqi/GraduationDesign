@@ -2,12 +2,18 @@ package com.ruoyi.schedule.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruoyi.common.core.exception.ServiceException;
 import com.ruoyi.schedule.domain.Schedule;
 import com.ruoyi.schedule.mapper.ScheduleMapper;
 import com.ruoyi.schedule.service.IScheduleService;
+import com.ruoyi.common.redis.service.RedisService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> implements IScheduleService {
@@ -15,25 +21,98 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
     @Autowired
     private ScheduleMapper scheduleMapper;
 
+    @Autowired
+    private RedisService redisService;
+
+    private static final String SCHEDULE_SLOTS_KEY = "hospital:schedule:slots:";
+
+    private String getRedisKey(Long scheduleId) {
+        return SCHEDULE_SLOTS_KEY + scheduleId;
+    }
+
     @Override
-    public boolean addSchedule(Schedule schedule) {
+    public List<Schedule> selectScheduleList(Schedule schedule) {
+        return scheduleMapper.selectScheduleList(schedule);
+    }
+
+    @Override
+    public Schedule getById(java.io.Serializable id) {
+        Schedule schedule = super.getById(id);
+        if (schedule != null) {
+            // 从 Redis 获取最新号源数
+            Integer availableSlots = redisService.getCacheObject(getRedisKey(schedule.getId()));
+            if (availableSlots != null) {
+                schedule.setAvailableSlots(availableSlots);
+            } else {
+                // 如果 Redis 没有，缓存一份，设置 24 小时过期
+                redisService.setCacheObject(getRedisKey(schedule.getId()), schedule.getAvailableSlots(), 24L, TimeUnit.HOURS);
+            }
+        }
+        return schedule;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean insertSchedule(Schedule schedule) {
         // 检查排班冲突
         Long count = scheduleMapper.selectCount(new LambdaQueryWrapper<Schedule>()
                 .eq(Schedule::getDoctorId, schedule.getDoctorId())
                 .eq(Schedule::getWorkDate, schedule.getWorkDate())
                 .eq(Schedule::getTimeSlot, schedule.getTimeSlot()));
         if (count > 0) {
-            throw new RuntimeException("该时段已有排班");
+            throw new ServiceException("该医生在该时段已有排班");
         }
         
         schedule.setAvailableSlots(schedule.getTotalCapacity());
-        return this.save(schedule);
+        boolean saved = this.save(schedule);
+        if (saved) {
+            // 写入 Redis 缓存
+            redisService.setCacheObject(getRedisKey(schedule.getId()), schedule.getAvailableSlots(), 24L, TimeUnit.HOURS);
+        }
+        return saved;
     }
 
     @Override
-    public List<Schedule> selectScheduleList(Schedule schedule) {
-        return scheduleMapper.selectList(new LambdaQueryWrapper<Schedule>()
-                .eq(schedule.getDoctorId() != null, Schedule::getDoctorId, schedule.getDoctorId())
-                .eq(schedule.getWorkDate() != null, Schedule::getWorkDate, schedule.getWorkDate()));
+    @Transactional(rollbackFor = Exception.class)
+    public boolean updateSchedule(Schedule schedule) {
+        // 检查排班冲突
+        Schedule oldSchedule = scheduleMapper.selectOne(new LambdaQueryWrapper<Schedule>()
+                .eq(Schedule::getDoctorId, schedule.getDoctorId())
+                .eq(Schedule::getWorkDate, schedule.getWorkDate())
+                .eq(Schedule::getTimeSlot, schedule.getTimeSlot()));
+        if (oldSchedule != null && !oldSchedule.getId().equals(schedule.getId())) {
+            throw new ServiceException("该医生在该时段已有其他排班");
+        }
+        
+        // 如果修改了总号源数，需要相应调整剩余号源数
+        if (schedule.getTotalCapacity() != null || schedule.getAvailableSlots() != null) {
+            Schedule current = super.getById(schedule.getId());
+            
+            // 如果是通过预约模块调用的 update (只更新 availableSlots)
+            if (schedule.getAvailableSlots() != null && schedule.getTotalCapacity() == null) {
+                // 更新 Redis
+                redisService.setCacheObject(getRedisKey(schedule.getId()), schedule.getAvailableSlots(), 24L, TimeUnit.HOURS);
+            } else if (schedule.getTotalCapacity() != null) {
+                // 如果是管理端修改总号源
+                int usedSlots = current.getTotalCapacity() - current.getAvailableSlots();
+                if (schedule.getTotalCapacity() < usedSlots) {
+                    throw new ServiceException("总号源数不能小于已预约人数 (" + usedSlots + ")");
+                }
+                schedule.setAvailableSlots(schedule.getTotalCapacity() - usedSlots);
+                // 更新 Redis
+                redisService.setCacheObject(getRedisKey(schedule.getId()), schedule.getAvailableSlots(), 24L, TimeUnit.HOURS);
+            }
+        }
+        
+        return updateById(schedule);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deleteScheduleByIds(Long[] ids) {
+        for (Long id : ids) {
+            redisService.deleteObject(getRedisKey(id));
+        }
+        return removeBatchByIds(Arrays.asList(ids));
     }
 }

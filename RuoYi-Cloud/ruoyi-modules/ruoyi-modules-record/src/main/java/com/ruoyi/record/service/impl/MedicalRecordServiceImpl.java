@@ -1,8 +1,10 @@
 package com.ruoyi.record.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.common.core.exception.ServiceException;
 import com.ruoyi.common.security.utils.SecurityUtils;
+import com.ruoyi.hospital.api.RemoteAppointmentService;
 import com.ruoyi.record.domain.MedicalRecord;
 import com.ruoyi.record.mapper.MedicalRecordMapper;
 import com.ruoyi.record.service.IMedicalRecordService;
@@ -11,9 +13,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 @Service
 public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, MedicalRecord> implements IMedicalRecordService {
@@ -22,6 +26,9 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
 
     @Autowired
     private MedicalRecordMapper medicalRecordMapper;
+
+    @Autowired
+    private RemoteAppointmentService remoteAppointmentService;
 
     private boolean hasRole(String role) {
         LoginUser loginUser = SecurityUtils.getLoginUser();
@@ -62,13 +69,14 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean insertMedicalRecord(MedicalRecord medicalRecord) {
         if (hasRole("admin")) {
             // 管理员可以随意新增
         } else if (hasRole("doctor")) {
             medicalRecord.setDoctorId(SecurityUtils.getUserId());
         } else {
-            // 患者新增
+            // 患者不能直接新增包含诊断信息的病历
             medicalRecord.setPatientId(SecurityUtils.getUserId());
             medicalRecord.setDiagnosis(null);
             medicalRecord.setPrescription(null);
@@ -78,7 +86,16 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         if (medicalRecord.getVisitTime() == null) {
             medicalRecord.setVisitTime(new Date());
         }
-        return save(medicalRecord);
+        
+        boolean saved = save(medicalRecord);
+        if (saved && medicalRecord.getAppointmentId() != null) {
+            // 就诊完成，更新预约状态为“已完成”
+            ResultVO<Boolean> result = remoteAppointmentService.updateStatus(medicalRecord.getAppointmentId(), "已完成");
+            if (result == null || !result.getData()) {
+                throw new ServiceException("更新预约状态失败");
+            }
+        }
+        return saved;
     }
 
     @Override

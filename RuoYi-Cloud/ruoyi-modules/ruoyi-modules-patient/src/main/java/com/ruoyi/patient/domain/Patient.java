@@ -40,12 +40,4 @@ public class Patient implements Serializable {
 
     /** 创建时间 */
     private Date createdAt;
-
-    /** 验证码 */
-    @TableField(exist = false)
-    private String code;
-
-    /** 唯一标识 */
-    @TableField(exist = false)
-    private String uuid;
 }

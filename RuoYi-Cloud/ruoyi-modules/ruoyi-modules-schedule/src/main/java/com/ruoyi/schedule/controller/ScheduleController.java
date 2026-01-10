@@ -11,6 +11,7 @@ import com.ruoyi.schedule.domain.Schedule;
 import com.ruoyi.schedule.service.IScheduleService;
 
 @RestController
+@RequestMapping("/schedule")
 public class ScheduleController extends BaseController
 {
     @Autowired
@@ -32,18 +33,18 @@ public class ScheduleController extends BaseController
     @PostMapping
     public ResultVO<Boolean> add(@RequestBody Schedule schedule)
     {
-        return ResultVO.success(scheduleService.addSchedule(schedule));
+        return ResultVO.success(scheduleService.insertSchedule(schedule));
     }
 
     @PutMapping
     public ResultVO<Boolean> edit(@RequestBody Schedule schedule)
     {
-        return ResultVO.success(scheduleService.updateById(schedule));
+        return ResultVO.success(scheduleService.updateSchedule(schedule));
     }
 
     @DeleteMapping("/{ids}")
     public ResultVO<Boolean> remove(@PathVariable Long[] ids)
     {
-        return ResultVO.success(scheduleService.removeBatchByIds(Arrays.asList(ids)));
+        return ResultVO.success(scheduleService.deleteScheduleByIds(ids));
     }
 }

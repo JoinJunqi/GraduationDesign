@@ -8,4 +8,5 @@ public interface IAppointmentService extends IService<Appointment> {
     boolean createAppointment(Appointment appointment);
     boolean cancelAppointment(Long appointmentId);
     List<Appointment> selectAppointmentList(Appointment appointment);
+    java.util.Map<String, Object> selectAppointmentStats();
 }

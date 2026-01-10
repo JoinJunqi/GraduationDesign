@@ -13,6 +13,7 @@ import com.ruoyi.patient.service.IPatientService;
 import com.ruoyi.common.security.utils.SecurityUtils;
 
 @RestController
+@RequestMapping("/patient")
 public class PatientController extends BaseController
 {
     @Autowired
@@ -33,7 +34,7 @@ public class PatientController extends BaseController
     @GetMapping("/list")
     public ResultVO<List<Patient>> list(Patient patient)
     {
-        return ResultVO.success(patientService.list());
+        return ResultVO.success(patientService.selectPatientList(patient));
     }
 
     @GetMapping(value = "/{id}")
@@ -57,14 +58,20 @@ public class PatientController extends BaseController
     @DeleteMapping("/{ids}")
     public ResultVO<Boolean> remove(@PathVariable Long[] ids)
     {
-        return ResultVO.success(patientService.removeByIds(Arrays.asList(ids)));
+        return ResultVO.success(patientService.deletePatientByIds(ids));
     }
 
     @GetMapping("/profile")
-    public ResultVO<Patient> profile()
+    public ResultVO<Map<String, Object>> profile()
     {
-        Long userId = SecurityUtils.getUserId();
-        return ResultVO.success(patientService.getById(userId));
+        com.ruoyi.system.api.model.LoginUser loginUser = com.ruoyi.common.security.utils.SecurityUtils.getLoginUser();
+        Map<String, Object> ajax = new java.util.HashMap<>();
+        ajax.put("user", loginUser.getSysUser());
+        ajax.put("roles", loginUser.getRoles());
+        ajax.put("permissions", loginUser.getPermissions());
+        // 额外提供完整的患者信息
+        ajax.put("patient", patientService.getById(loginUser.getUserid()));
+        return ResultVO.success(ajax);
     }
 
     @PutMapping("/profile")
