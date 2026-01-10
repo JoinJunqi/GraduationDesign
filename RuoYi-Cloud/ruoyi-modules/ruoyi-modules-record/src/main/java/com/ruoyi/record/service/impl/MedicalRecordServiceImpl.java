@@ -15,9 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, MedicalRecord> implements IMedicalRecordService {
@@ -30,68 +28,118 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
     @Autowired
     private RemoteAppointmentService remoteAppointmentService;
 
-    private boolean hasRole(String role) {
+    /**
+     * 判断是否为管理员
+     */
+    private boolean isAdminUser() {
         LoginUser loginUser = SecurityUtils.getLoginUser();
-        if (loginUser == null || loginUser.getRoles() == null) {
-            return false;
-        }
-        return loginUser.getRoles().contains(role);
+        if (loginUser == null) return SecurityUtils.isAdmin(SecurityUtils.getUserId());
+        Set<String> roles = loginUser.getRoles();
+        return roles != null && (roles.contains("admin") || roles.contains("ROLE_ADMIN")) || SecurityUtils.isAdmin(loginUser.getUserid());
     }
 
     @Override
     public List<MedicalRecord> selectMedicalRecordList(MedicalRecord medicalRecord) {
         Long userId = SecurityUtils.getUserId();
-        if (hasRole("admin")) {
-            log.info("User is admin, viewing all records");
-        } else if (hasRole("doctor")) {
-            log.info("User is doctor, filtering by doctorId={}", userId);
+        Set<String> roles = getRoles();
+        
+        log.info("MedicalRecord List Query - UserID: {}, Roles: {}, Params: {}", userId, roles, medicalRecord);
+        
+        if (isAdminUser()) {
+            log.info("Admin access: viewing all records");
+        } else if (roles.contains("doctor")) {
+            log.info("Doctor access: filtering by doctorId={}", userId);
             medicalRecord.setDoctorId(userId);
-        } else if (hasRole("patient")) {
-            log.info("User is patient, filtering by patientId={}", userId);
+        } else if (roles.contains("patient")) {
+            log.info("Patient access: filtering by patientId={}", userId);
             medicalRecord.setPatientId(userId);
         } else {
-            log.warn("User has no recognized role, defaulting to patientId={}", userId);
-            medicalRecord.setPatientId(userId);
+            // 兜底逻辑
+            if (userId != null && userId == 1L) {
+                log.info("System Admin(ID=1) access: viewing all records");
+            } else {
+                log.warn("Unknown role: defaulting to patient filter for userId={}", userId);
+                medicalRecord.setPatientId(userId);
+            }
         }
         return medicalRecordMapper.selectMedicalRecordList(medicalRecord);
     }
 
     @Override
     public MedicalRecord getMedicalRecordById(Long id) {
-        MedicalRecord record = getById(id);
+        MedicalRecord record = medicalRecordMapper.selectMedicalRecordById(id);
         if (record == null) {
             throw new ServiceException("病历不存在");
         }
-        if (!hasRole("admin") && !hasRole("doctor") && !record.getPatientId().equals(SecurityUtils.getUserId())) {
+        
+        Long userId = SecurityUtils.getUserId();
+        Set<String> roles = getRoles();
+        
+        if (!isAdminUser() && !roles.contains("doctor") && !record.getPatientId().equals(userId)) {
             throw new ServiceException("无权查看他人病历");
         }
         return record;
     }
 
+    /**
+     * 获取当前用户角色集合
+     */
+    private Set<String> getRoles() {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        return loginUser != null ? loginUser.getRoles() : new HashSet<>();
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean insertMedicalRecord(MedicalRecord medicalRecord) {
-        if (hasRole("admin")) {
-            // 管理员可以随意新增
-        } else if (hasRole("doctor")) {
-            medicalRecord.setDoctorId(SecurityUtils.getUserId());
-        } else {
+        Long userId = SecurityUtils.getUserId();
+        Set<String> roles = getRoles();
+        
+        log.info("Insert medical record. User: {}, roles: {}", userId, roles);
+
+        if (isAdminUser()) {
+            log.info("Admin inserting medical record");
+        } else if (roles.contains("doctor")) {
+            log.info("Doctor inserting medical record, setting doctorId={}", userId);
+            medicalRecord.setDoctorId(userId);
+        } else if (roles.contains("patient")) {
+            log.info("Patient inserting medical record, setting patientId={}", userId);
+            medicalRecord.setPatientId(userId);
             // 患者不能直接新增包含诊断信息的病历
-            medicalRecord.setPatientId(SecurityUtils.getUserId());
             medicalRecord.setDiagnosis(null);
             medicalRecord.setPrescription(null);
             medicalRecord.setNotes(null);
+        } else {
+            log.warn("Unknown role inserting medical record, default to patientId={}", userId);
+            medicalRecord.setPatientId(userId);
         }
+
+        // 如果有关联预约，从预约中获取患者ID以确保正确性
+        if (medicalRecord.getAppointmentId() != null) {
+            log.info("Fetching appointment info for appointmentId={}", medicalRecord.getAppointmentId());
+            ResultVO<com.ruoyi.hospital.api.domain.Appointment> appointmentResult = remoteAppointmentService.getInfo(medicalRecord.getAppointmentId());
+            if (appointmentResult != null && appointmentResult.getData() != null) {
+                Long patientIdFromAppt = appointmentResult.getData().getPatientId();
+                log.info("Found patientId={} from appointment", patientIdFromAppt);
+                medicalRecord.setPatientId(patientIdFromAppt);
+            } else {
+                log.warn("Could not find appointment info for ID={}", medicalRecord.getAppointmentId());
+            }
+        }
+
         medicalRecord.setCreatedAt(new Date());
         if (medicalRecord.getVisitTime() == null) {
             medicalRecord.setVisitTime(new Date());
         }
         
+        log.info("Final medical record to save: {}", medicalRecord);
         boolean saved = save(medicalRecord);
         if (saved && medicalRecord.getAppointmentId() != null) {
             // 就诊完成，更新预约状态为“已完成”
+            log.info("Updating appointment status to '已完成' for appointmentId={}", medicalRecord.getAppointmentId());
             ResultVO<Boolean> result = remoteAppointmentService.updateStatus(medicalRecord.getAppointmentId(), "已完成");
             if (result == null || !result.getData()) {
+                log.error("Failed to update appointment status");
                 throw new ServiceException("更新预约状态失败");
             }
         }
@@ -105,41 +153,59 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
             throw new ServiceException("病历不存在");
         }
 
-        if (hasRole("admin")) {
+        Long userId = SecurityUtils.getUserId();
+        Set<String> roles = getRoles();
+        
+        log.info("Update medical record ID: {}. User: {}, roles: {}", medicalRecord.getId(), userId, roles);
+
+        if (isAdminUser()) {
             return updateById(medicalRecord);
         }
 
-        if (hasRole("doctor")) {
+        if (roles.contains("doctor")) {
+            // 医生只能修改诊断和处方
             MedicalRecord updateRecord = new MedicalRecord();
             updateRecord.setId(medicalRecord.getId());
             updateRecord.setDiagnosis(medicalRecord.getDiagnosis());
             updateRecord.setPrescription(medicalRecord.getPrescription());
             updateRecord.setNotes(medicalRecord.getNotes());
+            log.info("Doctor updating record details");
             return updateById(updateRecord);
         } else {
-            if (!oldRecord.getPatientId().equals(SecurityUtils.getUserId())) {
+            // 患者只能查看或修改有限信息（通常患者不应修改病历）
+            if (oldRecord.getPatientId() != null && !oldRecord.getPatientId().equals(userId)) {
+                log.error("Permission denied. Record patientId={}, current userId={}", oldRecord.getPatientId(), userId);
                 throw new ServiceException("无权修改他人病历");
             }
             medicalRecord.setDiagnosis(null);
             medicalRecord.setPrescription(null);
             medicalRecord.setNotes(null);
+            log.info("Patient updating record (limited fields)");
             return updateById(medicalRecord);
         }
     }
 
     @Override
     public boolean deleteMedicalRecordByIds(Long[] ids) {
-        if (hasRole("admin")) {
+        Long userId = SecurityUtils.getUserId();
+        Set<String> roles = getRoles();
+
+        log.info("Delete medical records: {}. User: {}, roles: {}", Arrays.toString(ids), userId, roles);
+
+        if (isAdminUser()) {
             return removeBatchByIds(Arrays.asList(ids));
         }
 
         for (Long id : ids) {
             MedicalRecord record = getById(id);
             if (record == null) continue;
-            if (hasRole("doctor")) {
+            
+            if (roles.contains("doctor")) {
+                log.error("Doctor tried to delete record ID: {}", id);
                 throw new ServiceException("医生无权删除病历");
             } else {
-                if (!record.getPatientId().equals(SecurityUtils.getUserId())) {
+                if (record.getPatientId() != null && !record.getPatientId().equals(userId)) {
+                    log.error("Permission denied. Record patientId={}, current userId={}", record.getPatientId(), userId);
                     throw new ServiceException("无权删除他人病历");
                 }
             }

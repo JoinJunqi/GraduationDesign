@@ -122,8 +122,8 @@
     <!-- 病历详情对话框 -->
     <el-dialog title="病历详情" v-model="openView" width="600px" append-to-body>
       <el-descriptions :column="1" border>
-        <el-descriptions-item label="患者姓名" v-if="!isPatient">{{ form.patientName }}</el-descriptions-item>
-        <el-descriptions-item label="就诊医生" v-if="!isDoctor">{{ form.doctorName }}</el-descriptions-item>
+        <el-descriptions-item label="患者姓名">{{ form.patientName }}</el-descriptions-item>
+        <el-descriptions-item label="就诊医生">{{ form.doctorName }}</el-descriptions-item>
         <el-descriptions-item label="所属科室">{{ form.deptName }}</el-descriptions-item>
         <el-descriptions-item label="就诊时间">{{ parseTime(form.visitTime) }}</el-descriptions-item>
         <el-descriptions-item label="诊断结果">{{ form.diagnosis }}</el-descriptions-item>
@@ -193,16 +193,35 @@ const rules = computed(() => ({
 
 /** 查询病历列表 */
 function getList() {
-  console.log('getList called with queryParams:', queryParams.value);
-  loading.value = true;
-  listRecord(queryParams.value).then(response => {
-    console.log('listRecord response:', response);
-    recordList.value = response.data;
-    loading.value = false;
-  }).catch(error => {
-    console.error('listRecord error:', error);
-    loading.value = false;
-  });
+    console.log('getList called with queryParams:', queryParams.value);
+    loading.value = true;
+    listRecord(queryParams.value).then(response => {
+        console.log('listRecord response:', response);
+        // 如果后端返回的是 ResultVO，列表数据在 data 字段中
+        if (response.data) {
+            // 兼容 TableDataInfo 结构 (data.rows 和 data.total)
+            if (response.data.rows !== undefined) {
+                recordList.value = response.data.rows;
+                total.value = response.data.total || 0;
+            } else {
+                // 兼容直接返回数组的情况
+                recordList.value = response.data;
+                total.value = response.total || response.data.length || 0;
+            }
+            console.log('recordList set to:', recordList.value);
+        } else if (Array.isArray(response)) {
+            // 兼容直接返回数组的情况
+            recordList.value = response;
+            total.value = response.length;
+        } else {
+            recordList.value = [];
+            total.value = 0;
+        }
+        loading.value = false;
+    }).catch(error => {
+        console.error('listRecord error:', error);
+        loading.value = false;
+    });
 }
 
 // 取消按钮

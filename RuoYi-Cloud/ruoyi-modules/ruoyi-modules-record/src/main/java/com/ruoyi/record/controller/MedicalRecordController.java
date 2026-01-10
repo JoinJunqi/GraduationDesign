@@ -8,27 +8,38 @@ import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.record.domain.MedicalRecord;
 import com.ruoyi.record.service.IMedicalRecordService;
 
+import com.ruoyi.common.core.web.page.TableDataInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * 电子病历Controller
  */
 @RestController
-@RequestMapping("/record")
+@RequestMapping
 public class MedicalRecordController extends BaseController
 {
+    private static final Logger log = LoggerFactory.getLogger(MedicalRecordController.class);
+
     @Autowired
     private IMedicalRecordService medicalRecordService;
 
-    @GetMapping("/list")
-    public ResultVO<List<MedicalRecord>> list(MedicalRecord medicalRecord)
+    /**
+     * 查询病历列表
+     */
+    @GetMapping({"/record/list", "/list"})
+    public ResultVO<TableDataInfo> list(MedicalRecord medicalRecord)
     {
+        log.info("MedicalRecord list request received. Path: /record/list or /list, Params: {}", medicalRecord);
+        startPage();
         List<MedicalRecord> list = medicalRecordService.selectMedicalRecordList(medicalRecord);
-        return ResultVO.success(list);
+        return ResultVO.success(getDataTable(list));
     }
 
     /**
      * 获取病历详细信息
      */
-    @GetMapping(value = "/{id}")
+    @GetMapping(value = "/record/{id}")
     public ResultVO<MedicalRecord> getInfo(@PathVariable("id") Long id)
     {
         return ResultVO.success(medicalRecordService.getMedicalRecordById(id));
@@ -37,7 +48,7 @@ public class MedicalRecordController extends BaseController
     /**
      * 新增病历
      */
-    @PostMapping
+    @PostMapping("/record")
     public ResultVO<Boolean> add(@RequestBody MedicalRecord medicalRecord)
     {
         return ResultVO.success(medicalRecordService.insertMedicalRecord(medicalRecord));
@@ -46,7 +57,7 @@ public class MedicalRecordController extends BaseController
     /**
      * 修改病历
      */
-    @PutMapping
+    @PutMapping("/record")
     public ResultVO<Boolean> edit(@RequestBody MedicalRecord medicalRecord)
     {
         return ResultVO.success(medicalRecordService.updateMedicalRecord(medicalRecord));
@@ -55,7 +66,7 @@ public class MedicalRecordController extends BaseController
     /**
      * 删除病历
      */
-    @DeleteMapping("/{ids}")
+    @DeleteMapping("/record/{ids}")
     public ResultVO<Boolean> remove(@PathVariable Long[] ids)
     {
         return ResultVO.success(medicalRecordService.deleteMedicalRecordByIds(ids));

@@ -58,6 +58,8 @@
 </template>
 
 <script setup name="RecordForm">
+import { ref, reactive, toRefs, getCurrentInstance, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { getRecord, addRecord, updateRecord } from "@/api/hospital/record";
 
 const { proxy } = getCurrentInstance();

@@ -35,4 +35,13 @@
         ORDER BY mr.visit_time DESC
     </select>
 
+    <select id="selectMedicalRecordById" parameterType="Long" resultMap="MedicalRecordResult">
+        SELECT mr.*, d.name as doctor_name, p.name as patient_name, dept.name as dept_name
+        FROM medical_record mr
+        LEFT JOIN doctor d ON mr.doctor_id = d.id
+        LEFT JOIN patient p ON mr.patient_id = p.id
+        LEFT JOIN department dept ON d.dept_id = dept.id
+        WHERE mr.id = #{id}
+    </select>
+
 </mapper>

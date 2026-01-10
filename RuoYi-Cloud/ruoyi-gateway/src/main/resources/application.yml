@@ -120,4 +120,3 @@ security:
       - "/code"
       - "**/login"
       - "**/register"
-      - "/ruoyi-hospital-*/**"

@@ -14,4 +14,9 @@ public interface MedicalRecordMapper extends BaseMapper<MedicalRecord> {
      * 查询病历列表（包含医生和科室信息）
      */
     List<MedicalRecord> selectMedicalRecordList(MedicalRecord medicalRecord);
+
+    /**
+     * 根据ID查询病历详情（包含关联信息）
+     */
+    MedicalRecord selectMedicalRecordById(Long id);
 }

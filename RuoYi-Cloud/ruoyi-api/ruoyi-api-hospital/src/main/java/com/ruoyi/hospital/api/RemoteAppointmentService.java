@@ -1,8 +1,11 @@
 package com.ruoyi.hospital.api;
 
 import com.ruoyi.common.core.domain.ResultVO;
+import com.ruoyi.hospital.api.domain.Appointment;
 import com.ruoyi.hospital.api.factory.RemoteAppointmentFallbackFactory;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -16,4 +19,7 @@ public interface RemoteAppointmentService {
      */
     @PutMapping("/appointment/status")
     ResultVO<Boolean> updateStatus(@RequestParam("id") Long id, @RequestParam("status") String status);
+
+    @GetMapping("/appointment/{id}")
+    ResultVO<Appointment> getInfo(@PathVariable("id") Long id);
 }

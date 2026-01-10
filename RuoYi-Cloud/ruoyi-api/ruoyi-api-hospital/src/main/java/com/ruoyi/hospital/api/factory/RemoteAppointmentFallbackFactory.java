@@ -22,6 +22,11 @@ public class RemoteAppointmentFallbackFactory implements FallbackFactory<RemoteA
             public ResultVO<Boolean> updateStatus(Long id, String status) {
                 return ResultVO.error("更新预约状态失败:" + throwable.getMessage());
             }
+
+            @Override
+            public ResultVO<com.ruoyi.hospital.api.domain.Appointment> getInfo(Long id) {
+                return ResultVO.error("获取预约详情失败:" + throwable.getMessage());
+            }
         };
     }
 }
