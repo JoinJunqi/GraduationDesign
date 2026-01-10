@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.common.core.web.controller.BaseController;
-import org.springframework.web.multipart.MultipartFile;
 import com.ruoyi.patient.domain.Patient;
 import com.ruoyi.patient.service.IPatientService;
 import com.ruoyi.common.security.utils.SecurityUtils;
@@ -84,15 +83,5 @@ public class PatientController extends BaseController
     public ResultVO<Boolean> updatePwd(@RequestParam("oldPassword") String oldPassword, @RequestParam("newPassword") String newPassword)
     {
         return ResultVO.success(patientService.updatePassword(oldPassword, newPassword));
-    }
-
-    /**
-     * 患者头像上传
-     */
-    @PostMapping("/profile/avatar")
-    public ResultVO<String> avatar(@RequestParam("avatarfile") MultipartFile file) throws Exception
-    {
-        // TODO: 实现头像上传逻辑
-        return ResultVO.success("上传成功");
     }
 }

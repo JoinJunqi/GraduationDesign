@@ -123,4 +123,31 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
         Long count = doctorMapper.selectCount(new LambdaQueryWrapper<Doctor>().eq(Doctor::getUsername, username));
         return count == 0;
     }
+
+    @Override
+    public boolean updateDoctorProfile(Doctor doctor) {
+        doctor.setId(SecurityUtils.getUserId());
+        // 不允许通过此接口修改账号和密码
+        doctor.setUsername(null);
+        doctor.setPasswordHash(null);
+        return updateById(doctor);
+    }
+
+    @Override
+    public boolean updatePassword(String oldPassword, String newPassword) {
+        Long userId = SecurityUtils.getUserId();
+        Doctor doctor = getById(userId);
+        if (doctor == null) {
+            throw new ServiceException("医生不存在");
+        }
+        String password = doctor.getPasswordHash();
+        if (!SecurityUtils.matchesPassword(oldPassword, password)) {
+            throw new ServiceException("修改密码失败，旧密码错误");
+        }
+        if (SecurityUtils.matchesPassword(newPassword, password)) {
+            throw new ServiceException("新密码不能与旧密码相同");
+        }
+        doctor.setPasswordHash(SecurityUtils.encryptPassword(newPassword));
+        return updateById(doctor);
+    }
 }

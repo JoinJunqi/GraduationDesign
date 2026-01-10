@@ -46,4 +46,14 @@ public interface IDoctorService extends IService<Doctor> {
      * 校验用户名是否唯一
      */
     boolean checkUsernameUnique(String username);
+
+    /**
+     * 修改医生个人信息
+     */
+    boolean updateDoctorProfile(Doctor doctor);
+
+    /**
+     * 修改密码
+     */
+    boolean updatePassword(String oldPassword, String newPassword);
 }

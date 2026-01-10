@@ -118,5 +118,6 @@ security:
       - "/*/v2/api-docs"
       - "/csrf"
       - "/code"
-      - "/ruoyi-hospital-*/**/login"
-      - "/ruoyi-hospital-*/**/register"
+      - "**/login"
+      - "**/register"
+      - "/ruoyi-hospital-*/**"

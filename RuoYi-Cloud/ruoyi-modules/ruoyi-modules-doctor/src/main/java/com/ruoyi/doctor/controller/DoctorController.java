@@ -20,6 +20,7 @@ import com.ruoyi.system.api.domain.SysUser;
 import com.ruoyi.system.api.model.LoginUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.ruoyi.system.api.model.LoginUser;
 
 @RestController
 @RequestMapping("/doctor")
@@ -86,5 +87,17 @@ public class DoctorController extends BaseController
     public ResultVO<List<Doctor>> listByDept(@PathVariable Long deptId)
     {
         return ResultVO.success(doctorService.selectDoctorsByDeptId(deptId));
+    }
+
+    @PutMapping("/profile")
+    public ResultVO<Boolean> updateProfile(@RequestBody Doctor doctor)
+    {
+        return ResultVO.success(doctorService.updateDoctorProfile(doctor));
+    }
+
+    @PutMapping("/profile/updatePwd")
+    public ResultVO<Boolean> updatePwd(@RequestParam("oldPassword") String oldPassword, @RequestParam("newPassword") String newPassword)
+    {
+        return ResultVO.success(doctorService.updatePassword(oldPassword, newPassword));
     }
 }
