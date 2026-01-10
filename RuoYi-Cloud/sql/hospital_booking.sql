@@ -11,7 +11,7 @@
  Target Server Version : 50732 (5.7.32-log)
  File Encoding         : 65001
 
- Date: 09/01/2026 17:37:02
+ Date: 10/01/2026 21:24:56
 */
 
 SET NAMES utf8mb4;
@@ -35,7 +35,7 @@ CREATE TABLE `admin`  (
 -- ----------------------------
 -- Records of admin
 -- ----------------------------
-INSERT INTO `admin` VALUES (1, 'admin', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '系统管理员', 1, '2026-01-08 19:54:43');
+INSERT INTO `admin` VALUES (1, 'admin', '$2a$10$GIMZcpW99EG0FWFA0oCdOOagK1QTYbtvpjvxtQlasgNcwxaE0D126', '系统管理员1', 1, '2026-01-08 19:54:43');
 
 -- ----------------------------
 -- Table structure for appointment
@@ -52,11 +52,17 @@ CREATE TABLE `appointment`  (
   INDEX `patient_id`(`patient_id`) USING BTREE,
   CONSTRAINT `appointment_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `appointment_ibfk_2` FOREIGN KEY (`schedule_id`) REFERENCES `schedule` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '预约记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '预约记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of appointment
 -- ----------------------------
+INSERT INTO `appointment` VALUES (1, 1, 1, '已完成', '2026-01-08 10:00:00');
+INSERT INTO `appointment` VALUES (2, 1, 2, '已完成', '2026-01-08 11:00:00');
+INSERT INTO `appointment` VALUES (3, 1, 4, '已完成', '2026-01-09 09:00:00');
+INSERT INTO `appointment` VALUES (4, 2, 3, '已完成', '2026-01-09 10:00:00');
+INSERT INTO `appointment` VALUES (5, 2, 5, '已完成', '2026-01-09 14:00:00');
+INSERT INTO `appointment` VALUES (6, 2, 6, '已完成', '2026-01-10 08:00:00');
 
 -- ----------------------------
 -- Table structure for department
@@ -101,9 +107,9 @@ CREATE TABLE `doctor`  (
 -- ----------------------------
 -- Records of doctor
 -- ----------------------------
-INSERT INTO `doctor` VALUES (1, 1, 'doc1', '$2a$10$7JB720yubVSZv5w8vng2i.kY.1/w.Z.A.h.A.u.k.k.k.k.k.k', '张内科', '主任医师', 1, '2026-01-09 02:44:31');
-INSERT INTO `doctor` VALUES (2, 2, 'doc_surgery', '$2a$10$7JB720yubVSZv5w8vng2i.kY.1/w.Z.A.h.A.u.k.k.k.k.k.k', '李外科', '副主任医师', 1, '2026-01-09 02:44:31');
-INSERT INTO `doctor` VALUES (3, 3, 'doc_pediatrics', '$2a$10$7JB720yubVSZv5w8vng2i.kY.1/w.Z.A.h.A.u.k.k.k.k.k.k', '王儿科', '主治医师', 1, '2026-01-09 02:44:31');
+INSERT INTO `doctor` VALUES (1, 1, 'doc1', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '张内科', '主任医师', 1, '2026-01-09 02:44:31');
+INSERT INTO `doctor` VALUES (2, 2, 'doc_surgery', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '李外科', '副主任医师', 1, '2026-01-09 02:44:31');
+INSERT INTO `doctor` VALUES (3, 3, 'doc_pediatrics', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '王儿科', '主治医师', 1, '2026-01-09 02:44:31');
 
 -- ----------------------------
 -- Table structure for medical_record
@@ -126,11 +132,17 @@ CREATE TABLE `medical_record`  (
   CONSTRAINT `medical_record_ibfk_1` FOREIGN KEY (`appointment_id`) REFERENCES `appointment` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `medical_record_ibfk_2` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `medical_record_ibfk_3` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '电子病历表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '电子病历表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of medical_record
 -- ----------------------------
+INSERT INTO `medical_record` VALUES (1, 1, 1, 1, '急性上呼吸道感染（感冒）', '阿莫西林胶囊 0.5g，每日三次，连续7天；对乙酰氨基酚片 0.5g，发热时服用', '注意休息，多饮水，监测体温', '2026-01-09 09:00:00', '2026-01-09 22:48:13');
+INSERT INTO `medical_record` VALUES (2, 2, 1, 1, '慢性咽炎急性发作', '头孢克肟片 100mg，每日两次，连续5天；复方硼砂溶液漱口，每日三次', '避免辛辣刺激食物，戒烟酒', '2026-01-09 14:00:00', '2026-01-09 22:48:13');
+INSERT INTO `medical_record` VALUES (3, 3, 1, 1, '支气管炎', '左氧氟沙星片 0.5g，每日一次，连续7天；氨溴索口服液 10ml，每日三次', '保持室内空气流通，避免冷空气刺激', '2026-01-10 09:00:00', '2026-01-09 22:48:13');
+INSERT INTO `medical_record` VALUES (4, 4, 2, 2, '阑尾炎术后复查', '无特殊处方', '伤口愈合良好，建议逐步恢复正常活动，定期复查', '2026-01-10 09:00:00', '2026-01-09 22:48:13');
+INSERT INTO `medical_record` VALUES (5, 5, 2, 2, '软组织挫伤', '布洛芬缓释胶囊 0.3g，每日两次，连续3天；局部外用扶他林软膏', '限制活动，患处抬高，48小时后热敷', '2026-01-10 14:00:00', '2026-01-09 22:48:13');
+INSERT INTO `medical_record` VALUES (6, 6, 2, 3, '小儿过敏性鼻炎', '氯雷他定片 10mg，每日一次，连续14天；生理盐水鼻腔喷雾器清洗，每日两次', '避免接触过敏原，保持室内清洁', '2026-01-11 09:00:00', '2026-01-09 22:48:13');
 
 -- ----------------------------
 -- Table structure for patient
@@ -148,13 +160,13 @@ CREATE TABLE `patient`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `username`(`username`) USING BTREE,
   UNIQUE INDEX `id_card`(`id_card`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '患者信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '患者信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of patient
 -- ----------------------------
-INSERT INTO `patient` VALUES (1, 'patient1', '$2a$10$7JB720yubVSZv5w8vng2i.kY.1/w.Z.A.h.A.u.k.k.k.k.k.k', '赵患者', '13800138000', '110101199001011234', NULL, '2026-01-09 02:44:31');
-INSERT INTO `patient` VALUES (2, 'patient002', '$2a$10$7JB720yubVSZv5w8vng2i.kY.1/w.Z.A.h.A.u.k.k.k.k.k.k', '钱患者', '13900139000', '110101199505055678', NULL, '2026-01-09 02:44:31');
+INSERT INTO `patient` VALUES (1, 'patient1', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '赵患者1', '13800138000', '110101199001011234', NULL, '2026-01-09 02:44:31');
+INSERT INTO `patient` VALUES (2, 'patient002', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '钱患者', '13900139000', '110101199505055678', NULL, '2026-01-09 02:44:31');
 
 -- ----------------------------
 -- Table structure for schedule
@@ -171,7 +183,7 @@ CREATE TABLE `schedule`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_doctor_date_slot`(`doctor_id`, `work_date`, `time_slot`) USING BTREE,
   CONSTRAINT `schedule_ibfk_1` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '医生排班表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '医生排班表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of schedule
@@ -179,6 +191,9 @@ CREATE TABLE `schedule`  (
 INSERT INTO `schedule` VALUES (1, 1, '2026-01-09', '上午', 20, 20, '2026-01-09 02:44:31');
 INSERT INTO `schedule` VALUES (2, 1, '2026-01-09', '下午', 20, 20, '2026-01-09 02:44:31');
 INSERT INTO `schedule` VALUES (3, 2, '2026-01-10', '上午', 15, 15, '2026-01-09 02:44:31');
+INSERT INTO `schedule` VALUES (4, 1, '2026-01-10', '上午', 20, 20, '2026-01-09 22:48:13');
+INSERT INTO `schedule` VALUES (5, 2, '2026-01-10', '下午', 15, 15, '2026-01-09 22:48:13');
+INSERT INTO `schedule` VALUES (6, 3, '2026-01-11', '全天', 10, 10, '2026-01-09 22:48:13');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -210,7 +225,7 @@ CREATE TABLE `sys_menu`  (
   INDEX `idx_menu_type`(`menu_type`) USING BTREE,
   INDEX `idx_visible`(`visible`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 13 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_menu
@@ -227,5 +242,6 @@ INSERT INTO `sys_menu` VALUES (9, '医生查询', 4, 1, '#', '', NULL, '', '1', 
 INSERT INTO `sys_menu` VALUES (10, '医生新增', 4, 2, '#', '', NULL, '', '1', '0', 'F', '0', '0', 'hospital:doctor:add', '#', 'admin', '2026-01-08 16:14:48', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (11, '医生修改', 4, 3, '#', '', NULL, '', '1', '0', 'F', '0', '0', 'hospital:doctor:edit', '#', 'admin', '2026-01-08 16:14:48', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (12, '医生删除', 4, 4, '#', '', NULL, '', '1', '0', 'F', '0', '0', 'hospital:doctor:remove', '#', 'admin', '2026-01-08 16:14:48', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (13, '预约挂号', 1, 8, 'register', 'hospital/appointment/register', NULL, '', '1', '0', 'C', '0', '0', 'hospital:appointment:register', 'edit', 'admin', '2026-01-10 20:06:16', '', NULL, '');
 
 SET FOREIGN_KEY_CHECKS = 1;

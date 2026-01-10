@@ -90,11 +90,18 @@ const usePermissionStore = defineStore(
               meta: { title: '医院服务', icon: 'hospital', noCache: false, link: null },
               children: [
                 {
+                  name: 'Register',
+                  path: 'register',
+                  hidden: false,
+                  component: 'hospital/appointment/register',
+                  meta: { title: '立即挂号', icon: 'edit', noCache: false, link: null }
+                },
+                {
                   name: 'Appointment',
                   path: 'appointment',
                   hidden: false,
                   component: 'hospital/appointment/index',
-                  meta: { title: '预约挂号', icon: 'list', noCache: false, link: null }
+                  meta: { title: '我的预约', icon: 'list', noCache: false, link: null }
                 },
                 {
                   name: 'Record',

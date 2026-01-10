@@ -28,9 +28,8 @@
           type="primary"
           plain
           icon="Plus"
-          @click="handleAdd"
-          v-hasPermi="['hospital:appointment:add']"
-        >新增</el-button>
+          @click="handleRegister"
+        >立即挂号</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
@@ -115,6 +114,8 @@
 </template>
 
 <script setup name="Appointment">
+import { ref, reactive, toRefs, getCurrentInstance } from 'vue';
+import { useRouter } from 'vue-router';
 import { listAppointment, getAppointment, delAppointment, addAppointment, updateAppointment, cancelAppointment } from "@/api/hospital/appointment";
 
 const { proxy } = getCurrentInstance();
@@ -146,7 +147,14 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data);
 
-/** 查询预约列表 */
+const router = useRouter();
+
+/** 跳转到挂号页面 */
+function handleRegister() {
+  // 如果数据库中配置了动态路由，跳转到对应的路径
+  // 假设挂号页面在 /hospital/appointment/register 或类似路径
+  router.push({ path: '/hospital/appointment/register' });
+}
 function getList() {
   loading.value = true;
   listAppointment(queryParams.value).then(response => {

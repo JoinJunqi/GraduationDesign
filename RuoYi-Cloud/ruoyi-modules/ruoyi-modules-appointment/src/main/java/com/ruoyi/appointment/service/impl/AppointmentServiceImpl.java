@@ -93,9 +93,13 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean createAppointment(Appointment appointment) {
+        log.info("Starting createAppointment for patient: {}, schedule: {}", 
+                 appointment.getPatientId(), appointment.getScheduleId());
+                 
         // 0. 设置患者ID (如果是患者角色，强制设置为当前登录用户)
         if (hasRole("patient")) {
             appointment.setPatientId(SecurityUtils.getUserId());
+            log.info("Forced patient ID from SecurityUtils: {}", appointment.getPatientId());
         }
         
         if (appointment.getPatientId() == null) {
@@ -108,15 +112,19 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
                 .eq(Appointment::getScheduleId, appointment.getScheduleId())
                 .ne(Appointment::getStatus, "已取消"));
         if (count > 0) {
+            log.warn("Duplicate appointment detected for patient {} and schedule {}", 
+                     appointment.getPatientId(), appointment.getScheduleId());
             throw new ServiceException("您已预约过该时段，请勿重复预约");
         }
 
         // 2. 检查排班是否存在及剩余号源 (Redis 优先)
         Long scheduleId = appointment.getScheduleId();
         String redisKey = getScheduleRedisKey(scheduleId);
+        log.info("Checking Redis slots for key: {}", redisKey);
         
         // 使用 Redis 递减操作 (原子性)
         Long remaining = redisService.redisTemplate.opsForValue().decrement(redisKey);
+        log.info("Redis decrement result for key {}: {}", redisKey, remaining);
         
         if (remaining != null && remaining < 0) {
             // 如果 decrement 返回负数，说明之前没有这个 key 或者已经没号了
@@ -132,6 +140,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
                 } else {
                     // 确实没号了，回退递减
                     redisService.redisTemplate.opsForValue().increment(redisKey);
+                    log.warn("No slots available in Redis for schedule {}", scheduleId);
                     throw new ServiceException("号源已满");
                 }
             } else {
@@ -143,21 +152,31 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
             throw new ServiceException("系统繁忙，请稍后再试");
         }
 
-        // 3. 同步到排班服务 (异步或后续同步，这里简单处理)
-        Schedule updateSchedule = new Schedule();
-        updateSchedule.setId(scheduleId);
-        updateSchedule.setAvailableSlots(remaining.intValue());
-        ResultVO<Boolean> updateResult = remoteScheduleService.update(updateSchedule);
-        if (updateResult == null || !updateResult.getData()) {
+        try {
+            // 3. 同步到排班服务 (异步或后续同步，这里简单处理)
+            Schedule updateSchedule = new Schedule();
+            updateSchedule.setId(scheduleId);
+            updateSchedule.setAvailableSlots(remaining.intValue());
+            log.info("Updating remote schedule {} with remaining slots: {}", scheduleId, remaining);
+            
+            ResultVO<Boolean> updateResult = remoteScheduleService.update(updateSchedule);
+            if (updateResult == null || !updateResult.getData()) {
+                throw new ServiceException("同步排班信息失败");
+            }
+
+            // 4. 创建预约
+            appointment.setStatus("待就诊");
+            appointment.setBookedAt(new Date());
+            log.info("Saving appointment record to database...");
+            boolean saved = this.save(appointment);
+            log.info("Appointment saved successfully: {}", saved);
+            return saved;
+        } catch (Exception e) {
+            log.error("Error creating appointment, rolling back Redis slots...", e);
             // 数据库更新失败，回退 Redis
             redisService.redisTemplate.opsForValue().increment(redisKey);
-            throw new ServiceException("系统繁忙，请稍后再试");
+            throw e;
         }
-
-        // 4. 创建预约
-        appointment.setStatus("待就诊");
-        appointment.setBookedAt(new Date());
-        return this.save(appointment);
     }
 
     @Override

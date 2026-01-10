@@ -122,6 +122,19 @@ export const constantRoutes = [
         meta: { title: '修改患者', activeMenu: '/hospital/patient' }
       }
     ]
+  },
+  {
+    path: '/hospital/appointment',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'register',
+        component: () => import('@/views/hospital/appointment/register'),
+        name: 'AppointmentRegister',
+        meta: { title: '预约挂号', activeMenu: '/hospital/appointment' }
+      }
+    ]
   }
 ]
 
