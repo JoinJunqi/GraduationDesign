@@ -11,12 +11,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ruoyi.common.security.utils.SecurityUtils;
+import com.ruoyi.system.api.model.LoginUser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> implements IScheduleService {
+
+    private static final Logger log = LoggerFactory.getLogger(ScheduleServiceImpl.class);
 
     @Autowired
     private ScheduleMapper scheduleMapper;
@@ -30,8 +38,20 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         return SCHEDULE_SLOTS_KEY + scheduleId;
     }
 
+    private boolean isDoctor() {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (loginUser == null) return false;
+        Set<String> roles = loginUser.getRoles();
+        return roles != null && roles.contains("doctor");
+    }
+
     @Override
     public List<Schedule> selectScheduleList(Schedule schedule) {
+        if (isDoctor()) {
+            Long userId = SecurityUtils.getUserId();
+            log.info("Doctor role detected, filtering schedule by doctorId: {}", userId);
+            schedule.setDoctorId(userId);
+        }
         return scheduleMapper.selectScheduleList(schedule);
     }
 
@@ -54,6 +74,16 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean insertSchedule(Schedule schedule) {
+        if (isDoctor()) {
+            Long userId = SecurityUtils.getUserId();
+            log.info("Doctor role detected, setting doctorId to: {}", userId);
+            schedule.setDoctorId(userId);
+        }
+        
+        if (schedule.getDoctorId() == null) {
+            throw new ServiceException("医生信息不能为空");
+        }
+
         // 检查排班冲突
         Long count = scheduleMapper.selectCount(new LambdaQueryWrapper<Schedule>()
                 .eq(Schedule::getDoctorId, schedule.getDoctorId())

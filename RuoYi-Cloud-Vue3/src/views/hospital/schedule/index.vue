@@ -1,10 +1,10 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="医生ID" prop="doctorId">
+      <el-form-item label="医生姓名" prop="doctorName" v-if="!isDoctor">
         <el-input
-          v-model="queryParams.doctorId"
-          placeholder="请输入医生ID"
+          v-model="queryParams.doctorName"
+          placeholder="请输入医生姓名"
           clearable
           @keyup.enter="handleQuery"
         />
@@ -81,8 +81,9 @@
     <!-- 添加或修改排班对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
       <el-form ref="scheduleRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="医生ID" prop="doctorId">
-          <el-input v-model="form.doctorId" placeholder="请输入医生ID" />
+        <el-form-item label="医生" prop="doctorName">
+          <el-input v-model="form.doctorName" placeholder="医生姓名" :disabled="true" v-if="isDoctor" />
+          <el-input v-model="form.doctorId" placeholder="请输入医生ID" v-else />
         </el-form-item>
         <el-form-item label="出诊日期" prop="workDate">
           <el-date-picker
@@ -118,8 +119,14 @@
 
 <script setup name="Schedule">
 import { listSchedule, getSchedule, delSchedule, addSchedule, updateSchedule } from "@/api/hospital/schedule";
+import useUserStore from "@/store/modules/user";
 
+const userStore = useUserStore();
 const { proxy } = getCurrentInstance();
+
+const isDoctor = computed(() => userStore.roles.includes('doctor'));
+const currentDoctorName = computed(() => userStore.name);
+const currentDoctorId = computed(() => userStore.userId);
 
 const scheduleList = ref([]);
 const open = ref(false);
@@ -133,12 +140,15 @@ const title = ref("");
 const data = reactive({
   form: {},
   queryParams: {
-    doctorId: null,
+    doctorName: null,
     workDate: null
   },
   rules: {
     doctorId: [
       { required: true, message: "医生ID不能为空", trigger: "blur" }
+    ],
+    doctorName: [
+      { required: true, message: "医生姓名不能为空", trigger: "blur" }
     ],
     workDate: [
       { required: true, message: "出诊日期不能为空", trigger: "blur" }
@@ -173,7 +183,8 @@ function cancel() {
 function reset() {
   form.value = {
     id: null,
-    doctorId: null,
+    doctorId: isDoctor.value ? currentDoctorId.value : null,
+    doctorName: isDoctor.value ? currentDoctorName.value : null,
     workDate: null,
     timeSlot: null,
     totalCapacity: 20,
@@ -213,6 +224,9 @@ function handleUpdate(row) {
   const id = row.id || ids.value;
   getSchedule(id).then(response => {
     form.value = response.data;
+    if (isDoctor.value && !form.value.doctorName) {
+      form.value.doctorName = currentDoctorName.value;
+    }
     open.value = true;
     title.value = "修改排班";
   });
