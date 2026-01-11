@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.common.core.web.controller.BaseController;
+import com.ruoyi.common.core.web.page.TableDataInfo;
 import com.ruoyi.patient.domain.Patient;
 import com.ruoyi.patient.service.IPatientService;
 import com.ruoyi.common.security.utils.SecurityUtils;
@@ -31,12 +32,12 @@ public class PatientController extends BaseController
     }
 
     @GetMapping("/list")
-    public ResultVO<List<Patient>> list(Patient patient)
+    public TableDataInfo list(Patient patient)
     {
         startPage();
         startOrderBy();
         List<Patient> list = patientService.selectPatientList(patient);
-        return ResultVO.success(list);
+        return getDataTable(list);
     }
 
     @GetMapping(value = "/{id}")

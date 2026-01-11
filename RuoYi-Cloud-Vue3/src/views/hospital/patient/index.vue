@@ -75,6 +75,14 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <pagination
+      v-show="total > 0"
+      :total="total"
+      v-model:page="queryParams.pageNum"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
   </div>
 </template>
 
@@ -90,6 +98,7 @@ const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
 const multiple = ref(true);
+const total = ref(0);
 
 const data = reactive({
   queryParams: {
@@ -97,8 +106,8 @@ const data = reactive({
     pageSize: 10,
     name: null,
     phone: null,
-    orderByColumn: undefined,
-    isAsc: undefined
+    orderByColumn: "createdAt",
+    isAsc: "descending"
   }
 });
 

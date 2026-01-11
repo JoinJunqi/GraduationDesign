@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.common.core.web.controller.BaseController;
+import com.ruoyi.common.core.web.page.TableDataInfo;
 import com.ruoyi.system.api.domain.SysUser;
 import com.ruoyi.system.service.ISysUserService;
 import com.ruoyi.common.security.utils.SecurityUtils;
@@ -21,12 +22,12 @@ public class AdminController extends BaseController
      * 查询管理员列表
      */
     @GetMapping("/list")
-    public ResultVO<List<SysUser>> list(SysUser user)
+    public TableDataInfo list(SysUser user)
     {
         startPage();
         startOrderBy();
         List<SysUser> list = userService.selectUserList(user);
-        return ResultVO.success(list);
+        return getDataTable(list);
     }
 
     /**

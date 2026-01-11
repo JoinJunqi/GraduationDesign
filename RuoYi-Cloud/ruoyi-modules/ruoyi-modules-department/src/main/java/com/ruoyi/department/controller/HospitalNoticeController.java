@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.ruoyi.common.core.web.controller.BaseController;
 import com.ruoyi.common.core.domain.ResultVO;
+import com.ruoyi.common.core.web.page.TableDataInfo;
 import com.ruoyi.department.domain.HospitalNotice;
 import com.ruoyi.department.service.IHospitalNoticeService;
 
@@ -21,10 +22,11 @@ public class HospitalNoticeController extends BaseController {
      * 查询有效通知列表
      */
     @GetMapping("/list")
-    public ResultVO<List<HospitalNotice>> list() {
+    public TableDataInfo list() {
         startPage();
         startOrderBy();
-        return ResultVO.success(hospitalNoticeService.selectActiveNoticeList());
+        List<HospitalNotice> list = hospitalNoticeService.selectActiveNoticeList();
+        return getDataTable(list);
     }
 
     /**

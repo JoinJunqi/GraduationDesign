@@ -35,7 +35,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="timeSlot != null  and timeSlot != ''"> and s.time_slot = #{timeSlot}</if>
             <if test="deptId != null "> and d.dept_id = #{deptId}</if>
         </where>
-        order by s.work_date desc, s.time_slot asc
     </select>
     
 </mapper>

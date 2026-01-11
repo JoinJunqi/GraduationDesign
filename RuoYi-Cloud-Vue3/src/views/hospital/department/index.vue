@@ -64,6 +64,14 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <pagination
+      v-show="total > 0"
+      :total="total"
+      v-model:page="queryParams.pageNum"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
     
     <!-- 添加或修改科室对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
@@ -95,6 +103,7 @@ const ids = ref([]);
 const single = ref(true);
 const multiple = ref(true);
 const title = ref("");
+const total = ref(0);
 
 const data = reactive({
   form: {},
@@ -102,8 +111,8 @@ const data = reactive({
     pageNum: 1,
     pageSize: 10,
     name: null,
-    orderByColumn: undefined,
-    isAsc: undefined
+    orderByColumn: "id",
+    isAsc: "ascending"
   },
   rules: {
     name: [
@@ -125,18 +134,8 @@ function handleSortChange(column) {
 function getList() {
   loading.value = true;
   listDepartment(queryParams.value).then(response => {
-    if (response.rows) {
-      departmentList.value = response.rows;
-      total.value = response.total;
-    } else if (response.data) {
-      if (Array.isArray(response.data)) {
-        departmentList.value = response.data;
-        total.value = response.data.length;
-      } else {
-        departmentList.value = response.data.rows || [];
-        total.value = response.data.total || 0;
-      }
-    }
+    departmentList.value = response.rows;
+    total.value = response.total;
     loading.value = false;
   });
 }

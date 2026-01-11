@@ -32,7 +32,6 @@
             <if test="doctorName != null and doctorName != ''"> AND d.name LIKE concat('%', #{doctorName}, '%')</if>
             <if test="patientName != null and patientName != ''"> AND p.name LIKE concat('%', #{patientName}, '%')</if>
         </where>
-        ORDER BY mr.visit_time DESC
     </select>
 
     <select id="selectMedicalRecordById" parameterType="Long" resultMap="MedicalRecordResult">

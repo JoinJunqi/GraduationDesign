@@ -88,6 +88,14 @@
       </el-table-column>
     </el-table>
     
+    <pagination
+      v-show="total > 0"
+      :total="total"
+      v-model:page="queryParams.pageNum"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
+    
     <!-- 添加或修改预约对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
       <el-form ref="appointmentRef" :model="form" :rules="rules" label-width="80px">
@@ -144,8 +152,8 @@ const data = reactive({
     pageSize: 10,
     patientName: null,
     status: null,
-    orderByColumn: undefined,
-    isAsc: undefined
+    orderByColumn: "bookedAt",
+    isAsc: "descending"
   },
   rules: {
     patientId: [
@@ -176,29 +184,8 @@ function handleSortChange(column) {
 function getList() {
   loading.value = true;
   listAppointment(queryParams.value).then(response => {
-    // 兼容多种返回格式
-    if (response.rows !== undefined && response.total !== undefined) {
-      // 标准 RuoYi 分页响应
-      appointmentList.value = response.rows;
-      total.value = response.total;
-    } else if (response.data) {
-      if (Array.isArray(response.data)) {
-        appointmentList.value = response.data;
-        total.value = response.data.length;
-      } else if (response.data.rows) {
-        appointmentList.value = response.data.rows;
-        total.value = response.data.total;
-      } else {
-        appointmentList.value = [];
-        total.value = 0;
-      }
-    } else if (Array.isArray(response)) {
-      appointmentList.value = response;
-      total.value = response.length;
-    } else {
-      appointmentList.value = [];
-      total.value = 0;
-    }
+    appointmentList.value = response.rows;
+    total.value = response.total;
     loading.value = false;
   }).catch(error => {
     console.error("Failed to fetch appointments:", error);

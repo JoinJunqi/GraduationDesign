@@ -10,6 +10,7 @@ import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.common.core.utils.JwtUtils;
 import com.ruoyi.common.security.utils.SecurityUtils;
 import com.ruoyi.common.core.web.controller.BaseController;
+import com.ruoyi.common.core.web.page.TableDataInfo;
 import com.ruoyi.doctor.domain.Doctor;
 import com.ruoyi.doctor.service.IDoctorService;
 
@@ -41,12 +42,12 @@ public class DoctorController extends BaseController
     }
 
     @GetMapping("/list")
-    public ResultVO<List<Doctor>> list(Doctor doctor)
+    public TableDataInfo list(Doctor doctor)
     {
         startPage();
         startOrderBy();
         List<Doctor> list = doctorService.selectDoctorList(doctor);
-        return ResultVO.success(list);
+        return getDataTable(list);
     }
 
     @GetMapping(value = "/{id}")

@@ -18,12 +18,12 @@ public class ScheduleController extends BaseController
     private IScheduleService scheduleService;
 
     @GetMapping("/list")
-    public ResultVO<List<Schedule>> list(Schedule schedule)
+    public TableDataInfo list(Schedule schedule)
     {
         startPage();
         startOrderBy();
         List<Schedule> list = scheduleService.selectScheduleList(schedule);
-        return ResultVO.success(list);
+        return getDataTable(list);
     }
 
     @GetMapping(value = "/{id}")

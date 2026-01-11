@@ -85,6 +85,14 @@
       </el-table-column>
     </el-table>
 
+    <pagination
+      v-show="total > 0"
+      :total="total"
+      v-model:page="queryParams.pageNum"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
+
     <!-- 添加或修改病历对话框 -->
     <el-dialog :title="title" v-model="open" width="600px" append-to-body>
       <el-form ref="recordRef" :model="form" :rules="rules" label-width="100px">
@@ -177,8 +185,8 @@ const data = reactive({
     patientName: null,
     doctorName: null,
     diagnosis: null,
-    orderByColumn: undefined,
-    isAsc: undefined
+    orderByColumn: "visitTime",
+    isAsc: "descending"
   }
 });
 
@@ -211,16 +219,8 @@ function getList() {
     console.log('getList called with queryParams:', queryParams.value);
     loading.value = true;
     listRecord(queryParams.value).then(response => {
-        if (response.rows) {
-            recordList.value = response.rows;
-            total.value = response.total;
-        } else if (response.data && response.data.rows) {
-            recordList.value = response.data.rows;
-            total.value = response.data.total;
-        } else {
-            recordList.value = [];
-            total.value = 0;
-        }
+        recordList.value = response.rows;
+        total.value = response.total;
         loading.value = false;
     }).catch(err => {
         console.error('Failed to load records:', err);

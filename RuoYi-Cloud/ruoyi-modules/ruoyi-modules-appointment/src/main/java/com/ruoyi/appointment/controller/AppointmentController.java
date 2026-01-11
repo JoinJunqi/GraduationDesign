@@ -18,12 +18,12 @@ public class AppointmentController extends BaseController
     private IAppointmentService appointmentService;
 
     @GetMapping("/list")
-    public ResultVO<List<Appointment>> list(Appointment appointment)
+    public TableDataInfo list(Appointment appointment)
     {
         startPage();
         startOrderBy();
         List<Appointment> list = appointmentService.selectAppointmentList(appointment);
-        return ResultVO.success(list);
+        return getDataTable(list);
     }
 
     @GetMapping("/stats")

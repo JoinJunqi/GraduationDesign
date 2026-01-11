@@ -28,13 +28,13 @@ public class MedicalRecordController extends BaseController
      * 查询病历列表
      */
     @GetMapping({"/record/list", "/list"})
-    public ResultVO<TableDataInfo> list(MedicalRecord medicalRecord)
+    public TableDataInfo list(MedicalRecord medicalRecord)
     {
         log.info("MedicalRecord list request received. Path: /record/list or /list, Params: {}", medicalRecord);
         startPage();
         startOrderBy();
         List<MedicalRecord> list = medicalRecordService.selectMedicalRecordList(medicalRecord);
-        return ResultVO.success(getDataTable(list));
+        return getDataTable(list);
     }
 
     /**

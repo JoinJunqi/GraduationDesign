@@ -77,6 +77,14 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <pagination
+      v-show="total > 0"
+      :total="total"
+      v-model:page="queryParams.pageNum"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
     
     <!-- 添加或修改排班对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
@@ -137,6 +145,7 @@ const ids = ref([]);
 const single = ref(true);
 const multiple = ref(true);
 const title = ref("");
+const total = ref(0);
 
 const data = reactive({
   form: {},
@@ -145,8 +154,8 @@ const data = reactive({
     pageSize: 10,
     doctorName: null,
     workDate: null,
-    orderByColumn: undefined,
-    isAsc: undefined
+    orderByColumn: "workDate",
+    isAsc: "descending"
   },
   rules: {
     doctorId: [
@@ -180,18 +189,8 @@ function handleSortChange(column) {
 function getList() {
   loading.value = true;
   listSchedule(queryParams.value).then(response => {
-    if (response.rows) {
-      scheduleList.value = response.rows;
-      total.value = response.total;
-    } else if (response.data) {
-      if (Array.isArray(response.data)) {
-        scheduleList.value = response.data;
-        total.value = response.data.length;
-      } else {
-        scheduleList.value = response.data.rows || [];
-        total.value = response.data.total || 0;
-      }
-    }
+    scheduleList.value = response.rows;
+    total.value = response.total;
     loading.value = false;
   });
 }

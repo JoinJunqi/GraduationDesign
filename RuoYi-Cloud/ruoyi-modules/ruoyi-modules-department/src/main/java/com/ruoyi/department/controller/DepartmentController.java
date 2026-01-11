@@ -18,12 +18,12 @@ public class DepartmentController extends BaseController
     private IDepartmentService departmentService;
 
     @GetMapping("/list")
-    public ResultVO<List<Department>> list(Department department)
+    public TableDataInfo list(Department department)
     {
         startPage();
         startOrderBy();
         List<Department> list = departmentService.selectDepartmentList(department);
-        return ResultVO.success(list);
+        return getDataTable(list);
     }
 
     @GetMapping("/listWithIntro")

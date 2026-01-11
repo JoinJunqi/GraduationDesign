@@ -80,6 +80,14 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <pagination
+      v-show="total > 0"
+      :total="total"
+      v-model:page="queryParams.pageNum"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
     
     <!-- 添加或修改管理员对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
@@ -123,14 +131,17 @@ const ids = ref([]);
 const single = ref(true);
 const multiple = ref(true);
 const title = ref("");
+const total = ref(0);
 
 const data = reactive({
   form: {},
   queryParams: {
+    pageNum: 1,
+    pageSize: 10,
     userName: null,
     nickName: null,
-    orderByColumn: undefined,
-    isAsc: undefined
+    orderByColumn: "userId",
+    isAsc: "ascending"
   },
   rules: {
     userName: [
@@ -151,7 +162,8 @@ const { queryParams, form, rules } = toRefs(data);
 function getList() {
   loading.value = true;
   listAdmin(queryParams.value).then(response => {
-    adminList.value = response.data;
+    adminList.value = response.rows;
+    total.value = response.total;
     loading.value = false;
   });
 }

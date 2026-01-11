@@ -20,7 +20,6 @@
                 AND d.name LIKE CONCAT('%', #{name}, '%')
             </if>
         </where>
-        ORDER BY d.id ASC
     </select>
 
 </mapper>

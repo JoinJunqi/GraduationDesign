@@ -37,7 +37,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="doctorId != null "> and s.doctor_id = #{doctorId}</if>
             <if test="patientName != null and patientName != ''"> and p.name like concat('%', #{patientName}, '%')</if>
         </where>
-        order by a.booked_at desc
     </select>
     
 </mapper>
