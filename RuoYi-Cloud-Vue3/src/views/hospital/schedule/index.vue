@@ -118,6 +118,7 @@
 </template>
 
 <script setup name="Schedule">
+import { ref, reactive, toRefs, computed, getCurrentInstance } from 'vue';
 import { listSchedule, getSchedule, delSchedule, addSchedule, updateSchedule } from "@/api/hospital/schedule";
 import useUserStore from "@/store/modules/user";
 
@@ -125,8 +126,8 @@ const userStore = useUserStore();
 const { proxy } = getCurrentInstance();
 
 const isDoctor = computed(() => userStore.roles.includes('doctor'));
-const currentDoctorName = computed(() => userStore.name);
-const currentDoctorId = computed(() => userStore.userId);
+const currentDoctorName = computed(() => userStore.nickName);
+const currentDoctorId = computed(() => userStore.id);
 
 const scheduleList = ref([]);
 const open = ref(false);
