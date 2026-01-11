@@ -64,12 +64,12 @@
 
     <el-table v-loading="loading" :data="recordList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="编号" align="center" prop="id" width="80" />
-      <el-table-column label="患者姓名" align="center" prop="patientName" v-if="!isPatient" />
-      <el-table-column label="就诊医生" align="center" prop="doctorName" v-if="!isDoctor" />
+      <el-table-column label="编号" align="center" prop="id" width="80" sortable />
+      <el-table-column label="患者姓名" align="center" prop="patientName" v-if="!isPatient" sortable />
+      <el-table-column label="就诊医生" align="center" prop="doctorName" v-if="!isDoctor" sortable />
       <el-table-column label="科室" align="center" prop="deptName" />
       <el-table-column label="诊断结果" align="center" prop="diagnosis" show-overflow-tooltip />
-      <el-table-column label="就诊时间" align="center" prop="visitTime" width="180">
+      <el-table-column label="就诊时间" align="center" prop="visitTime" width="180" sortable>
         <template #default="scope">
           <span>{{ parseTime(scope.row.visitTime) }}</span>
         </template>
