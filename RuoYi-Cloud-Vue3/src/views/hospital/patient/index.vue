@@ -56,14 +56,14 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="patientList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="patientList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="ID" align="center" prop="id" />
-      <el-table-column label="登录账号" align="center" prop="username" />
-      <el-table-column label="姓名" align="center" prop="name" />
+      <el-table-column label="ID" align="center" prop="id" sortable="custom" />
+      <el-table-column label="登录账号" align="center" prop="username" sortable="custom" />
+      <el-table-column label="姓名" align="center" prop="name" sortable="custom" />
       <el-table-column label="手机号" align="center" prop="phone" />
       <el-table-column label="身份证号" align="center" prop="idCard" />
-      <el-table-column label="创建时间" align="center" prop="createdAt" width="180">
+      <el-table-column label="创建时间" align="center" prop="createdAt" width="180" sortable="custom">
         <template #default="scope">
           <span>{{ parseTime(scope.row.createdAt) }}</span>
         </template>
@@ -93,8 +93,12 @@ const multiple = ref(true);
 
 const data = reactive({
   queryParams: {
+    pageNum: 1,
+    pageSize: 10,
     name: null,
-    phone: null
+    phone: null,
+    orderByColumn: undefined,
+    isAsc: undefined
   }
 });
 
@@ -104,9 +108,17 @@ const { queryParams } = toRefs(data);
 function getList() {
   loading.value = true;
   listPatient(queryParams.value).then(response => {
-    patientList.value = response.data;
+    patientList.value = response.rows;
+    total.value = response.total;
     loading.value = false;
   });
+}
+
+/** 排序触发事件 */
+function handleSortChange(column) {
+  queryParams.value.orderByColumn = column.prop;
+  queryParams.value.isAsc = column.order;
+  getList();
 }
 
 /** 搜索按钮操作 */

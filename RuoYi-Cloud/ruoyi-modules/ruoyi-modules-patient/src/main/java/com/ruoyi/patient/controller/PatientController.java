@@ -33,7 +33,10 @@ public class PatientController extends BaseController
     @GetMapping("/list")
     public ResultVO<List<Patient>> list(Patient patient)
     {
-        return ResultVO.success(patientService.selectPatientList(patient));
+        startPage();
+        startOrderBy();
+        List<Patient> list = patientService.selectPatientList(patient);
+        return ResultVO.success(list);
     }
 
     @GetMapping(value = "/{id}")

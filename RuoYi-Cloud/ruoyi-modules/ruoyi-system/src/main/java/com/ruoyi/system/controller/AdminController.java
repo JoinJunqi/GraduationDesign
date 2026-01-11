@@ -24,6 +24,7 @@ public class AdminController extends BaseController
     public ResultVO<List<SysUser>> list(SysUser user)
     {
         startPage();
+        startOrderBy();
         List<SysUser> list = userService.selectUserList(user);
         return ResultVO.success(list);
     }

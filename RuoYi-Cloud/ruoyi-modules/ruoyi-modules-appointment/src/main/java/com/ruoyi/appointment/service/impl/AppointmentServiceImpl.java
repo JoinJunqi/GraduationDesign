@@ -132,34 +132,70 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         String redisKey = getScheduleRedisKey(scheduleId);
         log.info("Checking Redis slots for key: {}", redisKey);
         
-        // 使用 Redis 递减操作 (原子性)
-        Long remaining = redisService.redisTemplate.opsForValue().decrement(redisKey);
-        log.info("Redis decrement result for key {}: {}", redisKey, remaining);
-        
-        if (remaining != null && remaining < 0) {
-            // 如果 decrement 返回负数，说明之前没有这个 key 或者已经没号了
-            // 尝试加载一次 (防止缓存过期导致的 -1)
+        // 获取 Redis 中的值（用于调试）
+        Object redisValue = redisService.getCacheObject(redisKey);
+        log.info("Current Redis value for key {}: {}", redisKey, redisValue);
+
+        // 先检查 Redis 中是否存在该 key 或者值是否有效
+        Long remaining;
+        if (redisValue == null) {
+            log.info("Redis key {} not found or value is null, loading from DB...", redisKey);
+            // 缓存不存在，从数据库加载
             ResultVO<Schedule> scheduleResult = remoteScheduleService.getById(scheduleId);
+            log.info("DB fetch result for schedule {}: {}", scheduleId, scheduleResult);
+            
             if (scheduleResult != null && scheduleResult.getData() != null) {
                 Schedule schedule = scheduleResult.getData();
-                if (schedule.getAvailableSlots() > 0) {
-                    // 重新设置 Redis (这里可能存在微小的并发问题，但比直接报错强)
-                    int newRemaining = schedule.getAvailableSlots() - 1;
-                    redisService.setCacheObject(redisKey, newRemaining, 24L, java.util.concurrent.TimeUnit.HOURS);
-                    remaining = (long) newRemaining;
-                } else {
-                    // 确实没号了，回退递减
-                    redisService.redisTemplate.opsForValue().increment(redisKey);
-                    log.warn("No slots available in Redis for schedule {}", scheduleId);
-                    throw new ServiceException("号源已满");
+                log.info("Schedule from DB: availableSlots={}, totalCapacity={}", 
+                         schedule.getAvailableSlots(), schedule.getTotalCapacity());
+                         
+                if (schedule.getAvailableSlots() == null || schedule.getAvailableSlots() <= 0) {
+                    log.warn("No slots available in DB for schedule {}", scheduleId);
+                    throw new ServiceException("对不起，该时段号源已满");
                 }
+                // 初始化缓存 (设置过期时间)
+                redisService.setCacheObject(redisKey, schedule.getAvailableSlots(), 24L, java.util.concurrent.TimeUnit.HOURS);
+                log.info("Redis cache initialized for key {} with value {}", redisKey, schedule.getAvailableSlots());
             } else {
-                // 排班不存在，回退递减
-                redisService.redisTemplate.opsForValue().increment(redisKey);
+                log.error("Schedule {} not found in DB", scheduleId);
                 throw new ServiceException("排班信息不存在");
             }
+        } else {
+            // 如果 redisValue 不为 null，但可能不是数字（比如之前的错误残留）
+            try {
+                String valStr = redisValue.toString();
+                if (Integer.parseInt(valStr) <= 0) {
+                    log.warn("Redis value for {} is <= 0: {}", redisKey, valStr);
+                    throw new ServiceException("对不起，该时段号源已满");
+                }
+            } catch (NumberFormatException e) {
+                log.error("Redis value for {} is not a valid number: {}", redisKey, redisValue);
+                // 重新加载缓存
+                redisService.deleteObject(redisKey);
+                return createAppointment(appointment); // 递归重试一次
+            }
+        }
+        
+        // 执行原子递减
+        try {
+            remaining = redisService.redisTemplate.opsForValue().decrement(redisKey);
+            log.info("Redis decrement result for key {}: {}", redisKey, remaining);
+        } catch (Exception e) {
+            log.error("Redis decrement failed for key {}", redisKey, e);
+            // 如果 Redis 递减失败（可能是序列化问题），尝试重新加载缓存
+            redisService.deleteObject(redisKey);
+            throw new ServiceException("系统繁忙，请重试 (Cache Error)");
+        }
+        
+        if (remaining != null && remaining < 0) {
+            // 递减后小于 0，说明刚才那一瞬间没号了
+            // 回退递减操作
+            redisService.redisTemplate.opsForValue().increment(redisKey);
+            log.warn("No slots available in Redis for schedule {}. Remaining was {}", scheduleId, remaining);
+            throw new ServiceException("对不起，该时段号源已满");
         } else if (remaining == null) {
-            throw new ServiceException("系统繁忙，请稍后再试");
+            log.error("Redis decrement returned null for key {}", redisKey);
+            throw new ServiceException("系统繁忙，请重试");
         }
 
         try {

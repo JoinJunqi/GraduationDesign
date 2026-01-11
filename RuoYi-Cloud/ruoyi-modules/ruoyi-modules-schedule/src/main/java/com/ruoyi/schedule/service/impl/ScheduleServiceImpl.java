@@ -105,18 +105,23 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateSchedule(Schedule schedule) {
-        // 检查排班冲突
-        Schedule oldSchedule = scheduleMapper.selectOne(new LambdaQueryWrapper<Schedule>()
-                .eq(Schedule::getDoctorId, schedule.getDoctorId())
-                .eq(Schedule::getWorkDate, schedule.getWorkDate())
-                .eq(Schedule::getTimeSlot, schedule.getTimeSlot()));
-        if (oldSchedule != null && !oldSchedule.getId().equals(schedule.getId())) {
-            throw new ServiceException("该医生在该时段已有其他排班");
+        // 检查排班冲突 (仅在修改了时间或医生时检查)
+        if (schedule.getDoctorId() != null && schedule.getWorkDate() != null && schedule.getTimeSlot() != null) {
+            Schedule oldSchedule = scheduleMapper.selectOne(new LambdaQueryWrapper<Schedule>()
+                    .eq(Schedule::getDoctorId, schedule.getDoctorId())
+                    .eq(Schedule::getWorkDate, schedule.getWorkDate())
+                    .eq(Schedule::getTimeSlot, schedule.getTimeSlot()));
+            if (oldSchedule != null && !oldSchedule.getId().equals(schedule.getId())) {
+                throw new ServiceException("该医生在该时段已有其他排班");
+            }
         }
         
         // 如果修改了总号源数，需要相应调整剩余号源数
         if (schedule.getTotalCapacity() != null || schedule.getAvailableSlots() != null) {
             Schedule current = super.getById(schedule.getId());
+            if (current == null) {
+                throw new ServiceException("排班不存在");
+            }
             
             // 如果是通过预约模块调用的 update (只更新 availableSlots)
             if (schedule.getAvailableSlots() != null && schedule.getTotalCapacity() == null) {
@@ -124,7 +129,13 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
                 redisService.setCacheObject(getRedisKey(schedule.getId()), schedule.getAvailableSlots(), 24L, TimeUnit.HOURS);
             } else if (schedule.getTotalCapacity() != null) {
                 // 如果是管理端修改总号源
-                int usedSlots = current.getTotalCapacity() - current.getAvailableSlots();
+                // 注意：这里需要考虑当前 Redis 中的实际占用情况，而不是数据库中的
+                Integer currentAvailable = redisService.getCacheObject(getRedisKey(schedule.getId()));
+                if (currentAvailable == null) {
+                    currentAvailable = current.getAvailableSlots();
+                }
+                
+                int usedSlots = current.getTotalCapacity() - currentAvailable;
                 if (schedule.getTotalCapacity() < usedSlots) {
                     throw new ServiceException("总号源数不能小于已预约人数 (" + usedSlots + ")");
                 }

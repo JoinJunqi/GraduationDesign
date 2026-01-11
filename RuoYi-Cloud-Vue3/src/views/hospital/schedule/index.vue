@@ -57,19 +57,19 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="scheduleList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="scheduleList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="ID" align="center" prop="id" sortable />
+      <el-table-column label="ID" align="center" prop="id" sortable="custom" />
       <el-table-column label="科室" align="center" prop="deptName" />
-      <el-table-column label="医生" align="center" prop="doctorName" sortable />
-      <el-table-column label="出诊日期" align="center" prop="workDate" width="120" sortable>
+      <el-table-column label="医生" align="center" prop="doctorName" sortable="custom" />
+      <el-table-column label="出诊日期" align="center" prop="workDate" width="120" sortable="custom">
         <template #default="scope">
           <span>{{ parseTime(scope.row.workDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="班次" align="center" prop="timeSlot" sortable />
-      <el-table-column label="总号源" align="center" prop="totalCapacity" sortable />
-      <el-table-column label="剩余号源" align="center" prop="availableSlots" sortable />
+      <el-table-column label="班次" align="center" prop="timeSlot" sortable="custom" />
+      <el-table-column label="总号源" align="center" prop="totalCapacity" sortable="custom" />
+      <el-table-column label="剩余号源" align="center" prop="availableSlots" sortable="custom" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:schedule:edit']">修改</el-button>
@@ -141,8 +141,12 @@ const title = ref("");
 const data = reactive({
   form: {},
   queryParams: {
+    pageNum: 1,
+    pageSize: 10,
     doctorName: null,
-    workDate: null
+    workDate: null,
+    orderByColumn: undefined,
+    isAsc: undefined
   },
   rules: {
     doctorId: [
@@ -165,11 +169,29 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data);
 
+/** 排序触发事件 */
+function handleSortChange(column) {
+  queryParams.value.orderByColumn = column.prop;
+  queryParams.value.isAsc = column.order;
+  getList();
+}
+
 /** 查询排班列表 */
 function getList() {
   loading.value = true;
   listSchedule(queryParams.value).then(response => {
-    scheduleList.value = response.data;
+    if (response.rows) {
+      scheduleList.value = response.rows;
+      total.value = response.total;
+    } else if (response.data) {
+      if (Array.isArray(response.data)) {
+        scheduleList.value = response.data;
+        total.value = response.data.length;
+      } else {
+        scheduleList.value = response.data.rows || [];
+        total.value = response.data.total || 0;
+      }
+    }
     loading.value = false;
   });
 }

@@ -38,6 +38,7 @@
           plain
           icon="Plus"
           @click="handleAdd"
+          v-if="isAdmin || isDoctor"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -47,6 +48,7 @@
           icon="Edit"
           :disabled="single"
           @click="handleUpdate"
+          v-if="isAdmin || isDoctor"
         >修改</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -56,20 +58,20 @@
           icon="Delete"
           :disabled="multiple"
           @click="handleDelete"
-          v-if="!isDoctor"
+          v-if="isAdmin"
         >删除</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="recordList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="recordList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="编号" align="center" prop="id" width="80" sortable />
-      <el-table-column label="患者姓名" align="center" prop="patientName" v-if="!isPatient" sortable />
-      <el-table-column label="就诊医生" align="center" prop="doctorName" v-if="!isDoctor" sortable />
+      <el-table-column label="编号" align="center" prop="id" width="80" sortable="custom" />
+      <el-table-column label="患者姓名" align="center" prop="patientName" v-if="!isPatient" sortable="custom" />
+      <el-table-column label="就诊医生" align="center" prop="doctorName" v-if="!isDoctor" sortable="custom" />
       <el-table-column label="科室" align="center" prop="deptName" />
       <el-table-column label="诊断结果" align="center" prop="diagnosis" show-overflow-tooltip />
-      <el-table-column label="就诊时间" align="center" prop="visitTime" width="180" sortable>
+      <el-table-column label="就诊时间" align="center" prop="visitTime" width="180" sortable="custom">
         <template #default="scope">
           <span>{{ parseTime(scope.row.visitTime) }}</span>
         </template>
@@ -77,8 +79,8 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="!isDoctor">删除</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="isAdmin || isDoctor">修改</el-button>
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="isAdmin">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -169,14 +171,25 @@ const title = ref("");
 const data = reactive({
   form: {},
   queryParams: {
+    pageNum: 1,
+    pageSize: 10,
     patientId: null,
     patientName: null,
     doctorName: null,
-    diagnosis: null
+    diagnosis: null,
+    orderByColumn: undefined,
+    isAsc: undefined
   }
 });
 
 const { queryParams, form } = toRefs(data);
+
+/** 排序触发事件 */
+function handleSortChange(column) {
+  queryParams.value.orderByColumn = column.prop;
+  queryParams.value.isAsc = column.order;
+  getList();
+}
 
 const rules = computed(() => ({
   appointmentId: [
@@ -198,33 +211,19 @@ function getList() {
     console.log('getList called with queryParams:', queryParams.value);
     loading.value = true;
     listRecord(queryParams.value).then(response => {
-        console.log('listRecord response:', response);
-        // 兼容多种返回格式
-        if (response.rows !== undefined && response.total !== undefined) {
-            // 标准 RuoYi 分页响应
+        if (response.rows) {
             recordList.value = response.rows;
             total.value = response.total;
-        } else if (response.data) {
-            if (Array.isArray(response.data)) {
-                recordList.value = response.data;
-                total.value = response.data.length;
-            } else if (response.data.rows) {
-                recordList.value = response.data.rows;
-                total.value = response.data.total;
-            } else {
-                recordList.value = [];
-                total.value = 0;
-            }
-        } else if (Array.isArray(response)) {
-            recordList.value = response;
-            total.value = response.length;
+        } else if (response.data && response.data.rows) {
+            recordList.value = response.data.rows;
+            total.value = response.data.total;
         } else {
             recordList.value = [];
             total.value = 0;
         }
         loading.value = false;
-    }).catch(error => {
-        console.error('listRecord error:', error);
+    }).catch(err => {
+        console.error('Failed to load records:', err);
         loading.value = false;
     });
 }

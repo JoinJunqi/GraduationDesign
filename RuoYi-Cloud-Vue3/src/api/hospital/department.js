@@ -9,6 +9,15 @@ export function listDepartment(query) {
   })
 }
 
+// 查询包含说明的科室列表
+export function listDepartmentWithIntro(query) {
+  return request({
+    url: '/ruoyi-hospital-department/department/listWithIntro',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询科室详细
 export function getDepartment(id) {
   return request({

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.department.mapper.DepartmentMapper">
+
+    <resultMap type="com.ruoyi.department.domain.Department" id="DepartmentResult">
+        <result property="id"    column="id"    />
+        <result property="name"    column="name"    />
+        <result property="createdAt"    column="created_at"    />
+        <result property="overview"    column="overview"    />
+    </resultMap>
+
+    <select id="selectDepartmentWithIntroList" resultMap="DepartmentResult">
+        SELECT d.*, di.overview
+        FROM department d
+        LEFT JOIN department_intro di ON d.id = di.dept_id
+        <where>
+            <if test="name != null and name != ''">
+                AND d.name LIKE CONCAT('%', #{name}, '%')
+            </if>
+        </where>
+        ORDER BY d.id ASC
+    </select>
+
+</mapper>

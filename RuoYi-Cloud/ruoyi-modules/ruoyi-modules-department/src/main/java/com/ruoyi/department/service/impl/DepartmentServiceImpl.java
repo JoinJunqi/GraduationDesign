@@ -21,6 +21,11 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
     }
 
     @Override
+    public List<Department> selectDepartmentWithIntroList(Department department) {
+        return baseMapper.selectDepartmentWithIntroList(department);
+    }
+
+    @Override
     public boolean insertDepartment(Department department) {
         // 检查名称唯一性
         Long count = baseMapper.selectCount(new LambdaQueryWrapper<Department>()

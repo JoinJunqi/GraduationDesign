@@ -56,19 +56,19 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="adminList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="adminList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="ID" align="center" prop="userId" />
-      <el-table-column label="登录账号" align="center" prop="userName" />
-      <el-table-column label="姓名" align="center" prop="nickName" />
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="ID" align="center" prop="userId" sortable="custom" />
+      <el-table-column label="登录账号" align="center" prop="userName" sortable="custom" />
+      <el-table-column label="姓名" align="center" prop="nickName" sortable="custom" />
+      <el-table-column label="状态" align="center" prop="status" sortable="custom">
         <template #default="scope">
           <el-tag :type="scope.row.status === '0' ? 'success' : 'danger'">
             {{ scope.row.status === '0' ? '启用' : '禁用' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+      <el-table-column label="创建时间" align="center" prop="createTime" width="180" sortable="custom">
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
@@ -128,7 +128,9 @@ const data = reactive({
   form: {},
   queryParams: {
     userName: null,
-    nickName: null
+    nickName: null,
+    orderByColumn: undefined,
+    isAsc: undefined
   },
   rules: {
     userName: [
@@ -170,6 +172,13 @@ function reset() {
     status: "0"
   };
   proxy.resetForm("adminRef");
+}
+
+/** 排序触发事件 */
+function handleSortChange(column) {
+  queryParams.value.orderByColumn = column.prop;
+  queryParams.value.isAsc = column.order;
+  getList();
 }
 
 /** 搜索按钮操作 */

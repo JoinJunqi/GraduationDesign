@@ -24,4 +24,8 @@ public class Department implements Serializable {
 
     /** 创建时间 */
     private Date createdAt;
+
+    /** 科室概述 (来自 department_intro) */
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    private String overview;
 }

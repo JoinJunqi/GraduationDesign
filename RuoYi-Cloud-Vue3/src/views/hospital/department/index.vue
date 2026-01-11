@@ -48,11 +48,11 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="departmentList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="departmentList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="ID" align="center" prop="id" />
-      <el-table-column label="科室名称" align="center" prop="name" />
-      <el-table-column label="创建时间" align="center" prop="createdAt" width="180">
+      <el-table-column label="ID" align="center" prop="id" sortable="custom" />
+      <el-table-column label="科室名称" align="center" prop="name" sortable="custom" />
+      <el-table-column label="创建时间" align="center" prop="createdAt" width="180" sortable="custom">
         <template #default="scope">
           <span>{{ parseTime(scope.row.createdAt) }}</span>
         </template>
@@ -99,7 +99,11 @@ const title = ref("");
 const data = reactive({
   form: {},
   queryParams: {
-    name: null
+    pageNum: 1,
+    pageSize: 10,
+    name: null,
+    orderByColumn: undefined,
+    isAsc: undefined
   },
   rules: {
     name: [
@@ -110,11 +114,29 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data);
 
+/** 排序触发事件 */
+function handleSortChange(column) {
+  queryParams.value.orderByColumn = column.prop;
+  queryParams.value.isAsc = column.order;
+  getList();
+}
+
 /** 查询科室列表 */
 function getList() {
   loading.value = true;
   listDepartment(queryParams.value).then(response => {
-    departmentList.value = response.data;
+    if (response.rows) {
+      departmentList.value = response.rows;
+      total.value = response.total;
+    } else if (response.data) {
+      if (Array.isArray(response.data)) {
+        departmentList.value = response.data;
+        total.value = response.data.length;
+      } else {
+        departmentList.value = response.data.rows || [];
+        total.value = response.data.total || 0;
+      }
+    }
     loading.value = false;
   });
 }

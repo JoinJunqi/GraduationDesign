@@ -50,9 +50,9 @@ const usePermissionStore = defineStore(
             const asyncRoutes = filterDynamicRoutes(dynamicRoutes)
             asyncRoutes.forEach(route => { router.addRoute(route) })
             
-            // 对于患者和医生，sidebarRouters 只包含业务菜单，不包含 constantRoutes
+            // 对于患者和医生，sidebarRouters 包含业务菜单和公共菜单（如首页）
             this.setRoutes(rewriteRoutes)
-            this.setSidebarRouters(sidebarRoutes) 
+            this.setSidebarRouters(constantRoutes.concat(sidebarRoutes)) 
             this.setDefaultRoutes(sidebarRoutes)
             this.setTopbarRoutes(defaultRoutes)
             resolve(rewriteRoutes)

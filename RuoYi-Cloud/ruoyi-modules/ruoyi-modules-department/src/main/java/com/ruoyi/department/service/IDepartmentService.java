@@ -11,6 +11,11 @@ public interface IDepartmentService extends IService<Department> {
     List<Department> selectDepartmentList(Department department);
 
     /**
+     * 查询包含说明的科室列表
+     */
+    List<Department> selectDepartmentWithIntroList(Department department);
+
+    /**
      * 新增科室
      */
     boolean insertDepartment(Department department);

@@ -20,6 +20,8 @@ public class AppointmentController extends BaseController
     @GetMapping("/list")
     public ResultVO<List<Appointment>> list(Appointment appointment)
     {
+        startPage();
+        startOrderBy();
         List<Appointment> list = appointmentService.selectAppointmentList(appointment);
         return ResultVO.success(list);
     }

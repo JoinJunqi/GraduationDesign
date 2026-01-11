@@ -20,6 +20,8 @@ public class ScheduleController extends BaseController
     @GetMapping("/list")
     public ResultVO<List<Schedule>> list(Schedule schedule)
     {
+        startPage();
+        startOrderBy();
         List<Schedule> list = scheduleService.selectScheduleList(schedule);
         return ResultVO.success(list);
     }

@@ -20,7 +20,16 @@ public class DepartmentController extends BaseController
     @GetMapping("/list")
     public ResultVO<List<Department>> list(Department department)
     {
+        startPage();
+        startOrderBy();
         List<Department> list = departmentService.selectDepartmentList(department);
+        return ResultVO.success(list);
+    }
+
+    @GetMapping("/listWithIntro")
+    public ResultVO<List<Department>> listWithIntro(Department department)
+    {
+        List<Department> list = departmentService.selectDepartmentWithIntroList(department);
         return ResultVO.success(list);
     }
 

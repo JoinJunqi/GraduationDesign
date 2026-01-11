@@ -57,24 +57,24 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="appointmentList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="appointmentList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="患者姓名" align="center" prop="patientName" sortable />
-      <el-table-column label="医生" align="center" prop="doctorName" />
-      <el-table-column label="就诊日期" align="center" prop="workDate" sortable>
+      <el-table-column label="患者姓名" align="center" prop="patientName" sortable="custom" />
+      <el-table-column label="医生" align="center" prop="doctorName" sortable="custom" />
+      <el-table-column label="就诊日期" align="center" prop="workDate" sortable="custom">
         <template #default="scope">
           <span>{{ parseTime(scope.row.workDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
       <el-table-column label="班次" align="center" prop="timeSlot" />
-      <el-table-column label="状态" align="center" prop="status" sortable>
+      <el-table-column label="状态" align="center" prop="status" sortable="custom">
         <template #default="scope">
           <el-tag :type="scope.row.status === '已完成' ? 'success' : (scope.row.status === '已取消' ? 'info' : 'warning')">
             {{ scope.row.status }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="预约时间" align="center" prop="bookedAt" width="180" sortable>
+      <el-table-column label="预约时间" align="center" prop="bookedAt" width="180" sortable="custom">
         <template #default="scope">
           <span>{{ parseTime(scope.row.bookedAt) }}</span>
         </template>
@@ -140,8 +140,12 @@ const title = ref("");
 const data = reactive({
   form: {},
   queryParams: {
+    pageNum: 1,
+    pageSize: 10,
     patientName: null,
-    status: null
+    status: null,
+    orderByColumn: undefined,
+    isAsc: undefined
   },
   rules: {
     patientId: [
@@ -160,6 +164,13 @@ const router = useRouter();
 /** 跳转到挂号页面 */
 function handleRegister() {
   router.push({ path: '/hospital/register' });
+}
+
+/** 排序触发事件 */
+function handleSortChange(column) {
+  queryParams.value.orderByColumn = column.prop;
+  queryParams.value.isAsc = column.order;
+  getList();
 }
 
 function getList() {

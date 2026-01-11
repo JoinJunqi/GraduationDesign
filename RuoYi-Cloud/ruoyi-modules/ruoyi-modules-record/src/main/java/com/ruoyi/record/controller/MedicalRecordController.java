@@ -32,6 +32,7 @@ public class MedicalRecordController extends BaseController
     {
         log.info("MedicalRecord list request received. Path: /record/list or /list, Params: {}", medicalRecord);
         startPage();
+        startOrderBy();
         List<MedicalRecord> list = medicalRecordService.selectMedicalRecordList(medicalRecord);
         return ResultVO.success(getDataTable(list));
     }

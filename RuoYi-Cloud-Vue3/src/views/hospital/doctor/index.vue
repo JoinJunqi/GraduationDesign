@@ -56,14 +56,14 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="doctorList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="doctorList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="ID" align="center" prop="id" />
-      <el-table-column label="姓名" align="center" prop="name" />
+      <el-table-column label="ID" align="center" prop="id" sortable="custom" />
+      <el-table-column label="姓名" align="center" prop="name" sortable="custom" />
       <el-table-column label="科室" align="center" prop="deptName" />
       <el-table-column label="职称" align="center" prop="title" />
-      <el-table-column label="账号" align="center" prop="username" />
-      <el-table-column label="状态" align="center" prop="isActive">
+      <el-table-column label="账号" align="center" prop="username" sortable="custom" />
+      <el-table-column label="状态" align="center" prop="isActive" sortable="custom">
         <template #default="scope">
           <el-tag :type="scope.row.isActive ? 'success' : 'danger'">
             {{ scope.row.isActive ? '在职' : '离职' }}
@@ -95,8 +95,12 @@ const multiple = ref(true);
 
 const data = reactive({
   queryParams: {
+    pageNum: 1,
+    pageSize: 10,
     name: null,
-    deptId: null
+    deptId: null,
+    orderByColumn: undefined,
+    isAsc: undefined
   }
 });
 
@@ -106,9 +110,17 @@ const { queryParams } = toRefs(data);
 function getList() {
   loading.value = true;
   listDoctor(queryParams.value).then(response => {
-    doctorList.value = response.data;
+    doctorList.value = response.rows;
+    total.value = response.total;
     loading.value = false;
   });
+}
+
+/** 排序触发事件 */
+function handleSortChange(column) {
+  queryParams.value.orderByColumn = column.prop;
+  queryParams.value.isAsc = column.order;
+  getList();
 }
 
 /** 搜索按钮操作 */

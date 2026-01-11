@@ -105,16 +105,9 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         } else if (roles.contains("doctor")) {
             log.info("Doctor inserting medical record, setting doctorId={}", userId);
             medicalRecord.setDoctorId(userId);
-        } else if (roles.contains("patient")) {
-            log.info("Patient inserting medical record, setting patientId={}", userId);
-            medicalRecord.setPatientId(userId);
-            // 患者不能直接新增包含诊断信息的病历
-            medicalRecord.setDiagnosis(null);
-            medicalRecord.setPrescription(null);
-            medicalRecord.setNotes(null);
         } else {
-            log.warn("Unknown role inserting medical record, default to patientId={}", userId);
-            medicalRecord.setPatientId(userId);
+            log.error("Patient or unknown role tried to insert medical record. User: {}, roles: {}", userId, roles);
+            throw new ServiceException("患者无权新增病历单，请联系医生操作");
         }
 
         // 如果有关联预约，从预约中获取患者ID以确保正确性
@@ -175,16 +168,8 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
             log.info("Doctor updating record details");
             return updateById(updateRecord);
         } else {
-            // 患者只能查看或修改有限信息（通常患者不应修改病历）
-            if (oldRecord.getPatientId() != null && !oldRecord.getPatientId().equals(userId)) {
-                log.error("Permission denied. Record patientId={}, current userId={}", oldRecord.getPatientId(), userId);
-                throw new ServiceException("无权修改他人病历");
-            }
-            medicalRecord.setDiagnosis(null);
-            medicalRecord.setPrescription(null);
-            medicalRecord.setNotes(null);
-            log.info("Patient updating record (limited fields)");
-            return updateById(medicalRecord);
+            log.error("Patient or unknown role tried to update medical record. User: {}, roles: {}", userId, roles);
+            throw new ServiceException("患者无权修改病历单");
         }
     }
 
@@ -199,20 +184,8 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
             return removeBatchByIds(Arrays.asList(ids));
         }
 
-        for (Long id : ids) {
-            MedicalRecord record = getById(id);
-            if (record == null) continue;
-            
-            if (roles.contains("doctor")) {
-                log.error("Doctor tried to delete record ID: {}", id);
-                throw new ServiceException("医生无权删除病历");
-            } else {
-                if (record.getPatientId() != null && !record.getPatientId().equals(userId)) {
-                    log.error("Permission denied. Record patientId={}, current userId={}", record.getPatientId(), userId);
-                    throw new ServiceException("无权删除他人病历");
-                }
-            }
-        }
-        return removeBatchByIds(Arrays.asList(ids));
+        // 既不是管理员，也不允许医生或患者删除
+        log.error("Unauthorized delete attempt by User: {}, roles: {}", userId, roles);
+        throw new ServiceException("无权删除病历单，仅管理员可执行此操作");
     }
 }
