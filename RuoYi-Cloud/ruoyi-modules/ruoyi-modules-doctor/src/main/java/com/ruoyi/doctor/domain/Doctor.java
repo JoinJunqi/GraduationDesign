@@ -45,6 +45,10 @@ public class Doctor implements Serializable {
     @TableField(exist = false)
     private String deptName;
 
+    /** 重置密码用 (不存库) */
+    @TableField(exist = false)
+    private String password;
+
     public Long getId() {
         return id;
     }
@@ -91,5 +95,13 @@ public class Doctor implements Serializable {
 
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }

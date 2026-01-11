@@ -12,4 +12,9 @@ public interface IHospitalNoticeService extends IService<HospitalNotice> {
      * 查询有效通知列表
      */
     List<HospitalNotice> selectActiveNoticeList();
+
+    /**
+     * 查询通知列表
+     */
+    List<HospitalNotice> selectNoticeList(HospitalNotice notice);
 }

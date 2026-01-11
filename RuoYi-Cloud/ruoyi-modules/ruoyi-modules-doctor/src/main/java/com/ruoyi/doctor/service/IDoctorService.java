@@ -56,4 +56,9 @@ public interface IDoctorService extends IService<Doctor> {
      * 修改密码
      */
     boolean updatePassword(String oldPassword, String newPassword);
+
+    /**
+     * 重置密码
+     */
+    boolean resetPassword(Long id, String password);
 }

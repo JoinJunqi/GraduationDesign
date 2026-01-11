@@ -11,7 +11,7 @@
  Target Server Version : 50732 (5.7.32-log)
  File Encoding         : 65001
 
- Date: 11/01/2026 22:09:45
+ Date: 12/01/2026 01:06:55
 */
 
 SET NAMES utf8mb4;
@@ -35,7 +35,7 @@ CREATE TABLE `admin`  (
 -- ----------------------------
 -- Records of admin
 -- ----------------------------
-INSERT INTO `admin` VALUES (1, 'admin', '$2a$10$GIMZcpW99EG0FWFA0oCdOOagK1QTYbtvpjvxtQlasgNcwxaE0D126', '系统管理员1', 1, '2026-01-08 19:54:43');
+INSERT INTO `admin` VALUES (1, 'admin', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '系统管理员1', 1, '2026-01-08 19:54:43');
 
 -- ----------------------------
 -- Table structure for appointment
@@ -45,16 +45,16 @@ CREATE TABLE `appointment`  (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '预约ID',
   `patient_id` int(11) NOT NULL COMMENT '患者ID',
   `schedule_id` int(11) NOT NULL COMMENT '排班ID',
-  `status` enum('待就诊','已取消','已完成','取消申请中') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '待就诊' COMMENT '状态',
+  `status` enum('待就诊','已取消','已完成') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '待就诊' COMMENT '状态',
   `booked_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '预约时间',
   `appointment_time` time NULL DEFAULT NULL COMMENT '预约时段（如08:00:00）',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_schedule_time`(`schedule_id`, `appointment_time`) USING BTREE,
+  UNIQUE INDEX `uk_schedule_unique`(`schedule_id`) USING BTREE,
   INDEX `patient_id`(`patient_id`) USING BTREE,
   INDEX `idx_appointment_time`(`appointment_time`) USING BTREE,
   CONSTRAINT `appointment_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `appointment_ibfk_2` FOREIGN KEY (`schedule_id`) REFERENCES `schedule` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1239 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '预约记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1240 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '预约记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of appointment
@@ -204,6 +204,7 @@ INSERT INTO `appointment` VALUES (1235, 1, 1651, '已取消', '2026-01-11 21:14:
 INSERT INTO `appointment` VALUES (1236, 1, 1575, '已取消', '2026-01-11 21:15:19', '17:15:00');
 INSERT INTO `appointment` VALUES (1237, 1, 9, '待就诊', '2026-01-11 21:46:13', '15:15:00');
 INSERT INTO `appointment` VALUES (1238, 1, 16, '待就诊', '2026-01-11 21:46:33', '08:30:00');
+INSERT INTO `appointment` VALUES (1239, 1, 8, '待就诊', '2026-01-11 22:42:08', '11:15:00');
 
 -- ----------------------------
 -- Table structure for department
@@ -563,7 +564,7 @@ INSERT INTO `schedule` VALUES (4, 1, '2026-01-10', '上午', 20, 20, '2026-01-09
 INSERT INTO `schedule` VALUES (5, 2, '2026-01-10', '下午', 15, 15, '2026-01-09 22:48:13');
 INSERT INTO `schedule` VALUES (6, 3, '2026-01-11', '全天', 10, 10, '2026-01-09 22:48:13');
 INSERT INTO `schedule` VALUES (7, 1, '2026-01-12', '上午', 20, 20, '2026-01-11 18:10:33');
-INSERT INTO `schedule` VALUES (8, 2, '2026-01-12', '上午', 20, 20, '2026-01-11 18:10:33');
+INSERT INTO `schedule` VALUES (8, 2, '2026-01-12', '上午', 20, 19, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (9, 3, '2026-01-12', '全天', 40, 39, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (10, 4, '2026-01-12', '全天', 40, 40, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (11, 5, '2026-01-12', '全天', 40, 40, '2026-01-11 18:10:33');
@@ -2276,14 +2277,14 @@ CREATE TABLE `sys_menu`  (
   INDEX `idx_menu_type`(`menu_type`) USING BTREE,
   INDEX `idx_visible`(`visible`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 15 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_menu
 -- ----------------------------
 INSERT INTO `sys_menu` VALUES (1, '医院管理', 0, 10, 'hospital', NULL, NULL, '', '1', '0', 'M', '0', '0', '', 'hospital', 'admin', '2026-01-08 16:14:48', '', NULL, '医院管理系统菜单');
 INSERT INTO `sys_menu` VALUES (2, '管理员管理', 1, 1, 'admin', 'hospital/admin/index', NULL, '', '1', '0', 'C', '0', '0', 'hospital:admin:list', 'user', 'admin', '2026-01-08 16:14:48', '', NULL, '');
-INSERT INTO `sys_menu` VALUES (3, '科室管理', 1, 2, 'department', 'hospital/department/index', NULL, '', '1', '0', 'C', '0', '0', 'hospital:department:list', 'tree', 'admin', '2026-01-08 16:14:48', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (3, '科室信息管理', 1, 2, 'department', 'hospital/department/index', NULL, '', '1', '0', 'C', '0', '0', 'hospital:department:list', 'tree', 'admin', '2026-01-08 16:14:48', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (4, '医生管理', 1, 3, 'doctor', 'hospital/doctor/index', NULL, '', '1', '0', 'C', '0', '0', 'hospital:doctor:list', 'peoples', 'admin', '2026-01-08 16:14:48', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (5, '患者管理', 1, 4, 'patient', 'hospital/patient/index', NULL, '', '1', '0', 'C', '0', '0', 'hospital:patient:list', 'user', 'admin', '2026-01-08 16:14:48', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (6, '排班管理', 1, 5, 'schedule', 'hospital/schedule/index', NULL, '', '1', '0', 'C', '0', '0', 'hospital:schedule:list', 'date', 'admin', '2026-01-08 16:14:48', '', NULL, '');
@@ -2295,6 +2296,7 @@ INSERT INTO `sys_menu` VALUES (11, '医生修改', 4, 3, '#', '', NULL, '', '1',
 INSERT INTO `sys_menu` VALUES (12, '医生删除', 4, 4, '#', '', NULL, '', '1', '0', 'F', '0', '0', 'hospital:doctor:remove', '#', 'admin', '2026-01-08 16:14:48', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (13, '预约挂号', 1, 8, 'register', 'hospital/appointment/register', NULL, '', '1', '0', 'C', '0', '0', 'hospital:appointment:register', 'edit', 'admin', '2026-01-10 20:06:16', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (14, '预约挂号', 1, 8, 'register', 'hospital/appointment/register', NULL, '', '1', '0', 'C', '0', '0', 'hospital:appointment:register', 'edit', 'admin', '2026-01-10 21:41:33', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (15, '医院信息管理', 1, 9, 'notice', 'hospital/notice/index', NULL, '', '1', '0', 'C', '0', '0', 'hospital:notice:list', 'message', 'admin', '2026-01-12 10:00:00', '', NULL, '');
 
 -- ----------------------------
 -- Procedure structure for GenerateAppointments

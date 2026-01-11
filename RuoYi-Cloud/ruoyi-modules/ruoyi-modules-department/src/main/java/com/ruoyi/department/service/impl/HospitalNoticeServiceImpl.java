@@ -24,4 +24,14 @@ public class HospitalNoticeServiceImpl extends ServiceImpl<HospitalNoticeMapper,
                 .orderByDesc(HospitalNotice::getIsTop)
                 .orderByDesc(HospitalNotice::getPublishTime));
     }
+
+    @Override
+    public List<HospitalNotice> selectNoticeList(HospitalNotice notice) {
+        return this.list(new LambdaQueryWrapper<HospitalNotice>()
+                .like(notice.getTitle() != null, HospitalNotice::getTitle, notice.getTitle())
+                .eq(notice.getNoticeType() != null, HospitalNotice::getNoticeType, notice.getNoticeType())
+                .eq(notice.getIsActive() != null, HospitalNotice::getIsActive, notice.getIsActive())
+                .orderByDesc(HospitalNotice::getIsTop)
+                .orderByDesc(HospitalNotice::getPublishTime));
+    }
 }

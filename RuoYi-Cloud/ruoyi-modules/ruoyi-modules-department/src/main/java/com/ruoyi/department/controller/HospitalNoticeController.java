@@ -22,10 +22,10 @@ public class HospitalNoticeController extends BaseController {
      * 查询有效通知列表
      */
     @GetMapping("/list")
-    public TableDataInfo list() {
+    public TableDataInfo list(HospitalNotice notice) {
         startPage();
         startOrderBy();
-        List<HospitalNotice> list = hospitalNoticeService.selectActiveNoticeList();
+        List<HospitalNotice> list = hospitalNoticeService.selectNoticeList(notice);
         return getDataTable(list);
     }
 
@@ -36,9 +36,34 @@ public class HospitalNoticeController extends BaseController {
     public ResultVO<HospitalNotice> getInfo(@PathVariable("id") Long id) {
         HospitalNotice notice = hospitalNoticeService.getById(id);
         if (notice != null) {
+            // 只有查询单个通知时才增加查看次数
             notice.setViewCount(notice.getViewCount() + 1);
             hospitalNoticeService.updateById(notice);
         }
         return ResultVO.success(notice);
+    }
+
+    /**
+     * 新增通知
+     */
+    @PostMapping
+    public ResultVO<Boolean> add(@RequestBody HospitalNotice notice) {
+        return ResultVO.success(hospitalNoticeService.save(notice));
+    }
+
+    /**
+     * 修改通知
+     */
+    @PutMapping
+    public ResultVO<Boolean> edit(@RequestBody HospitalNotice notice) {
+        return ResultVO.success(hospitalNoticeService.updateById(notice));
+    }
+
+    /**
+     * 删除通知
+     */
+    @DeleteMapping("/{ids}")
+    public ResultVO<Boolean> remove(@PathVariable Long[] ids) {
+        return ResultVO.success(hospitalNoticeService.removeBatchByIds(java.util.Arrays.asList(ids)));
     }
 }

@@ -104,4 +104,10 @@ public class DoctorController extends BaseController
     {
         return ResultVO.success(doctorService.updatePassword(oldPassword, newPassword));
     }
+
+    @PutMapping("/resetPwd")
+    public ResultVO<Boolean> resetPwd(@RequestBody Doctor doctor)
+    {
+        return ResultVO.success(doctorService.resetPassword(doctor.getId(), doctor.getPassword()));
+    }
 }

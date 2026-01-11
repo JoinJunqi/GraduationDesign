@@ -72,6 +72,7 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
+          <el-button link type="primary" icon="Key" @click="handleResetPwd(scope.row)" v-hasPermi="['hospital:doctor:edit']">重置密码</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:doctor:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hospital:doctor:remove']">删除</el-button>
         </template>
@@ -89,7 +90,7 @@
 </template>
 
 <script setup name="Doctor">
-import { listDoctor, delDoctor } from "@/api/hospital/doctor.js";
+import { listDoctor, delDoctor, resetDoctorPwd } from "@/api/hospital/doctor.js";
 
 const { proxy } = getCurrentInstance();
 const router = useRouter();
@@ -159,6 +160,21 @@ function handleAdd() {
 function handleUpdate(row) {
   const id = row.id || ids.value;
   router.push("/hospital/doctor/edit/" + id);
+}
+
+/** 重置密码按钮操作 */
+function handleResetPwd(row) {
+  proxy.$prompt('请输入"' + row.name + '"的新密码', "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    closeOnClickModal: false,
+    inputPattern: /^.{5,20}$/,
+    inputErrorMessage: "密码长度需在 5 到 20 个字符之间",
+  }).then(({ value }) => {
+    resetDoctorPwd(row.id, value).then(response => {
+      proxy.$modal.msgSuccess("修改成功，新密码为：" + value);
+    });
+  }).catch(() => {});
 }
 
 /** 删除按钮操作 */

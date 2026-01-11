@@ -72,3 +72,16 @@ export function updateDoctorPwd(oldPassword, newPassword) {
     params: data
   })
 }
+
+// 重置医生密码（管理员使用）
+export function resetDoctorPwd(id, password) {
+  const data = {
+    id,
+    password
+  }
+  return request({
+    url: '/ruoyi-hospital-doctor/doctor/resetPwd',
+    method: 'put',
+    data: data
+  })
+}

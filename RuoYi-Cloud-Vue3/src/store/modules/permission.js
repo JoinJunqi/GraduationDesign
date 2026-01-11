@@ -63,6 +63,19 @@ const usePermissionStore = defineStore(
           getRouters().then(res => {
             let menuData = res.data
             
+            // 移除管理员界面的“预约挂号”功能入口（预约挂号是患者端功能）
+            menuData = menuData.filter(route => {
+              if (route.path === '/hospital' || route.path === 'hospital') {
+                if (route.children) {
+                  route.children = route.children.filter(child => 
+                    child.path !== 'register' && child.name !== 'Register' && 
+                    child.meta?.title !== '预约挂号'
+                  );
+                }
+              }
+              return true;
+            });
+            
             const sdata = JSON.parse(JSON.stringify(menuData))
             const rdata = JSON.parse(JSON.stringify(menuData))
             const defaultData = JSON.parse(JSON.stringify(menuData))

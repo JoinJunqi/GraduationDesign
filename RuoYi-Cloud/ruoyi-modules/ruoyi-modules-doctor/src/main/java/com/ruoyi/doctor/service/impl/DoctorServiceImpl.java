@@ -150,4 +150,12 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
         doctor.setPasswordHash(SecurityUtils.encryptPassword(newPassword));
         return updateById(doctor);
     }
+
+    @Override
+    public boolean resetPassword(Long id, String password) {
+        Doctor doctor = new Doctor();
+        doctor.setId(id);
+        doctor.setPasswordHash(SecurityUtils.encryptPassword(password));
+        return updateById(doctor);
+    }
 }

@@ -127,7 +127,7 @@
 </template>
 
 <script setup name="Index">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import useUserStore from '@/store/modules/user'
 import { parseTime } from '@/utils/ruoyi'
@@ -143,12 +143,20 @@ const noticeList = ref([])
 const noticeVisible = ref(false)
 const currentNotice = ref({})
 
-const functionList = [
-  { title: '预约挂号', icon: 'Calendar', path: '/hospital/register', color: '#409EFF' },
-  { title: '我的预约', icon: 'List', path: '/hospital/appointment', color: '#67C23A' },
-  { title: '我的病历', icon: 'Form', path: '/hospital/record', color: '#E6A23C' },
-  { title: '个人中心', icon: 'User', path: '/user/profile', color: '#F56C6C' }
-]
+const loginType = userStore.loginType
+
+const functionList = computed(() => {
+  const allFunctions = [
+    { title: '预约挂号', icon: 'Calendar', path: '/hospital/register', color: '#409EFF', roles: ['patient'] },
+    { title: '我的预约', icon: 'List', path: '/hospital/appointment', color: '#67C23A', roles: ['patient', 'doctor'] },
+    { title: '我的病历', icon: 'Form', path: '/hospital/record', color: '#E6A23C', roles: ['patient', 'doctor'] },
+    { title: '个人中心', icon: 'User', path: '/user/profile', color: '#F56C6C', roles: ['admin', 'doctor', 'patient'] },
+    { title: '科室管理', icon: 'OfficeBuilding', path: '/hospital/department', color: '#409EFF', roles: ['admin'] },
+    { title: '医生管理', icon: 'UserFilled', path: '/hospital/doctor', color: '#67C23A', roles: ['admin'] },
+    { title: '通知管理', icon: 'Message', path: '/hospital/notice', color: '#E6A23C', roles: ['admin'] }
+  ]
+  return allFunctions.filter(item => item.roles.includes(loginType))
+})
 
 onMounted(() => {
   getDeptList()

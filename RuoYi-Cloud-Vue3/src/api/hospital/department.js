@@ -51,3 +51,20 @@ export function delDepartment(id) {
     method: 'delete'
   })
 }
+
+// 获取科室说明
+export function getDepartmentIntro(deptId) {
+  return request({
+    url: '/ruoyi-hospital-department/department/intro/' + deptId,
+    method: 'get'
+  })
+}
+
+// 保存科室说明
+export function saveDepartmentIntro(data) {
+  return request({
+    url: '/ruoyi-hospital-department/department/intro',
+    method: 'post',
+    data: data
+  })
+}
