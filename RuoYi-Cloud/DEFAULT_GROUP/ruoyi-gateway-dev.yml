@@ -1,0 +1,92 @@
+# Spring Cloud Gateway 配置
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          lowerCaseServiceId: true
+          enabled: true
+      routes:
+        # 认证中心
+        - id: ruoyi-auth
+          uri: lb://ruoyi-auth
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=1
+        # 系统模块
+        - id: ruoyi-system
+          uri: lb://ruoyi-system
+          predicates:
+            - Path=/system/**
+          filters:
+            - StripPrefix=1
+        # 代码生成
+        - id: ruoyi-gen
+          uri: lb://ruoyi-gen
+          predicates:
+            - Path=/code/**
+          filters:
+            - StripPrefix=1
+        # 定时任务
+        - id: ruoyi-job
+          uri: lb://ruoyi-job
+          predicates:
+            - Path=/schedule/job/**
+          filters:
+            - StripPrefix=1
+        # 医院科室模块
+        - id: ruoyi-hospital-department
+          uri: lb://ruoyi-hospital-department
+          predicates:
+            - Path=/ruoyi-hospital-department/**
+          filters:
+            - StripPrefix=1
+        # 医院医生模块
+        - id: ruoyi-hospital-doctor
+          uri: lb://ruoyi-hospital-doctor
+          predicates:
+            - Path=/ruoyi-hospital-doctor/**
+          filters:
+            - StripPrefix=1
+        # 医院排班模块
+        - id: ruoyi-hospital-schedule
+          uri: lb://ruoyi-hospital-schedule
+          predicates:
+            - Path=/ruoyi-hospital-schedule/**
+          filters:
+            - StripPrefix=1
+        # 医院预约模块
+        - id: ruoyi-hospital-appointment
+          uri: lb://ruoyi-hospital-appointment
+          predicates:
+            - Path=/ruoyi-hospital-appointment/**
+          filters:
+            - StripPrefix=1
+        # 医院患者模块
+        - id: ruoyi-hospital-patient
+          uri: lb://ruoyi-hospital-patient
+          predicates:
+            - Path=/ruoyi-hospital-patient/**
+          filters:
+            - StripPrefix=1
+        # 医院病历模块
+        - id: ruoyi-hospital-record
+          uri: lb://ruoyi-hospital-record
+          predicates:
+            - Path=/ruoyi-hospital-record/**
+          filters:
+            - StripPrefix=1
+
+# 安全配置
+security:
+  ignore:
+    whites:
+      - "/auth/logout"
+      - "/auth/login"
+      - "/auth/register"
+      - "/code"
+      - "/ruoyi-hospital-patient/patient/login"
+      - "/ruoyi-hospital-patient/patient/register"
+      - "/ruoyi-hospital-doctor/doctor/login"
+      - "/ruoyi-hospital-*/**" # 关键：确保医院模块的所有接口在未登录时也能被正确识别（鉴权由模块内部控制）

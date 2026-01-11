@@ -49,8 +49,10 @@ const usePermissionStore = defineStore(
             const defaultRoutes = filterAsyncRouter(defaultData)
             const asyncRoutes = filterDynamicRoutes(dynamicRoutes)
             asyncRoutes.forEach(route => { router.addRoute(route) })
+            
+            // 对于患者和医生，sidebarRouters 只包含业务菜单，不包含 constantRoutes
             this.setRoutes(rewriteRoutes)
-            this.setSidebarRouters(constantRoutes.concat(sidebarRoutes))
+            this.setSidebarRouters(sidebarRoutes) 
             this.setDefaultRoutes(sidebarRoutes)
             this.setTopbarRoutes(defaultRoutes)
             resolve(rewriteRoutes)
@@ -87,14 +89,14 @@ const usePermissionStore = defineStore(
               redirect: 'noRedirect',
               component: 'Layout',
               alwaysShow: true,
-              meta: { title: '医院服务', icon: 'hospital', noCache: false, link: null },
+              meta: { title: '医疗服务', icon: 'hospital', noCache: false, link: null },
               children: [
                 {
                   name: 'Register',
                   path: 'register',
                   hidden: false,
                   component: 'hospital/appointment/register',
-                  meta: { title: '立即挂号', icon: 'edit', noCache: false, link: null }
+                  meta: { title: '预约挂号', icon: 'edit', noCache: false, link: null }
                 },
                 {
                   name: 'Appointment',

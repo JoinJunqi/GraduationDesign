@@ -71,28 +71,43 @@
 </template>
 
 <script setup name="Profile">
+import { ref, reactive, onMounted, computed } from 'vue';
 import userAvatar from "./userAvatar";
 import userInfo from "./userInfo";
 import resetPwd from "./resetPwd";
-import { getUserProfile } from "@/api/system/user";
+import { getInfo } from "@/api/login";
 import useUserStore from "@/store/modules/user";
 
 const userStore = useUserStore();
 const activeTab = ref("userinfo");
-const loginType = userStore.loginType;
+const loginType = computed(() => userStore.loginType);
 const state = reactive({
   user: {},
-  roleGroup: {},
-  postGroup: {}
+  roleGroup: "",
+  postGroup: ""
 });
 
 function getUser() {
-  getUserProfile().then(response => {
-    state.user = response.data;
-    state.roleGroup = response.roleGroup;
-    state.postGroup = response.postGroup;
+  getInfo().then(response => {
+    const data = response.data;
+    if (loginType.value === 'patient') {
+      state.user = data.patient || {};
+      state.roleGroup = "患者";
+    } else if (loginType.value === 'doctor') {
+      state.user = data.doctor || {};
+      state.roleGroup = "医生";
+    } else {
+      state.user = data.user || data;
+      if (data.roles && data.roles.length > 0) {
+        state.roleGroup = data.roles.join(" / ");
+      } else {
+        state.roleGroup = "无角色";
+      }
+    }
   });
 };
 
-getUser();
+onMounted(() => {
+  getUser();
+});
 </script>

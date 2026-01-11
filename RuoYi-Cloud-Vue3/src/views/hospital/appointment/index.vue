@@ -1,10 +1,10 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="患者ID" prop="patientId">
+      <el-form-item label="患者姓名" prop="patientName">
         <el-input
-          v-model="queryParams.patientId"
-          placeholder="请输入患者ID"
+          v-model="queryParams.patientName"
+          placeholder="请输入患者姓名"
           clearable
           @keyup.enter="handleQuery"
         />
@@ -29,7 +29,8 @@
           plain
           icon="Plus"
           @click="handleRegister"
-        >立即挂号</el-button>
+          v-if="isPatient"
+        >预约挂号</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
@@ -38,6 +39,7 @@
           icon="Edit"
           :disabled="single"
           @click="handleUpdate"
+          v-if="!isPatient"
           v-hasPermi="['hospital:appointment:edit']"
         >修改</el-button>
       </el-col>
@@ -48,6 +50,7 @@
           icon="Delete"
           :disabled="multiple"
           @click="handleDelete"
+          v-if="!isPatient"
           v-hasPermi="['hospital:appointment:remove']"
         >删除</el-button>
       </el-col>
@@ -56,8 +59,7 @@
 
     <el-table v-loading="loading" :data="appointmentList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="ID" align="center" prop="id" />
-      <el-table-column label="患者" align="center" prop="patientName" />
+      <el-table-column label="患者姓名" align="center" prop="patientName" />
       <el-table-column label="医生" align="center" prop="doctorName" />
       <el-table-column label="就诊日期" align="center" prop="workDate">
         <template #default="scope">
@@ -79,9 +81,9 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:appointment:edit']">修改</el-button>
-          <el-button link type="danger" icon="CircleClose" @click="handleCancel(scope.row)" v-if="scope.row.status === '待就诊'">取消</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hospital:appointment:remove']">删除</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="!isPatient" v-hasPermi="['hospital:appointment:edit']">修改</el-button>
+          <el-button link type="danger" icon="CircleClose" @click="handleCancel(scope.row)" v-if="scope.row.status === '待就诊'">取消预约</el-button>
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="!isPatient" v-hasPermi="['hospital:appointment:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -114,11 +116,16 @@
 </template>
 
 <script setup name="Appointment">
-import { ref, reactive, toRefs, getCurrentInstance } from 'vue';
+import { ref, reactive, toRefs, getCurrentInstance, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { listAppointment, getAppointment, delAppointment, addAppointment, updateAppointment, cancelAppointment } from "@/api/hospital/appointment";
+import { listAppointment, getAppointment, delAppointment, addAppointment, updateAppointment, cancelAppointment } from "@/api/hospital/appointment.js";
+import { parseTime } from "@/utils/ruoyi";
+import useUserStore from "@/store/modules/user";
 
 const { proxy } = getCurrentInstance();
+const userStore = useUserStore();
+const loginType = computed(() => userStore.loginType);
+const isPatient = computed(() => loginType.value === 'patient');
 
 const appointmentList = ref([]);
 const open = ref(false);
@@ -127,12 +134,13 @@ const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
 const multiple = ref(true);
+const total = ref(0);
 const title = ref("");
 
 const data = reactive({
   form: {},
   queryParams: {
-    patientId: null,
+    patientName: null,
     status: null
   },
   rules: {
@@ -151,17 +159,45 @@ const router = useRouter();
 
 /** 跳转到挂号页面 */
 function handleRegister() {
-  // 如果数据库中配置了动态路由，跳转到对应的路径
-  // 假设挂号页面在 /hospital/appointment/register 或类似路径
-  router.push({ path: '/hospital/appointment/register' });
+  router.push({ path: '/hospital/register' });
 }
+
 function getList() {
   loading.value = true;
   listAppointment(queryParams.value).then(response => {
-    appointmentList.value = response.data;
+    // 兼容多种返回格式
+    if (response.rows !== undefined && response.total !== undefined) {
+      // 标准 RuoYi 分页响应
+      appointmentList.value = response.rows;
+      total.value = response.total;
+    } else if (response.data) {
+      if (Array.isArray(response.data)) {
+        appointmentList.value = response.data;
+        total.value = response.data.length;
+      } else if (response.data.rows) {
+        appointmentList.value = response.data.rows;
+        total.value = response.data.total;
+      } else {
+        appointmentList.value = [];
+        total.value = 0;
+      }
+    } else if (Array.isArray(response)) {
+      appointmentList.value = response;
+      total.value = response.length;
+    } else {
+      appointmentList.value = [];
+      total.value = 0;
+    }
+    loading.value = false;
+  }).catch(error => {
+    console.error("Failed to fetch appointments:", error);
     loading.value = false;
   });
 }
+
+onMounted(() => {
+  getList();
+});
 
 /** 取消按钮 */
 function cancel() {

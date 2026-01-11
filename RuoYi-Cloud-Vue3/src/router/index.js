@@ -61,6 +61,7 @@ export const constantRoutes = [
     path: '',
     component: Layout,
     redirect: '/index',
+    hidden: true,
     children: [
       {
         path: '/index',
@@ -123,19 +124,6 @@ export const constantRoutes = [
       }
     ]
   },
-  {
-    path: '/hospital/appointment',
-    component: Layout,
-    hidden: true,
-    children: [
-      {
-        path: 'register',
-        component: () => import('@/views/hospital/appointment/register'),
-        name: 'AppointmentRegister',
-        meta: { title: '预约挂号', activeMenu: '/hospital/appointment' }
-      }
-    ]
-  }
 ]
 
 // 动态路由，基于用户权限动态去加载

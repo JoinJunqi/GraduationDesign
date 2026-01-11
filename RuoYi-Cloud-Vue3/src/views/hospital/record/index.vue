@@ -141,7 +141,8 @@
 
 <script setup name="Record">
 import { getCurrentInstance, computed, ref, reactive, toRefs, onMounted } from 'vue';
-import { listRecord, getRecord, delRecord, addRecord, updateRecord } from "@/api/hospital/record";
+import { listRecord, getRecord, delRecord, addRecord, updateRecord } from "@/api/hospital/record.js";
+import { parseTime } from "@/utils/ruoyi";
 import useUserStore from "@/store/modules/user";
 
 console.log('Record index component setup started');
@@ -168,6 +169,7 @@ const title = ref("");
 const data = reactive({
   form: {},
   queryParams: {
+    patientId: null,
     patientName: null,
     doctorName: null,
     diagnosis: null
@@ -197,20 +199,23 @@ function getList() {
     loading.value = true;
     listRecord(queryParams.value).then(response => {
         console.log('listRecord response:', response);
-        // 如果后端返回的是 ResultVO，列表数据在 data 字段中
-        if (response.data) {
-            // 兼容 TableDataInfo 结构 (data.rows 和 data.total)
-            if (response.data.rows !== undefined) {
-                recordList.value = response.data.rows;
-                total.value = response.data.total || 0;
-            } else {
-                // 兼容直接返回数组的情况
+        // 兼容多种返回格式
+        if (response.rows !== undefined && response.total !== undefined) {
+            // 标准 RuoYi 分页响应
+            recordList.value = response.rows;
+            total.value = response.total;
+        } else if (response.data) {
+            if (Array.isArray(response.data)) {
                 recordList.value = response.data;
-                total.value = response.total || response.data.length || 0;
+                total.value = response.data.length;
+            } else if (response.data.rows) {
+                recordList.value = response.data.rows;
+                total.value = response.data.total;
+            } else {
+                recordList.value = [];
+                total.value = 0;
             }
-            console.log('recordList set to:', recordList.value);
         } else if (Array.isArray(response)) {
-            // 兼容直接返回数组的情况
             recordList.value = response;
             total.value = response.length;
         } else {

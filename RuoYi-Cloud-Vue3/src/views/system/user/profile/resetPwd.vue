@@ -17,9 +17,15 @@
 </template>
 
 <script setup>
-import { updateUserPwd } from "@/api/system/user";
+import { getCurrentInstance, reactive, ref, computed } from "vue";
+import { updateUserPwd } from "@/api/system/user.js";
+import { updatePatientPwd } from "@/api/hospital/patient.js";
+import { updateDoctorPwd } from "@/api/hospital/doctor.js";
+import useUserStore from "@/store/modules/user";
 
 const { proxy } = getCurrentInstance();
+const userStore = useUserStore();
+const loginType = computed(() => userStore.loginType);
 
 const user = reactive({
   oldPassword: "",
@@ -45,7 +51,14 @@ const rules = ref({
 function submit() {
   proxy.$refs.pwdRef.validate(valid => {
     if (valid) {
-      updateUserPwd(user.oldPassword, user.newPassword).then(response => {
+      let updatePwdApi = updateUserPwd;
+      if (loginType.value === 'patient') {
+        updatePwdApi = updatePatientPwd;
+      } else if (loginType.value === 'doctor') {
+        updatePwdApi = updateDoctorPwd;
+      }
+      
+      updatePwdApi(user.oldPassword, user.newPassword).then(response => {
         proxy.$modal.msgSuccess("修改成功");
       });
     }

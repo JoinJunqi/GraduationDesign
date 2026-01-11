@@ -28,7 +28,10 @@
 </template>
 
 <script setup>
-import { updateUserProfile } from "@/api/system/user";
+import { getCurrentInstance, ref, computed } from "vue";
+import { updateUserProfile } from "@/api/system/user.js";
+import { updatePatientProfile } from "@/api/hospital/patient.js";
+import { updateDoctorProfile } from "@/api/hospital/doctor.js";
 import useUserStore from "@/store/modules/user";
 
 const props = defineProps({
@@ -39,7 +42,7 @@ const props = defineProps({
 
 const userStore = useUserStore();
 const { proxy } = getCurrentInstance();
-const loginType = userStore.loginType;
+const loginType = computed(() => userStore.loginType);
 
 const rules = ref({
   nickName: [{ required: true, message: "用户昵称不能为空", trigger: "blur" }],
@@ -54,7 +57,14 @@ const rules = ref({
 function submit() {
   proxy.$refs.userRef.validate(valid => {
     if (valid) {
-      updateUserProfile(props.user).then(response => {
+      let updateApi = updateUserProfile;
+      if (loginType.value === 'patient') {
+        updateApi = updatePatientProfile;
+      } else if (loginType.value === 'doctor') {
+        updateApi = updateDoctorProfile;
+      }
+      
+      updateApi(props.user).then(response => {
         proxy.$modal.msgSuccess("修改成功");
       });
     }

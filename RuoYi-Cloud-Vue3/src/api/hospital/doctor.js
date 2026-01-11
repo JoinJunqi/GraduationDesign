@@ -50,3 +50,25 @@ export function listDoctorByDept(deptId) {
     method: 'get'
   })
 }
+
+// 修改医生个人信息
+export function updateDoctorProfile(data) {
+  return request({
+    url: '/ruoyi-hospital-doctor/doctor/profile',
+    method: 'put',
+    data: data
+  })
+}
+
+// 修改医生密码
+export function updateDoctorPwd(oldPassword, newPassword) {
+  const data = {
+    oldPassword,
+    newPassword
+  }
+  return request({
+    url: '/ruoyi-hospital-doctor/doctor/profile/updatePwd',
+    method: 'put',
+    params: data
+  })
+}

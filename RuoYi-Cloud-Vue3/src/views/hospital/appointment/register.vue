@@ -111,10 +111,10 @@
 <script setup name="AppointmentRegister">
 import { ref, onMounted, getCurrentInstance } from 'vue';
 import { useRouter } from 'vue-router';
-import { listDepartment } from "@/api/hospital/department";
-import { listDoctorByDept } from "@/api/hospital/doctor";
-import { listSchedule } from "@/api/hospital/schedule";
-import { addAppointment } from "@/api/hospital/appointment";
+import { listDepartment } from "@/api/hospital/department.js";
+import { listDoctorByDept } from "@/api/hospital/doctor.js";
+import { listSchedule } from "@/api/hospital/schedule.js";
+import { addAppointment } from "@/api/hospital/appointment.js";
 import { parseTime } from "@/utils/ruoyi";
 import { ElMessage } from 'element-plus';
 
@@ -138,7 +138,7 @@ function getDeptList() {
   loading.value = true;
   listDepartment().then(response => {
     console.log('Department list response:', response);
-    departmentList.value = response.data || [];
+    departmentList.value = response.rows || response.data || (Array.isArray(response) ? response : []);
     loading.value = false;
   }).catch(err => {
     console.error('Failed to fetch departments:', err);
@@ -160,7 +160,7 @@ function getDoctorList(deptId) {
   loading.value = true;
   listDoctorByDept(deptId).then(response => {
     console.log('Doctor list response:', response);
-    doctorList.value = response.data || [];
+    doctorList.value = response.rows || response.data || (Array.isArray(response) ? response : []);
     loading.value = false;
   }).catch(err => {
     console.error('Failed to fetch doctors:', err);
@@ -185,7 +185,7 @@ function getScheduleList(doctorId) {
   };
   listSchedule(query).then(response => {
     console.log('Schedule list response:', response);
-    const rawList = response.data || [];
+    const rawList = response.rows || response.data || (Array.isArray(response) ? response : []);
     const today = new Date().toISOString().split('T')[0];
     scheduleList.value = rawList.filter(s => s.workDate >= today);
     loading.value = false;

@@ -13,10 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.ruoyi.common.security.utils.SecurityUtils;
 import com.ruoyi.system.api.model.LoginUser;
@@ -56,19 +53,32 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     @Override
     public List<Appointment> selectAppointmentList(Appointment appointment) {
         Long userId = SecurityUtils.getUserId();
+        Set<String> roles = SecurityUtils.getLoginUser().getRoles();
+        log.info("selectAppointmentList - userId: {}, roles: {}, appointment: {}", userId, roles, appointment);
+
         if (hasRole("admin")) {
             // 管理员可以看所有
+            log.info("Admin access: viewing all appointments");
         } else if (hasRole("doctor")) {
             // 医生看自己的患者预约
+            log.info("Doctor access: filtering by doctorId={}", userId);
             appointment.setDoctorId(userId);
         } else if (hasRole("patient")) {
             // 患者看自己的预约
+            log.info("Patient access: filtering by patientId={}", userId);
             appointment.setPatientId(userId);
         } else {
             // 默认患者视角
+            log.info("Default/Other access: filtering by patientId={}", userId);
             appointment.setPatientId(userId);
         }
-        return appointmentMapper.selectAppointmentList(appointment);
+        
+        log.info("Executing selectAppointmentList with params: patientId={}, doctorId={}, patientName={}, status={}", 
+                 appointment.getPatientId(), appointment.getDoctorId(), appointment.getPatientName(), appointment.getStatus());
+                 
+        List<Appointment> list = appointmentMapper.selectAppointmentList(appointment);
+        log.info("selectAppointmentList result size: {}", list != null ? list.size() : 0);
+        return list;
     }
 
     @Override

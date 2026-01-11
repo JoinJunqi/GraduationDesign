@@ -53,6 +53,7 @@
 </template>
 
 <script setup>
+import { getCurrentInstance, ref, reactive } from "vue";
 import "vue-cropper/dist/index.css";
 import { VueCropper } from "vue-cropper";
 import useUserStore from "@/store/modules/user";

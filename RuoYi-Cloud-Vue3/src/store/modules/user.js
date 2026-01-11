@@ -81,31 +81,35 @@ const useUserStore = defineStore(
       getInfo() {
         return new Promise((resolve, reject) => {
           getInfo().then(res => {
-            let user = res.data || res.user
-            // 兼容 RuoYi 标准返回和自定义模块返回
-            if (res.user) {
-                user = res.user
+            const data = res.data || res;
+            let user = data.user || data;
+            
+            // 针对患者和医生的特殊处理
+            if (this.loginType === 'patient' && data.patient) {
+                user = data.patient;
+            } else if (this.loginType === 'doctor' && data.doctor) {
+                user = data.doctor;
             }
             
             const avatar = (isEmpty(user.avatar)) ? defAva : user.avatar
             
             // 简单处理权限，如果是患者或医生，给予默认权限
             if (this.loginType === 'patient' || this.loginType === 'doctor') {
-                this.roles = ['ROLE_USER']
-                this.permissions = ['*:*:*'] // 暂时给全部权限，后续细化
+                this.roles = data.roles || ['ROLE_USER']
+                this.permissions = data.permissions || ['*:*:*'] // 暂时给全部权限，后续细化
                 this.id = user.id
-                this.name = user.username
+                this.name = user.username || user.name
                 this.nickName = user.name
             } else {
-                if (res.roles && res.roles.length > 0) {
-                  this.roles = res.roles
-                  this.permissions = res.permissions
+                if (data.roles && data.roles.length > 0) {
+                  this.roles = data.roles
+                  this.permissions = data.permissions
                 } else {
                   this.roles = ['ROLE_DEFAULT']
                 }
-                this.id = user.userId
-                this.name = user.userName
-                this.nickName = user.nickName
+                this.id = user.userId || user.id
+                this.name = user.userName || user.username
+                this.nickName = user.nickName || user.name
             }
             
             this.avatar = avatar

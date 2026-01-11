@@ -33,9 +33,10 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
      */
     private boolean isAdminUser() {
         LoginUser loginUser = SecurityUtils.getLoginUser();
-        if (loginUser == null) return SecurityUtils.isAdmin(SecurityUtils.getUserId());
+        if (loginUser == null) return false;
         Set<String> roles = loginUser.getRoles();
-        return roles != null && (roles.contains("admin") || roles.contains("ROLE_ADMIN")) || SecurityUtils.isAdmin(loginUser.getUserid());
+        // 严格检查角色标识，不再仅依赖ID=1判断，因为不同表的ID可能冲突
+        return roles != null && (roles.contains("admin") || roles.contains("ROLE_ADMIN"));
     }
 
     @Override
@@ -43,8 +44,8 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         Long userId = SecurityUtils.getUserId();
         Set<String> roles = getRoles();
         
-        log.info("MedicalRecord List Query - UserID: {}, Roles: {}, Params: {}", userId, roles, medicalRecord);
-        
+        log.info("selectMedicalRecordList - userId: {}, roles: {}, medicalRecord: {}", userId, roles, medicalRecord);
+
         if (isAdminUser()) {
             log.info("Admin access: viewing all records");
         } else if (roles.contains("doctor")) {
@@ -54,15 +55,17 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
             log.info("Patient access: filtering by patientId={}", userId);
             medicalRecord.setPatientId(userId);
         } else {
-            // 兜底逻辑
-            if (userId != null && userId == 1L) {
-                log.info("System Admin(ID=1) access: viewing all records");
-            } else {
-                log.warn("Unknown role: defaulting to patient filter for userId={}", userId);
-                medicalRecord.setPatientId(userId);
-            }
+            // 如果没有任何角色，默认可能是通过其他方式登录的，也尝试使用userId作为patientId
+            log.info("Unknown access (roles empty): filtering by patientId={}", userId);
+            medicalRecord.setPatientId(userId);
         }
-        return medicalRecordMapper.selectMedicalRecordList(medicalRecord);
+        
+        log.info("Executing selectMedicalRecordList with params: patientId={}, doctorId={}, diagnosis={}", 
+                 medicalRecord.getPatientId(), medicalRecord.getDoctorId(), medicalRecord.getDiagnosis());
+                 
+        List<MedicalRecord> list = medicalRecordMapper.selectMedicalRecordList(medicalRecord);
+        log.info("selectMedicalRecordList result size: {}", list != null ? list.size() : 0);
+        return list;
     }
 
     @Override
