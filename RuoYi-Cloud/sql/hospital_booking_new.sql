@@ -11,7 +11,7 @@
  Target Server Version : 50732 (5.7.32-log)
  File Encoding         : 65001
 
- Date: 11/01/2026 19:07:04
+ Date: 11/01/2026 22:09:45
 */
 
 SET NAMES utf8mb4;
@@ -22,14 +22,14 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ----------------------------
 DROP TABLE IF EXISTS `admin`;
 CREATE TABLE `admin`  (
-                          `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '管理员ID',
-                          `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '登录账号',
-                          `password_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '密码哈希',
-                          `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '管理员姓名',
-                          `is_active` tinyint(1) NULL DEFAULT 1 COMMENT '是否启用(1是,0否)',
-                          `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                          PRIMARY KEY (`id`) USING BTREE,
-                          UNIQUE INDEX `username`(`username`) USING BTREE
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '管理员ID',
+  `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '登录账号',
+  `password_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '密码哈希',
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '管理员姓名',
+  `is_active` tinyint(1) NULL DEFAULT 1 COMMENT '是否启用(1是,0否)',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `username`(`username`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '管理员信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -42,172 +42,179 @@ INSERT INTO `admin` VALUES (1, 'admin', '$2a$10$GIMZcpW99EG0FWFA0oCdOOagK1QTYbtv
 -- ----------------------------
 DROP TABLE IF EXISTS `appointment`;
 CREATE TABLE `appointment`  (
-                                `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '预约ID',
-                                `patient_id` int(11) NOT NULL COMMENT '患者ID',
-                                `schedule_id` int(11) NOT NULL COMMENT '排班ID',
-                                `status` enum('待就诊','已取消','已完成') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '待就诊' COMMENT '状态',
-                                `booked_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '预约时间',
-                                PRIMARY KEY (`id`) USING BTREE,
-                                UNIQUE INDEX `uk_schedule_unique`(`schedule_id`) USING BTREE,
-                                INDEX `patient_id`(`patient_id`) USING BTREE,
-                                CONSTRAINT `appointment_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
-                                CONSTRAINT `appointment_ibfk_2` FOREIGN KEY (`schedule_id`) REFERENCES `schedule` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1234 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '预约记录表' ROW_FORMAT = Dynamic;
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '预约ID',
+  `patient_id` int(11) NOT NULL COMMENT '患者ID',
+  `schedule_id` int(11) NOT NULL COMMENT '排班ID',
+  `status` enum('待就诊','已取消','已完成','取消申请中') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '待就诊' COMMENT '状态',
+  `booked_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '预约时间',
+  `appointment_time` time NULL DEFAULT NULL COMMENT '预约时段（如08:00:00）',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_schedule_time`(`schedule_id`, `appointment_time`) USING BTREE,
+  INDEX `patient_id`(`patient_id`) USING BTREE,
+  INDEX `idx_appointment_time`(`appointment_time`) USING BTREE,
+  CONSTRAINT `appointment_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT `appointment_ibfk_2` FOREIGN KEY (`schedule_id`) REFERENCES `schedule` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 1239 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '预约记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of appointment
 -- ----------------------------
-INSERT INTO `appointment` VALUES (3, 1, 4, '已完成', '2026-01-09 09:00:00');
-INSERT INTO `appointment` VALUES (6, 2, 6, '已完成', '2026-01-10 08:00:00');
-INSERT INTO `appointment` VALUES (21, 8, 27, '待就诊', '2026-01-11 18:10:42');
-INSERT INTO `appointment` VALUES (24, 10, 30, '已取消', '2026-01-11 18:10:42');
-INSERT INTO `appointment` VALUES (52, 7, 70, '待就诊', '2026-01-09 18:10:42');
-INSERT INTO `appointment` VALUES (53, 9, 71, '已取消', '2026-01-07 18:10:42');
-INSERT INTO `appointment` VALUES (62, 8, 82, '已取消', '2026-01-09 18:10:42');
-INSERT INTO `appointment` VALUES (66, 13, 86, '已完成', '2026-01-11 18:10:42');
-INSERT INTO `appointment` VALUES (70, 9, 93, '待就诊', '2026-01-10 18:10:42');
-INSERT INTO `appointment` VALUES (73, 2, 96, '已完成', '2026-01-10 18:10:42');
-INSERT INTO `appointment` VALUES (99, 11, 137, '待就诊', '2026-01-10 18:10:42');
-INSERT INTO `appointment` VALUES (110, 3, 150, '已完成', '2026-01-11 18:10:42');
-INSERT INTO `appointment` VALUES (113, 13, 154, '已取消', '2026-01-11 18:10:42');
-INSERT INTO `appointment` VALUES (115, 12, 156, '待就诊', '2026-01-09 18:10:42');
-INSERT INTO `appointment` VALUES (129, 8, 175, '已完成', '2026-01-10 18:10:42');
-INSERT INTO `appointment` VALUES (142, 4, 190, '已完成', '2026-01-10 18:10:42');
-INSERT INTO `appointment` VALUES (150, 1, 198, '待就诊', '2026-01-08 18:10:42');
-INSERT INTO `appointment` VALUES (171, 6, 232, '已取消', '2026-01-10 18:10:42');
-INSERT INTO `appointment` VALUES (176, 1, 238, '已取消', '2026-01-11 18:10:42');
-INSERT INTO `appointment` VALUES (183, 13, 245, '已完成', '2026-01-11 18:10:42');
-INSERT INTO `appointment` VALUES (189, 10, 254, '已完成', '2026-01-10 18:10:42');
-INSERT INTO `appointment` VALUES (190, 2, 255, '已取消', '2026-01-11 18:10:42');
-INSERT INTO `appointment` VALUES (202, 12, 273, '已完成', '2026-01-10 18:10:42');
-INSERT INTO `appointment` VALUES (205, 4, 276, '已取消', '2026-01-11 18:10:42');
-INSERT INTO `appointment` VALUES (210, 8, 282, '已完成', '2026-01-09 18:10:42');
-INSERT INTO `appointment` VALUES (211, 5, 283, '待就诊', '2026-01-11 18:10:42');
-INSERT INTO `appointment` VALUES (217, 9, 291, '已取消', '2026-01-09 18:10:42');
-INSERT INTO `appointment` VALUES (239, 4, 325, '已取消', '2026-01-09 18:10:42');
-INSERT INTO `appointment` VALUES (240, 1, 327, '已完成', '2026-01-10 18:10:42');
-INSERT INTO `appointment` VALUES (260, 14, 354, '已取消', '2026-01-09 18:10:42');
-INSERT INTO `appointment` VALUES (270, 11, 368, '已取消', '2026-01-10 18:10:42');
-INSERT INTO `appointment` VALUES (271, 5, 369, '待就诊', '2026-01-09 18:10:42');
-INSERT INTO `appointment` VALUES (295, 12, 404, '已完成', '2026-01-08 18:10:42');
-INSERT INTO `appointment` VALUES (302, 7, 416, '待就诊', '2026-01-11 18:10:42');
-INSERT INTO `appointment` VALUES (305, 9, 420, '已取消', '2026-01-09 18:10:42');
-INSERT INTO `appointment` VALUES (308, 6, 425, '已取消', '2026-01-10 18:10:42');
-INSERT INTO `appointment` VALUES (320, 5, 446, '已完成', '2026-01-07 18:10:42');
-INSERT INTO `appointment` VALUES (324, 2, 450, '已完成', '2026-01-09 18:10:42');
-INSERT INTO `appointment` VALUES (328, 10, 455, '待就诊', '2026-01-10 18:10:42');
-INSERT INTO `appointment` VALUES (329, 13, 456, '已取消', '2026-01-10 18:10:42');
-INSERT INTO `appointment` VALUES (351, 11, 485, '待就诊', '2026-01-11 18:10:42');
-INSERT INTO `appointment` VALUES (362, 10, 501, '待就诊', '2026-01-10 18:10:42');
-INSERT INTO `appointment` VALUES (391, 10, 537, '待就诊', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (410, 3, 569, '待就诊', '2026-01-07 18:10:43');
-INSERT INTO `appointment` VALUES (421, 14, 583, '待就诊', '2026-01-08 18:10:43');
-INSERT INTO `appointment` VALUES (422, 5, 584, '已取消', '2026-01-08 18:10:43');
-INSERT INTO `appointment` VALUES (423, 13, 586, '已取消', '2026-01-08 18:10:43');
-INSERT INTO `appointment` VALUES (442, 2, 613, '已取消', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (445, 6, 617, '已取消', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (448, 7, 621, '已完成', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (461, 13, 640, '已取消', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (464, 7, 644, '已取消', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (465, 14, 645, '待就诊', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (470, 7, 651, '待就诊', '2026-01-08 18:10:43');
-INSERT INTO `appointment` VALUES (479, 7, 663, '待就诊', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (480, 10, 664, '待就诊', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (501, 11, 693, '已完成', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (505, 12, 697, '待就诊', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (507, 8, 700, '待就诊', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (518, 6, 713, '已完成', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (519, 14, 714, '待就诊', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (541, 13, 741, '待就诊', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (556, 6, 762, '已取消', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (564, 8, 774, '已取消', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (573, 5, 787, '待就诊', '2026-01-08 18:10:43');
-INSERT INTO `appointment` VALUES (581, 9, 797, '待就诊', '2026-01-07 18:10:43');
-INSERT INTO `appointment` VALUES (607, 14, 829, '待就诊', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (611, 5, 834, '待就诊', '2026-01-07 18:10:43');
-INSERT INTO `appointment` VALUES (615, 13, 838, '已取消', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (618, 4, 845, '已取消', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (627, 8, 857, '已完成', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (674, 10, 913, '待就诊', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (675, 8, 914, '已完成', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (701, 2, 945, '已取消', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (711, 3, 959, '待就诊', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (717, 7, 968, '已完成', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (722, 5, 975, '已取消', '2026-01-08 18:10:43');
-INSERT INTO `appointment` VALUES (726, 1, 986, '已取消', '2026-01-08 18:10:43');
-INSERT INTO `appointment` VALUES (742, 12, 1009, '待就诊', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (755, 13, 1030, '已完成', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (756, 5, 1032, '已取消', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (761, 11, 1037, '已取消', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (768, 4, 1044, '待就诊', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (784, 14, 1073, '已完成', '2026-01-08 18:10:43');
-INSERT INTO `appointment` VALUES (787, 14, 1079, '待就诊', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (792, 14, 1088, '已取消', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (807, 11, 1108, '待就诊', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (809, 3, 1110, '待就诊', '2026-01-08 18:10:43');
-INSERT INTO `appointment` VALUES (813, 5, 1115, '待就诊', '2026-01-07 18:10:43');
-INSERT INTO `appointment` VALUES (816, 7, 1118, '已完成', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (824, 8, 1127, '待就诊', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (829, 3, 1132, '已完成', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (850, 2, 1160, '待就诊', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (852, 4, 1163, '已完成', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (865, 1, 1185, '待就诊', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (866, 11, 1186, '待就诊', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (868, 2, 1188, '已完成', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (869, 2, 1189, '已完成', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (870, 9, 1190, '已完成', '2026-01-08 18:10:43');
-INSERT INTO `appointment` VALUES (879, 3, 1200, '已完成', '2026-01-08 18:10:43');
-INSERT INTO `appointment` VALUES (896, 1, 1223, '已取消', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (900, 13, 1230, '已取消', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (903, 1, 1234, '已完成', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (912, 5, 1246, '已取消', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (917, 2, 1253, '已完成', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (919, 6, 1257, '待就诊', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (922, 4, 1261, '已完成', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (929, 9, 1273, '已取消', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (942, 6, 1287, '待就诊', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (950, 3, 1300, '待就诊', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (952, 14, 1302, '待就诊', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (957, 9, 1309, '待就诊', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (968, 10, 1323, '已完成', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (978, 4, 1338, '已完成', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (992, 9, 1361, '已取消', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (1003, 9, 1377, '已完成', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (1012, 11, 1393, '已取消', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (1017, 8, 1398, '待就诊', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (1030, 4, 1419, '已完成', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (1037, 12, 1429, '已完成', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (1041, 7, 1433, '已完成', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (1056, 12, 1450, '已完成', '2026-01-08 18:10:43');
-INSERT INTO `appointment` VALUES (1061, 1, 1458, '待就诊', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (1084, 10, 1487, '待就诊', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (1090, 4, 1496, '已完成', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (1095, 12, 1501, '待就诊', '2026-01-08 18:10:43');
-INSERT INTO `appointment` VALUES (1101, 3, 1509, '已取消', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (1112, 6, 1528, '已取消', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (1117, 3, 1537, '待就诊', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (1128, 1, 1549, '已取消', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (1143, 10, 1568, '已取消', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (1146, 6, 1573, '已完成', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (1158, 11, 1587, '待就诊', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (1180, 6, 1617, '待就诊', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (1183, 14, 1622, '已完成', '2026-01-11 18:10:43');
-INSERT INTO `appointment` VALUES (1191, 12, 1632, '已取消', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (1196, 3, 1638, '待就诊', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (1207, 11, 1650, '已取消', '2026-01-10 18:10:43');
-INSERT INTO `appointment` VALUES (1217, 12, 1668, '已完成', '2026-01-09 18:10:43');
-INSERT INTO `appointment` VALUES (1233, 7, 1689, '已完成', '2026-01-10 18:10:43');
+INSERT INTO `appointment` VALUES (3, 1, 4, '已完成', '2026-01-09 09:00:00', '08:15:00');
+INSERT INTO `appointment` VALUES (6, 2, 6, '已完成', '2026-01-10 08:00:00', '16:15:00');
+INSERT INTO `appointment` VALUES (21, 8, 27, '待就诊', '2026-01-11 18:10:42', '17:00:00');
+INSERT INTO `appointment` VALUES (24, 10, 30, '已取消', '2026-01-11 18:10:42', '08:00:00');
+INSERT INTO `appointment` VALUES (52, 7, 70, '待就诊', '2026-01-09 18:10:42', '15:15:00');
+INSERT INTO `appointment` VALUES (53, 9, 71, '已取消', '2026-01-07 18:10:42', '16:45:00');
+INSERT INTO `appointment` VALUES (62, 8, 82, '已取消', '2026-01-09 18:10:42', '15:45:00');
+INSERT INTO `appointment` VALUES (66, 13, 86, '已完成', '2026-01-11 18:10:42', '09:15:00');
+INSERT INTO `appointment` VALUES (70, 9, 93, '待就诊', '2026-01-10 18:10:42', '10:30:00');
+INSERT INTO `appointment` VALUES (73, 2, 96, '已完成', '2026-01-10 18:10:42', '09:00:00');
+INSERT INTO `appointment` VALUES (99, 11, 137, '待就诊', '2026-01-10 18:10:42', '16:30:00');
+INSERT INTO `appointment` VALUES (110, 3, 150, '已完成', '2026-01-11 18:10:42', '11:45:00');
+INSERT INTO `appointment` VALUES (113, 13, 154, '已取消', '2026-01-11 18:10:42', '17:15:00');
+INSERT INTO `appointment` VALUES (115, 12, 156, '待就诊', '2026-01-09 18:10:42', '13:45:00');
+INSERT INTO `appointment` VALUES (129, 8, 175, '已完成', '2026-01-10 18:10:42', '14:15:00');
+INSERT INTO `appointment` VALUES (142, 4, 190, '已完成', '2026-01-10 18:10:42', '11:15:00');
+INSERT INTO `appointment` VALUES (150, 1, 198, '待就诊', '2026-01-08 18:10:42', '15:30:00');
+INSERT INTO `appointment` VALUES (171, 6, 232, '已取消', '2026-01-10 18:10:42', '11:00:00');
+INSERT INTO `appointment` VALUES (176, 1, 238, '已取消', '2026-01-11 18:10:42', '15:00:00');
+INSERT INTO `appointment` VALUES (183, 13, 245, '已完成', '2026-01-11 18:10:42', '15:45:00');
+INSERT INTO `appointment` VALUES (189, 10, 254, '已完成', '2026-01-10 18:10:42', '09:45:00');
+INSERT INTO `appointment` VALUES (190, 2, 255, '已取消', '2026-01-11 18:10:42', '17:30:00');
+INSERT INTO `appointment` VALUES (202, 12, 273, '已完成', '2026-01-10 18:10:42', '08:45:00');
+INSERT INTO `appointment` VALUES (205, 4, 276, '已取消', '2026-01-11 18:10:42', '09:00:00');
+INSERT INTO `appointment` VALUES (210, 8, 282, '已完成', '2026-01-09 18:10:42', '11:00:00');
+INSERT INTO `appointment` VALUES (211, 5, 283, '待就诊', '2026-01-11 18:10:42', '08:15:00');
+INSERT INTO `appointment` VALUES (217, 9, 291, '已取消', '2026-01-09 18:10:42', '09:45:00');
+INSERT INTO `appointment` VALUES (239, 4, 325, '已取消', '2026-01-09 18:10:42', '16:00:00');
+INSERT INTO `appointment` VALUES (240, 1, 327, '已完成', '2026-01-10 18:10:42', '10:00:00');
+INSERT INTO `appointment` VALUES (260, 14, 354, '已取消', '2026-01-09 18:10:42', '09:30:00');
+INSERT INTO `appointment` VALUES (270, 11, 368, '已取消', '2026-01-10 18:10:42', '09:30:00');
+INSERT INTO `appointment` VALUES (271, 5, 369, '待就诊', '2026-01-09 18:10:42', '17:15:00');
+INSERT INTO `appointment` VALUES (295, 12, 404, '已完成', '2026-01-08 18:10:42', '11:30:00');
+INSERT INTO `appointment` VALUES (302, 7, 416, '待就诊', '2026-01-11 18:10:42', '17:45:00');
+INSERT INTO `appointment` VALUES (305, 9, 420, '已取消', '2026-01-09 18:10:42', '10:15:00');
+INSERT INTO `appointment` VALUES (308, 6, 425, '已取消', '2026-01-10 18:10:42', '08:45:00');
+INSERT INTO `appointment` VALUES (320, 5, 446, '已完成', '2026-01-07 18:10:42', '10:45:00');
+INSERT INTO `appointment` VALUES (324, 2, 450, '已完成', '2026-01-09 18:10:42', '16:15:00');
+INSERT INTO `appointment` VALUES (328, 10, 455, '待就诊', '2026-01-10 18:10:42', '11:00:00');
+INSERT INTO `appointment` VALUES (329, 13, 456, '已取消', '2026-01-10 18:10:42', '14:15:00');
+INSERT INTO `appointment` VALUES (351, 11, 485, '待就诊', '2026-01-11 18:10:42', '10:15:00');
+INSERT INTO `appointment` VALUES (362, 10, 501, '待就诊', '2026-01-10 18:10:42', '16:30:00');
+INSERT INTO `appointment` VALUES (391, 10, 537, '待就诊', '2026-01-09 18:10:43', '10:00:00');
+INSERT INTO `appointment` VALUES (410, 3, 569, '待就诊', '2026-01-07 18:10:43', '17:00:00');
+INSERT INTO `appointment` VALUES (421, 14, 583, '待就诊', '2026-01-08 18:10:43', '08:30:00');
+INSERT INTO `appointment` VALUES (422, 5, 584, '已取消', '2026-01-08 18:10:43', '09:30:00');
+INSERT INTO `appointment` VALUES (423, 13, 586, '已取消', '2026-01-08 18:10:43', '14:00:00');
+INSERT INTO `appointment` VALUES (442, 2, 613, '已取消', '2026-01-10 18:10:43', '17:15:00');
+INSERT INTO `appointment` VALUES (445, 6, 617, '已取消', '2026-01-10 18:10:43', '12:45:00');
+INSERT INTO `appointment` VALUES (448, 7, 621, '已完成', '2026-01-11 18:10:43', '17:15:00');
+INSERT INTO `appointment` VALUES (461, 13, 640, '已取消', '2026-01-11 18:10:43', '11:15:00');
+INSERT INTO `appointment` VALUES (464, 7, 644, '已取消', '2026-01-10 18:10:43', '14:45:00');
+INSERT INTO `appointment` VALUES (465, 14, 645, '待就诊', '2026-01-10 18:10:43', '17:30:00');
+INSERT INTO `appointment` VALUES (470, 7, 651, '待就诊', '2026-01-08 18:10:43', '12:15:00');
+INSERT INTO `appointment` VALUES (479, 7, 663, '待就诊', '2026-01-11 18:10:43', '13:00:00');
+INSERT INTO `appointment` VALUES (480, 10, 664, '待就诊', '2026-01-09 18:10:43', '14:45:00');
+INSERT INTO `appointment` VALUES (501, 11, 693, '已完成', '2026-01-09 18:10:43', '12:45:00');
+INSERT INTO `appointment` VALUES (505, 12, 697, '待就诊', '2026-01-10 18:10:43', '15:45:00');
+INSERT INTO `appointment` VALUES (507, 8, 700, '待就诊', '2026-01-09 18:10:43', '13:15:00');
+INSERT INTO `appointment` VALUES (518, 6, 713, '已完成', '2026-01-10 18:10:43', '09:00:00');
+INSERT INTO `appointment` VALUES (519, 14, 714, '待就诊', '2026-01-10 18:10:43', '15:45:00');
+INSERT INTO `appointment` VALUES (541, 13, 741, '待就诊', '2026-01-11 18:10:43', '08:15:00');
+INSERT INTO `appointment` VALUES (556, 6, 762, '已取消', '2026-01-11 18:10:43', '08:45:00');
+INSERT INTO `appointment` VALUES (564, 8, 774, '已取消', '2026-01-10 18:10:43', '09:30:00');
+INSERT INTO `appointment` VALUES (573, 5, 787, '待就诊', '2026-01-08 18:10:43', '14:00:00');
+INSERT INTO `appointment` VALUES (581, 9, 797, '待就诊', '2026-01-07 18:10:43', '13:00:00');
+INSERT INTO `appointment` VALUES (607, 14, 829, '待就诊', '2026-01-09 18:10:43', '16:45:00');
+INSERT INTO `appointment` VALUES (611, 5, 834, '待就诊', '2026-01-07 18:10:43', '09:00:00');
+INSERT INTO `appointment` VALUES (615, 13, 838, '已取消', '2026-01-09 18:10:43', '15:30:00');
+INSERT INTO `appointment` VALUES (618, 4, 845, '已取消', '2026-01-11 18:10:43', '16:15:00');
+INSERT INTO `appointment` VALUES (627, 8, 857, '已完成', '2026-01-10 18:10:43', '11:00:00');
+INSERT INTO `appointment` VALUES (674, 10, 913, '待就诊', '2026-01-10 18:10:43', '08:30:00');
+INSERT INTO `appointment` VALUES (675, 8, 914, '已完成', '2026-01-11 18:10:43', '12:15:00');
+INSERT INTO `appointment` VALUES (701, 2, 945, '已取消', '2026-01-09 18:10:43', '17:00:00');
+INSERT INTO `appointment` VALUES (711, 3, 959, '待就诊', '2026-01-10 18:10:43', '15:45:00');
+INSERT INTO `appointment` VALUES (717, 7, 968, '已完成', '2026-01-11 18:10:43', '08:00:00');
+INSERT INTO `appointment` VALUES (722, 5, 975, '已取消', '2026-01-08 18:10:43', '10:30:00');
+INSERT INTO `appointment` VALUES (726, 1, 986, '已取消', '2026-01-08 18:10:43', '11:00:00');
+INSERT INTO `appointment` VALUES (742, 12, 1009, '待就诊', '2026-01-11 18:10:43', '10:00:00');
+INSERT INTO `appointment` VALUES (755, 13, 1030, '已完成', '2026-01-10 18:10:43', '17:00:00');
+INSERT INTO `appointment` VALUES (756, 5, 1032, '已取消', '2026-01-11 18:10:43', '14:30:00');
+INSERT INTO `appointment` VALUES (761, 11, 1037, '已取消', '2026-01-11 18:10:43', '16:15:00');
+INSERT INTO `appointment` VALUES (768, 4, 1044, '待就诊', '2026-01-11 18:10:43', '15:30:00');
+INSERT INTO `appointment` VALUES (784, 14, 1073, '已完成', '2026-01-08 18:10:43', '12:00:00');
+INSERT INTO `appointment` VALUES (787, 14, 1079, '待就诊', '2026-01-09 18:10:43', '16:45:00');
+INSERT INTO `appointment` VALUES (792, 14, 1088, '已取消', '2026-01-10 18:10:43', '09:15:00');
+INSERT INTO `appointment` VALUES (807, 11, 1108, '待就诊', '2026-01-10 18:10:43', '14:00:00');
+INSERT INTO `appointment` VALUES (809, 3, 1110, '待就诊', '2026-01-08 18:10:43', '11:45:00');
+INSERT INTO `appointment` VALUES (813, 5, 1115, '待就诊', '2026-01-07 18:10:43', '09:00:00');
+INSERT INTO `appointment` VALUES (816, 7, 1118, '已完成', '2026-01-09 18:10:43', '14:00:00');
+INSERT INTO `appointment` VALUES (824, 8, 1127, '待就诊', '2026-01-11 18:10:43', '17:00:00');
+INSERT INTO `appointment` VALUES (829, 3, 1132, '已完成', '2026-01-10 18:10:43', '17:30:00');
+INSERT INTO `appointment` VALUES (850, 2, 1160, '待就诊', '2026-01-10 18:10:43', '10:30:00');
+INSERT INTO `appointment` VALUES (852, 4, 1163, '已完成', '2026-01-10 18:10:43', '10:30:00');
+INSERT INTO `appointment` VALUES (865, 1, 1185, '已取消', '2026-01-10 18:10:43', '12:00:00');
+INSERT INTO `appointment` VALUES (866, 11, 1186, '待就诊', '2026-01-10 18:10:43', '08:15:00');
+INSERT INTO `appointment` VALUES (868, 2, 1188, '已完成', '2026-01-09 18:10:43', '09:15:00');
+INSERT INTO `appointment` VALUES (869, 2, 1189, '已完成', '2026-01-09 18:10:43', '16:00:00');
+INSERT INTO `appointment` VALUES (870, 9, 1190, '已完成', '2026-01-08 18:10:43', '14:45:00');
+INSERT INTO `appointment` VALUES (879, 3, 1200, '已完成', '2026-01-08 18:10:43', '15:30:00');
+INSERT INTO `appointment` VALUES (896, 1, 1223, '已取消', '2026-01-10 18:10:43', '12:45:00');
+INSERT INTO `appointment` VALUES (900, 13, 1230, '已取消', '2026-01-11 18:10:43', '14:30:00');
+INSERT INTO `appointment` VALUES (903, 1, 1234, '已完成', '2026-01-09 18:10:43', '15:15:00');
+INSERT INTO `appointment` VALUES (912, 5, 1246, '已取消', '2026-01-11 18:10:43', '08:45:00');
+INSERT INTO `appointment` VALUES (917, 2, 1253, '已完成', '2026-01-10 18:10:43', '08:00:00');
+INSERT INTO `appointment` VALUES (919, 6, 1257, '待就诊', '2026-01-10 18:10:43', '09:45:00');
+INSERT INTO `appointment` VALUES (922, 4, 1261, '已完成', '2026-01-11 18:10:43', '10:15:00');
+INSERT INTO `appointment` VALUES (929, 9, 1273, '已取消', '2026-01-10 18:10:43', '17:00:00');
+INSERT INTO `appointment` VALUES (942, 6, 1287, '待就诊', '2026-01-09 18:10:43', '10:30:00');
+INSERT INTO `appointment` VALUES (950, 3, 1300, '待就诊', '2026-01-10 18:10:43', '17:45:00');
+INSERT INTO `appointment` VALUES (952, 14, 1302, '待就诊', '2026-01-10 18:10:43', '14:15:00');
+INSERT INTO `appointment` VALUES (957, 9, 1309, '待就诊', '2026-01-09 18:10:43', '16:15:00');
+INSERT INTO `appointment` VALUES (968, 10, 1323, '已完成', '2026-01-11 18:10:43', '14:30:00');
+INSERT INTO `appointment` VALUES (978, 4, 1338, '已完成', '2026-01-11 18:10:43', '13:15:00');
+INSERT INTO `appointment` VALUES (992, 9, 1361, '已取消', '2026-01-11 18:10:43', '16:30:00');
+INSERT INTO `appointment` VALUES (1003, 9, 1377, '已完成', '2026-01-11 18:10:43', '17:00:00');
+INSERT INTO `appointment` VALUES (1012, 11, 1393, '已取消', '2026-01-09 18:10:43', '11:30:00');
+INSERT INTO `appointment` VALUES (1017, 8, 1398, '待就诊', '2026-01-09 18:10:43', '08:45:00');
+INSERT INTO `appointment` VALUES (1030, 4, 1419, '已完成', '2026-01-11 18:10:43', '11:00:00');
+INSERT INTO `appointment` VALUES (1037, 12, 1429, '已完成', '2026-01-11 18:10:43', '16:00:00');
+INSERT INTO `appointment` VALUES (1041, 7, 1433, '已完成', '2026-01-10 18:10:43', '09:15:00');
+INSERT INTO `appointment` VALUES (1056, 12, 1450, '已完成', '2026-01-08 18:10:43', '09:30:00');
+INSERT INTO `appointment` VALUES (1061, 1, 1458, '已取消', '2026-01-09 18:10:43', '11:15:00');
+INSERT INTO `appointment` VALUES (1084, 10, 1487, '待就诊', '2026-01-11 18:10:43', '16:00:00');
+INSERT INTO `appointment` VALUES (1090, 4, 1496, '已完成', '2026-01-10 18:10:43', '09:15:00');
+INSERT INTO `appointment` VALUES (1095, 12, 1501, '待就诊', '2026-01-08 18:10:43', '08:00:00');
+INSERT INTO `appointment` VALUES (1101, 3, 1509, '已取消', '2026-01-11 18:10:43', '08:45:00');
+INSERT INTO `appointment` VALUES (1112, 6, 1528, '已取消', '2026-01-11 18:10:43', '17:15:00');
+INSERT INTO `appointment` VALUES (1117, 3, 1537, '待就诊', '2026-01-10 18:10:43', '08:15:00');
+INSERT INTO `appointment` VALUES (1128, 1, 1549, '已取消', '2026-01-09 18:10:43', '13:15:00');
+INSERT INTO `appointment` VALUES (1143, 10, 1568, '已取消', '2026-01-10 18:10:43', '09:30:00');
+INSERT INTO `appointment` VALUES (1146, 6, 1573, '已完成', '2026-01-10 18:10:43', '09:45:00');
+INSERT INTO `appointment` VALUES (1158, 11, 1587, '待就诊', '2026-01-10 18:10:43', '08:30:00');
+INSERT INTO `appointment` VALUES (1180, 6, 1617, '待就诊', '2026-01-11 18:10:43', '08:45:00');
+INSERT INTO `appointment` VALUES (1183, 14, 1622, '已完成', '2026-01-11 18:10:43', '10:45:00');
+INSERT INTO `appointment` VALUES (1191, 12, 1632, '已取消', '2026-01-10 18:10:43', '17:00:00');
+INSERT INTO `appointment` VALUES (1196, 3, 1638, '待就诊', '2026-01-10 18:10:43', '09:30:00');
+INSERT INTO `appointment` VALUES (1207, 11, 1650, '已取消', '2026-01-10 18:10:43', '15:15:00');
+INSERT INTO `appointment` VALUES (1217, 12, 1668, '已完成', '2026-01-09 18:10:43', '13:30:00');
+INSERT INTO `appointment` VALUES (1233, 7, 1689, '已完成', '2026-01-10 18:10:43', '16:45:00');
+INSERT INTO `appointment` VALUES (1234, 1, 1635, '已取消', '2026-01-11 21:14:07', '15:45:00');
+INSERT INTO `appointment` VALUES (1235, 1, 1651, '已取消', '2026-01-11 21:14:20', '11:15:00');
+INSERT INTO `appointment` VALUES (1236, 1, 1575, '已取消', '2026-01-11 21:15:19', '17:15:00');
+INSERT INTO `appointment` VALUES (1237, 1, 9, '待就诊', '2026-01-11 21:46:13', '15:15:00');
+INSERT INTO `appointment` VALUES (1238, 1, 16, '待就诊', '2026-01-11 21:46:33', '08:30:00');
 
 -- ----------------------------
 -- Table structure for department
 -- ----------------------------
 DROP TABLE IF EXISTS `department`;
 CREATE TABLE `department`  (
-                               `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '科室ID',
-                               `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '科室名称',
-                               `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                               PRIMARY KEY (`id`) USING BTREE,
-                               UNIQUE INDEX `name`(`name`) USING BTREE
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '科室ID',
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '科室名称',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `name`(`name`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '科室信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -234,25 +241,25 @@ INSERT INTO `department` VALUES (15, '内分泌科', '2026-01-11 10:00:00');
 -- ----------------------------
 DROP TABLE IF EXISTS `department_intro`;
 CREATE TABLE `department_intro`  (
-                                     `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '说明ID',
-                                     `dept_id` int(11) NOT NULL COMMENT '科室ID',
-                                     `overview` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '科室概述',
-                                     `detailed_intro` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '详细科室说明',
-                                     `services` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '主要服务项目',
-                                     `features` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '科室特色',
-                                     `notice` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '就诊须知',
-                                     `is_active` tinyint(1) NULL DEFAULT 1 COMMENT '是否启用(1是,0否)',
-                                     `created_by` int(11) NULL DEFAULT NULL COMMENT '创建人ID(关联admin.id)',
-                                     `updated_by` int(11) NULL DEFAULT NULL COMMENT '最后更新人ID',
-                                     `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                                     `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-                                     PRIMARY KEY (`id`) USING BTREE,
-                                     UNIQUE INDEX `uk_dept_id`(`dept_id`) USING BTREE,
-                                     INDEX `created_by`(`created_by`) USING BTREE,
-                                     INDEX `updated_by`(`updated_by`) USING BTREE,
-                                     CONSTRAINT `department_intro_ibfk_1` FOREIGN KEY (`dept_id`) REFERENCES `department` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
-                                     CONSTRAINT `department_intro_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `admin` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT,
-                                     CONSTRAINT `department_intro_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `admin` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '说明ID',
+  `dept_id` int(11) NOT NULL COMMENT '科室ID',
+  `overview` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '科室概述',
+  `detailed_intro` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '详细科室说明',
+  `services` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '主要服务项目',
+  `features` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '科室特色',
+  `notice` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '就诊须知',
+  `is_active` tinyint(1) NULL DEFAULT 1 COMMENT '是否启用(1是,0否)',
+  `created_by` int(11) NULL DEFAULT NULL COMMENT '创建人ID(关联admin.id)',
+  `updated_by` int(11) NULL DEFAULT NULL COMMENT '最后更新人ID',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_dept_id`(`dept_id`) USING BTREE,
+  INDEX `created_by`(`created_by`) USING BTREE,
+  INDEX `updated_by`(`updated_by`) USING BTREE,
+  CONSTRAINT `department_intro_ibfk_1` FOREIGN KEY (`dept_id`) REFERENCES `department` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT `department_intro_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `admin` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT,
+  CONSTRAINT `department_intro_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `admin` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '科室说明表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -279,18 +286,18 @@ INSERT INTO `department_intro` VALUES (15, 15, '内分泌代谢病中心', '内�
 -- ----------------------------
 DROP TABLE IF EXISTS `doctor`;
 CREATE TABLE `doctor`  (
-                           `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '医生ID',
-                           `dept_id` int(11) NOT NULL COMMENT '所属科室ID',
-                           `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '登录账号',
-                           `password_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '密码哈希',
-                           `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '医生姓名',
-                           `title` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '职称',
-                           `is_active` tinyint(1) NULL DEFAULT 1 COMMENT '是否在职(1是,0否)',
-                           `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                           PRIMARY KEY (`id`) USING BTREE,
-                           UNIQUE INDEX `username`(`username`) USING BTREE,
-                           INDEX `dept_id`(`dept_id`) USING BTREE,
-                           CONSTRAINT `doctor_ibfk_1` FOREIGN KEY (`dept_id`) REFERENCES `department` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '医生ID',
+  `dept_id` int(11) NOT NULL COMMENT '所属科室ID',
+  `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '登录账号',
+  `password_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '密码哈希',
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '医生姓名',
+  `title` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '职称',
+  `is_active` tinyint(1) NULL DEFAULT 1 COMMENT '是否在职(1是,0否)',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `username`(`username`) USING BTREE,
+  INDEX `dept_id`(`dept_id`) USING BTREE,
+  CONSTRAINT `doctor_ibfk_1` FOREIGN KEY (`dept_id`) REFERENCES `department` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 71 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '医生信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -372,29 +379,29 @@ INSERT INTO `doctor` VALUES (70, 15, 'doc_15_5', '$2a$10$7JB720yubVSZvUI0rEqK/.V
 -- ----------------------------
 DROP TABLE IF EXISTS `hospital_notice`;
 CREATE TABLE `hospital_notice`  (
-                                    `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '通知ID',
-                                    `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '通知标题',
-                                    `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '通知内容',
-                                    `notice_type` enum('系统公告','医院动态','停诊通知','政策法规','温馨提示') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '系统公告' COMMENT '通知类型',
-                                    `target_audience` enum('全部','患者','医生','管理员') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '全部' COMMENT '目标受众',
-                                    `priority` enum('普通','重要','紧急') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '普通' COMMENT '优先级',
-                                    `publish_time` datetime NOT NULL COMMENT '发布时间',
-                                    `expire_time` datetime NULL DEFAULT NULL COMMENT '过期时间',
-                                    `is_top` tinyint(1) NULL DEFAULT 0 COMMENT '是否置顶(1是,0否)',
-                                    `is_active` tinyint(1) NULL DEFAULT 1 COMMENT '是否有效(1是,0否)',
-                                    `view_count` int(11) NULL DEFAULT 0 COMMENT '查看次数',
-                                    `publisher_id` int(11) NOT NULL COMMENT '发布人ID(关联admin.id)',
-                                    `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                                    `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-                                    PRIMARY KEY (`id`) USING BTREE,
-                                    INDEX `publisher_id`(`publisher_id`) USING BTREE,
-                                    INDEX `idx_publish_time`(`publish_time`) USING BTREE,
-                                    INDEX `idx_notice_type`(`notice_type`) USING BTREE,
-                                    INDEX `idx_target_audience`(`target_audience`) USING BTREE,
-                                    INDEX `idx_priority`(`priority`) USING BTREE,
-                                    INDEX `idx_is_top`(`is_top`) USING BTREE,
-                                    INDEX `idx_is_active`(`is_active`) USING BTREE,
-                                    CONSTRAINT `hospital_notice_ibfk_1` FOREIGN KEY (`publisher_id`) REFERENCES `admin` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '通知ID',
+  `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '通知标题',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '通知内容',
+  `notice_type` enum('系统公告','医院动态','停诊通知','政策法规','温馨提示') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '系统公告' COMMENT '通知类型',
+  `target_audience` enum('全部','患者','医生','管理员') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '全部' COMMENT '目标受众',
+  `priority` enum('普通','重要','紧急') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '普通' COMMENT '优先级',
+  `publish_time` datetime NOT NULL COMMENT '发布时间',
+  `expire_time` datetime NULL DEFAULT NULL COMMENT '过期时间',
+  `is_top` tinyint(1) NULL DEFAULT 0 COMMENT '是否置顶(1是,0否)',
+  `is_active` tinyint(1) NULL DEFAULT 1 COMMENT '是否有效(1是,0否)',
+  `view_count` int(11) NULL DEFAULT 0 COMMENT '查看次数',
+  `publisher_id` int(11) NOT NULL COMMENT '发布人ID(关联admin.id)',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `publisher_id`(`publisher_id`) USING BTREE,
+  INDEX `idx_publish_time`(`publish_time`) USING BTREE,
+  INDEX `idx_notice_type`(`notice_type`) USING BTREE,
+  INDEX `idx_target_audience`(`target_audience`) USING BTREE,
+  INDEX `idx_priority`(`priority`) USING BTREE,
+  INDEX `idx_is_top`(`is_top`) USING BTREE,
+  INDEX `idx_is_active`(`is_active`) USING BTREE,
+  CONSTRAINT `hospital_notice_ibfk_1` FOREIGN KEY (`publisher_id`) REFERENCES `admin` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '医院通知表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -409,7 +416,7 @@ INSERT INTO `hospital_notice` VALUES (6, '专家门诊时间调整', '因学术�
 INSERT INTO `hospital_notice` VALUES (7, '疫情防控重要提醒', '当前处于呼吸道传染病高发季节，请来院患者及家属全程佩戴口罩，配合体温检测，保持安全距离。有发热、咳嗽等症状请主动告知预检分诊人员。', '温馨提示', '全部', '紧急', '2026-02-03 08:00:00', '2026-03-31 23:59:59', 1, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
 INSERT INTO `hospital_notice` VALUES (8, '新停车场投入使用', '医院新建地下停车场已于2026年2月1日正式投入使用，新增车位200个，实行智能化管理。前30分钟免费，后续按标准收费。', '医院动态', '全部', '普通', '2026-02-01 10:00:00', '2026-03-01 23:59:59', 0, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
 INSERT INTO `hospital_notice` VALUES (9, '糖尿病俱乐部活动通知', '糖尿病俱乐部定于2026年2月15日下午2点举办\"糖尿病饮食管理\"主题活动，届时将有营养师现场指导，欢迎糖友参加。', '医院动态', '患者', '普通', '2026-02-05 14:00:00', '2026-02-15 23:59:59', 0, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
-INSERT INTO `hospital_notice` VALUES (10, '医疗收费标准公示', '根据市卫健委要求，我院2026年度医疗服务价格标准已更新，具体收费标准详见门诊大厅公示栏或医院官方网站。', '政策法规', '全部', '重要', '2026-01-01 00:00:00', '2026-12-31 23:59:59', 0, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
+INSERT INTO `hospital_notice` VALUES (10, '医疗收费标准公示', '根据市卫健委要求，我院2026年度医疗服务价格标准已更新，具体收费标准详见门诊大厅公示栏或医院官方网站。', '政策法规', '全部', '重要', '2026-01-01 00:00:00', '2026-12-31 23:59:59', 0, 1, 1, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
 INSERT INTO `hospital_notice` VALUES (11, '志愿者招募公告', '我院现面向社会招募医疗志愿者，要求年龄18-65岁，身体健康，有爱心和责任心。报名时间：即日起至2月28日。', '医院动态', '全部', '普通', '2026-02-10 09:00:00', '2026-02-28 23:59:59', 0, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
 INSERT INTO `hospital_notice` VALUES (12, '孕妇学校开课通知', '孕妇学校2026年春季班将于2月20日开课，课程内容包括孕期保健、分娩准备、新生儿护理等。欢迎准爸妈报名参加。', '医院动态', '患者', '普通', '2026-02-12 10:00:00', '2026-02-20 23:59:59', 0, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
 INSERT INTO `hospital_notice` VALUES (13, '医疗质量安全月活动', '我院将于3月开展\"医疗质量安全月\"活动，期间将组织多项质量改进措施和患者安全教育活动，欢迎监督。', '医院动态', '全部', '重要', '2026-02-25 15:00:00', '2026-03-31 23:59:59', 0, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
@@ -419,29 +426,29 @@ INSERT INTO `hospital_notice` VALUES (16, '爱心献血活动通知', '我院将
 INSERT INTO `hospital_notice` VALUES (17, '医保政策调整说明', '根据最新医保政策，2026年3月1日起部分药品和诊疗项目报销比例有所调整，具体变化请咨询医保办。', '政策法规', '患者', '重要', '2026-02-15 16:00:00', '2026-03-31 23:59:59', 1, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
 INSERT INTO `hospital_notice` VALUES (18, '医院环境改造公告', '为改善就诊环境，医院将于2026年3月进行部分区域装修改造，施工期间可能产生噪音，敬请谅解。', '温馨提示', '全部', '普通', '2026-02-20 08:30:00', '2026-03-31 23:59:59', 0, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
 INSERT INTO `hospital_notice` VALUES (19, '专家义诊活动预告', '为庆祝建院70周年，我院将于2026年3月15日举办大型专家义诊活动，届时各科专家将免费为市民提供咨询服务。', '医院动态', '患者', '重要', '2026-03-01 10:00:00', '2026-03-15 23:59:59', 1, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
-INSERT INTO `hospital_notice` VALUES (20, '医疗投诉渠道公示', '为更好服务患者，现将医疗投诉渠道公示：投诉电话：XXXX-XXXXXXX，投诉邮箱：ts@hospital.com，现场投诉：医患关系办公室。', '政策法规', '患者', '普通', '2026-01-10 09:00:00', '2026-12-31 23:59:59', 0, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
+INSERT INTO `hospital_notice` VALUES (20, '医疗投诉渠道公示', '为更好服务患者，现将医疗投诉渠道公示：投诉电话：XXXX-XXXXXXX，投诉邮箱：ts@hospital.com，现场投诉：医患关系办公室。', '政策法规', '患者', '普通', '2026-01-10 09:00:00', '2026-12-31 23:59:59', 0, 1, 1, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
 
 -- ----------------------------
 -- Table structure for medical_record
 -- ----------------------------
 DROP TABLE IF EXISTS `medical_record`;
 CREATE TABLE `medical_record`  (
-                                   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '病历ID',
-                                   `appointment_id` int(11) NOT NULL COMMENT '关联的预约ID',
-                                   `patient_id` int(11) NOT NULL COMMENT '患者ID',
-                                   `doctor_id` int(11) NOT NULL COMMENT '医生ID',
-                                   `diagnosis` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '诊断结果',
-                                   `prescription` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '处方信息',
-                                   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '医嘱备注',
-                                   `visit_time` datetime NOT NULL COMMENT '就诊时间',
-                                   `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                                   PRIMARY KEY (`id`) USING BTREE,
-                                   UNIQUE INDEX `appointment_id`(`appointment_id`) USING BTREE,
-                                   INDEX `patient_id`(`patient_id`) USING BTREE,
-                                   INDEX `doctor_id`(`doctor_id`) USING BTREE,
-                                   CONSTRAINT `medical_record_ibfk_1` FOREIGN KEY (`appointment_id`) REFERENCES `appointment` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-                                   CONSTRAINT `medical_record_ibfk_2` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
-                                   CONSTRAINT `medical_record_ibfk_3` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '病历ID',
+  `appointment_id` int(11) NOT NULL COMMENT '关联的预约ID',
+  `patient_id` int(11) NOT NULL COMMENT '患者ID',
+  `doctor_id` int(11) NOT NULL COMMENT '医生ID',
+  `diagnosis` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '诊断结果',
+  `prescription` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '处方信息',
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '医嘱备注',
+  `visit_time` datetime NOT NULL COMMENT '就诊时间',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `appointment_id`(`appointment_id`) USING BTREE,
+  INDEX `patient_id`(`patient_id`) USING BTREE,
+  INDEX `doctor_id`(`doctor_id`) USING BTREE,
+  CONSTRAINT `medical_record_ibfk_1` FOREIGN KEY (`appointment_id`) REFERENCES `appointment` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `medical_record_ibfk_2` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT `medical_record_ibfk_3` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 424 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '电子病历表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -498,17 +505,17 @@ INSERT INTO `medical_record` VALUES (423, 1233, 7, 70, '皮肤病', '根据病�
 -- ----------------------------
 DROP TABLE IF EXISTS `patient`;
 CREATE TABLE `patient`  (
-                            `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '患者ID',
-                            `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '登录账号',
-                            `password_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '密码哈希',
-                            `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '姓名',
-                            `phone` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '手机号',
-                            `id_card` char(18) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '身份证号',
-                            `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '头像地址',
-                            `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                            PRIMARY KEY (`id`) USING BTREE,
-                            UNIQUE INDEX `username`(`username`) USING BTREE,
-                            UNIQUE INDEX `id_card`(`id_card`) USING BTREE
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '患者ID',
+  `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '登录账号',
+  `password_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '密码哈希',
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '姓名',
+  `phone` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '手机号',
+  `id_card` char(18) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '身份证号',
+  `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '头像地址',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `username`(`username`) USING BTREE,
+  UNIQUE INDEX `id_card`(`id_card`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '患者信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -534,16 +541,16 @@ INSERT INTO `patient` VALUES (14, '周洋', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZT
 -- ----------------------------
 DROP TABLE IF EXISTS `schedule`;
 CREATE TABLE `schedule`  (
-                             `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '排班ID',
-                             `doctor_id` int(11) NOT NULL COMMENT '医生ID',
-                             `work_date` date NOT NULL COMMENT '出诊日期',
-                             `time_slot` enum('上午','下午','全天') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '班次',
-                             `total_capacity` int(11) NOT NULL DEFAULT 20 COMMENT '总号源数',
-                             `available_slots` int(11) NOT NULL DEFAULT 20 COMMENT '剩余号源',
-                             `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                             PRIMARY KEY (`id`) USING BTREE,
-                             UNIQUE INDEX `uk_doctor_date_slot`(`doctor_id`, `work_date`, `time_slot`) USING BTREE,
-                             CONSTRAINT `schedule_ibfk_1` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '排班ID',
+  `doctor_id` int(11) NOT NULL COMMENT '医生ID',
+  `work_date` date NOT NULL COMMENT '出诊日期',
+  `time_slot` enum('上午','下午','全天') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '班次',
+  `total_capacity` int(11) NOT NULL DEFAULT 20 COMMENT '总号源数',
+  `available_slots` int(11) NOT NULL DEFAULT 20 COMMENT '剩余号源',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_doctor_date_slot`(`doctor_id`, `work_date`, `time_slot`) USING BTREE,
+  CONSTRAINT `schedule_ibfk_1` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 1690 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '医生排班表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -557,14 +564,14 @@ INSERT INTO `schedule` VALUES (5, 2, '2026-01-10', '下午', 15, 15, '2026-01-09
 INSERT INTO `schedule` VALUES (6, 3, '2026-01-11', '全天', 10, 10, '2026-01-09 22:48:13');
 INSERT INTO `schedule` VALUES (7, 1, '2026-01-12', '上午', 20, 20, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (8, 2, '2026-01-12', '上午', 20, 20, '2026-01-11 18:10:33');
-INSERT INTO `schedule` VALUES (9, 3, '2026-01-12', '全天', 40, 40, '2026-01-11 18:10:33');
+INSERT INTO `schedule` VALUES (9, 3, '2026-01-12', '全天', 40, 39, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (10, 4, '2026-01-12', '全天', 40, 40, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (11, 5, '2026-01-12', '全天', 40, 40, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (12, 8, '2026-01-12', '下午', 20, 20, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (13, 10, '2026-01-12', '上午', 20, 20, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (14, 12, '2026-01-12', '全天', 40, 40, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (15, 13, '2026-01-12', '下午', 20, 20, '2026-01-11 18:10:33');
-INSERT INTO `schedule` VALUES (16, 14, '2026-01-12', '上午', 20, 20, '2026-01-11 18:10:33');
+INSERT INTO `schedule` VALUES (16, 14, '2026-01-12', '上午', 20, 19, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (17, 16, '2026-01-12', '下午', 20, 20, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (18, 17, '2026-01-12', '上午', 20, 20, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (19, 18, '2026-01-12', '上午', 20, 20, '2026-01-11 18:10:33');
@@ -1733,7 +1740,7 @@ INSERT INTO `schedule` VALUES (1181, 59, '2026-02-01', '下午', 20, 20, '2026-0
 INSERT INTO `schedule` VALUES (1182, 60, '2026-02-01', '下午', 20, 20, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (1183, 61, '2026-02-01', '全天', 40, 40, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (1184, 62, '2026-02-01', '上午', 20, 20, '2026-01-11 18:10:33');
-INSERT INTO `schedule` VALUES (1185, 63, '2026-02-01', '全天', 40, 40, '2026-01-11 18:10:33');
+INSERT INTO `schedule` VALUES (1185, 63, '2026-02-01', '全天', 40, 41, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (1186, 65, '2026-02-01', '上午', 20, 20, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (1187, 66, '2026-02-01', '下午', 20, 20, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (1188, 67, '2026-02-01', '全天', 40, 40, '2026-01-11 18:10:33');
@@ -2006,7 +2013,7 @@ INSERT INTO `schedule` VALUES (1454, 54, '2026-02-06', '上午', 20, 20, '2026-0
 INSERT INTO `schedule` VALUES (1455, 55, '2026-02-06', '上午', 20, 20, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (1456, 56, '2026-02-06', '全天', 40, 40, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (1457, 57, '2026-02-06', '下午', 20, 20, '2026-01-11 18:10:33');
-INSERT INTO `schedule` VALUES (1458, 58, '2026-02-06', '上午', 20, 20, '2026-01-11 18:10:33');
+INSERT INTO `schedule` VALUES (1458, 58, '2026-02-06', '上午', 20, 21, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (1459, 59, '2026-02-06', '全天', 40, 40, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (1460, 60, '2026-02-06', '上午', 20, 20, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (1461, 61, '2026-02-06', '全天', 40, 40, '2026-01-11 18:10:33');
@@ -2244,31 +2251,31 @@ INSERT INTO `schedule` VALUES (1689, 70, '2026-02-10', '下午', 20, 20, '2026-0
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_menu`;
 CREATE TABLE `sys_menu`  (
-                             `menu_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '菜单ID',
-                             `menu_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '菜单名称',
-                             `parent_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '父菜单ID',
-                             `order_num` int(4) NOT NULL DEFAULT 0 COMMENT '显示顺序',
-                             `path` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '路由地址',
-                             `component` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '组件路径',
-                             `query` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '路由参数',
-                             `route_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '路由名称',
-                             `is_frame` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '1' COMMENT '是否为外链（1是 0否）',
-                             `is_cache` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '是否缓存（1是 0否）',
-                             `menu_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '菜单类型（M目录 C菜单 F按钮）',
-                             `visible` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '菜单状态（0显示 1隐藏）',
-                             `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '菜单状态（0正常 1停用）',
-                             `perms` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '权限标识',
-                             `icon` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '菜单图标',
-                             `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-                             `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                             `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-                             `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-                             `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
-                             PRIMARY KEY (`menu_id`) USING BTREE,
-                             INDEX `idx_parent_id`(`parent_id`) USING BTREE,
-                             INDEX `idx_menu_type`(`menu_type`) USING BTREE,
-                             INDEX `idx_visible`(`visible`) USING BTREE,
-                             INDEX `idx_status`(`status`) USING BTREE
+  `menu_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '菜单ID',
+  `menu_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '菜单名称',
+  `parent_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '父菜单ID',
+  `order_num` int(4) NOT NULL DEFAULT 0 COMMENT '显示顺序',
+  `path` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '路由地址',
+  `component` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '组件路径',
+  `query` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '路由参数',
+  `route_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '路由名称',
+  `is_frame` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '1' COMMENT '是否为外链（1是 0否）',
+  `is_cache` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '是否缓存（1是 0否）',
+  `menu_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '菜单类型（M目录 C菜单 F按钮）',
+  `visible` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '菜单状态（0显示 1隐藏）',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '菜单状态（0正常 1停用）',
+  `perms` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '权限标识',
+  `icon` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '菜单图标',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
+  PRIMARY KEY (`menu_id`) USING BTREE,
+  INDEX `idx_parent_id`(`parent_id`) USING BTREE,
+  INDEX `idx_menu_type`(`menu_type`) USING BTREE,
+  INDEX `idx_visible`(`visible`) USING BTREE,
+  INDEX `idx_status`(`status`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 15 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -2302,11 +2309,11 @@ BEGIN
     DECLARE patient_id_val INT;
     DECLARE schedule_id_val INT;
     DECLARE status_val ENUM('待就诊','已取消','已完成');
-
-SELECT MAX(id) INTO schedule_count FROM schedule;
-SELECT MAX(id) INTO patient_count FROM patient;
-
-WHILE i <= schedule_count DO
+    
+    SELECT MAX(id) INTO schedule_count FROM schedule;
+    SELECT MAX(id) INTO patient_count FROM patient;
+    
+    WHILE i <= schedule_count DO
         -- 模拟号源被预约的概率（60%-90%）
         IF RAND() < (0.6 + RAND() * 0.3) THEN
             SET patient_id_val = FLOOR(1 + RAND() * patient_count);
@@ -2317,11 +2324,11 @@ WHILE i <= schedule_count DO
                 INSERT INTO `appointment` (`patient_id`, `schedule_id`, `status`, `booked_at`)
                 VALUES (patient_id_val, i, status_val, 
                        DATE_SUB(NOW(), INTERVAL FLOOR(RAND() * 30) DAY));
-END IF;
-END IF;
+            END IF;
+        END IF;
         
         SET i = i + 1;
-END WHILE;
+    END WHILE;
 END
 ;;
 delimiter ;
@@ -2337,10 +2344,10 @@ BEGIN
     DECLARE dept_count INT;
     DECLARE dept_id INT;
     DECLARE titles JSON DEFAULT '["主任医师", "副主任医师", "主治医师", "住院医师"]';
-
-SELECT COUNT(*) INTO dept_count FROM department;
-
-WHILE i <= dept_count DO
+    
+    SELECT COUNT(*) INTO dept_count FROM department;
+    
+    WHILE i <= dept_count DO
         -- 为每个科室生成3-5名医生
         SET @doctor_count = FLOOR(3 + RAND() * 3);
         SET @j = 1;
@@ -2349,20 +2356,20 @@ WHILE i <= dept_count DO
             SET @title_index = FLOOR(1 + RAND() * 4);
             SET @doctor_name = ELT(FLOOR(1 + RAND() * 10), '张', '王', '李', '赵', '刘', '陈', '杨', '黄', '周', '吴');
             SET @doctor_name = CONCAT(@doctor_name, ELT(FLOOR(1 + RAND() * 10), '伟', '勇', '敏', '静', '强', '磊', '洋', '娜', '杰', '婷'));
-
-INSERT INTO `doctor` (`dept_id`, `username`, `password_hash`, `name`, `title`, `is_active`)
-VALUES (i,
-        CONCAT('doc_', i, '_', @j),
-        '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2',
-        @doctor_name,
-        JSON_EXTRACT(titles, CONCAT('$[', @title_index-1, ']')),
-        1);
-
-SET @j = @j + 1;
-END WHILE;
+            
+            INSERT INTO `doctor` (`dept_id`, `username`, `password_hash`, `name`, `title`, `is_active`) 
+            VALUES (i, 
+                   CONCAT('doc_', i, '_', @j), 
+                   '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2',
+                   @doctor_name,
+                   JSON_EXTRACT(titles, CONCAT('$[', @title_index-1, ']')),
+                   1);
+            
+            SET @j = @j + 1;
+        END WHILE;
         
         SET i = i + 1;
-END WHILE;
+    END WHILE;
 END
 ;;
 delimiter ;
@@ -2381,21 +2388,21 @@ BEGIN
     DECLARE visit_time_val DATETIME;
     
     -- 只处理状态为'已完成'的预约
-    DECLARE cur CURSOR FOR
-SELECT a.id, a.patient_id, s.doctor_id, a.booked_at
-FROM appointment a
-         JOIN schedule s ON a.schedule_id = s.id
-WHERE a.status = '已完成';
-
-DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
-
-OPEN cur;
-
-read_loop: LOOP
+    DECLARE cur CURSOR FOR 
+    SELECT a.id, a.patient_id, s.doctor_id, a.booked_at
+    FROM appointment a
+    JOIN schedule s ON a.schedule_id = s.id
+    WHERE a.status = '已完成';
+    
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+    
+    OPEN cur;
+    
+    read_loop: LOOP
         FETCH cur INTO appt_id, pat_id, doc_id, visit_time_val;
         IF done THEN
             LEAVE read_loop;
-END IF;
+        END IF;
         
         -- 生成诊断结果和处方
         SET @diagnosis = ELT(FLOOR(1 + RAND() * 10), 
@@ -2407,17 +2414,17 @@ END IF;
             WHEN '高血压' THEN '硝苯地平控释片 30mg，每日一次'
             WHEN '糖尿病' THEN '二甲双胍片 0.5g，每日两次'
             ELSE '根据病情开具相应药物'
-END;
+        END;
         
         SET @notes = '定期复查，如有不适随诊';
-
-INSERT INTO `medical_record` (`appointment_id`, `patient_id`, `doctor_id`,
-                              `diagnosis`, `prescription`, `notes`, `visit_time`)
-VALUES (appt_id, pat_id, doc_id, @diagnosis, @prescription, @notes, visit_time_val);
-
-END LOOP;
-
-CLOSE cur;
+        
+        INSERT INTO `medical_record` (`appointment_id`, `patient_id`, `doctor_id`, 
+                                    `diagnosis`, `prescription`, `notes`, `visit_time`)
+        VALUES (appt_id, pat_id, doc_id, @diagnosis, @prescription, @notes, visit_time_val);
+        
+    END LOOP;
+    
+    CLOSE cur;
 END
 ;;
 delimiter ;
@@ -2436,36 +2443,36 @@ BEGIN
     DECLARE visit_time_val DATETIME;
     
     -- 只处理状态为'已完成'且尚未生成病历的预约
-    DECLARE cur CURSOR FOR
-SELECT a.id, a.patient_id, s.doctor_id, a.booked_at
-FROM appointment a
-         JOIN schedule s ON a.schedule_id = s.id
-WHERE a.status = '已完成'
-  AND NOT EXISTS (SELECT 1 FROM medical_record mr WHERE mr.appointment_id = a.id); -- 新增条件：检查病历不存在
-
-DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
-
-OPEN cur;
-
-read_loop: LOOP
+    DECLARE cur CURSOR FOR 
+    SELECT a.id, a.patient_id, s.doctor_id, a.booked_at
+    FROM appointment a
+    JOIN schedule s ON a.schedule_id = s.id
+    WHERE a.status = '已完成'
+    AND NOT EXISTS (SELECT 1 FROM medical_record mr WHERE mr.appointment_id = a.id); -- 新增条件：检查病历不存在
+    
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+    
+    OPEN cur;
+    
+    read_loop: LOOP
         FETCH cur INTO appt_id, pat_id, doc_id, visit_time_val;
         IF done THEN
             LEAVE read_loop;
-END IF;
+        END IF;
         
         -- ... (后续生成诊断和处方的逻辑保持不变)
         SET @diagnosis = ELT(FLOOR(1 + RAND() * 10), 
             '上呼吸道感染', '高血压', '糖尿病', '胃炎', '关节炎', 
             '皮肤病', '近视', '牙周炎', '颈椎病', '感冒');
         -- ... (设置 @prescription 和 @notes)
-
-INSERT INTO `medical_record` (`appointment_id`, `patient_id`, `doctor_id`,
-                              `diagnosis`, `prescription`, `notes`, `visit_time`)
-VALUES (appt_id, pat_id, doc_id, @diagnosis, @prescription, @notes, visit_time_val);
-
-END LOOP;
-
-CLOSE cur;
+        
+        INSERT INTO `medical_record` (`appointment_id`, `patient_id`, `doctor_id`, 
+                                    `diagnosis`, `prescription`, `notes`, `visit_time`)
+        VALUES (appt_id, pat_id, doc_id, @diagnosis, @prescription, @notes, visit_time_val);
+        
+    END LOOP;
+    
+    CLOSE cur;
 END
 ;;
 delimiter ;
@@ -2489,16 +2496,16 @@ BEGIN
         SET @birth_month = LPAD(FLOOR(1 + RAND() * 12), 2, '0');
         SET @birth_day = LPAD(FLOOR(1 + RAND() * 28), 2, '0');
         SET @id_card = CONCAT('110101', @birth_year, @birth_month, @birth_day, LPAD(FLOOR(RAND() * 10000), 4, '0'));
-
-INSERT INTO `patient` (`username`, `password_hash`, `name`, `phone`, `id_card`)
-VALUES (LOWER(@fullname),
-        '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2',
-        @fullname,
-        base_phone + i,
-        @id_card);
-
-SET i = i + 1;
-END WHILE;
+        
+        INSERT INTO `patient` (`username`, `password_hash`, `name`, `phone`, `id_card`) 
+        VALUES (LOWER(@fullname), 
+               '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2',
+               @fullname,
+               base_phone + i,
+               @id_card);
+        
+        SET i = i + 1;
+    END WHILE;
 END
 ;;
 delimiter ;
@@ -2516,10 +2523,10 @@ BEGIN
     DECLARE doctor_id_val INT;
     DECLARE work_date DATE;
     DECLARE time_slot_val ENUM('上午','下午','全天');
-
-SELECT MAX(id) INTO doctor_count FROM doctor;
-
-WHILE i <= 30 DO  -- 生成30天的排班
+    
+    SELECT MAX(id) INTO doctor_count FROM doctor;
+    
+    WHILE i <= 30 DO  -- 生成30天的排班
         SET work_date = DATE_ADD('2026-01-11', INTERVAL i DAY);
         SET j = 1;
         
@@ -2529,18 +2536,18 @@ WHILE i <= 30 DO  -- 生成30天的排班
                 SET time_slot_val = ELT(FLOOR(1 + RAND() * 3), '上午', '下午', '全天');
                 SET @capacity = CASE 
                     WHEN time_slot_val = '全天' THEN 40 
-                    ELSE 20
-END;
-
-INSERT INTO `schedule` (`doctor_id`, `work_date`, `time_slot`, `total_capacity`, `available_slots`)
-VALUES (j, work_date, time_slot_val, @capacity, @capacity);
-END IF;
+                    ELSE 20 
+                END;
+                
+                INSERT INTO `schedule` (`doctor_id`, `work_date`, `time_slot`, `total_capacity`, `available_slots`)
+                VALUES (j, work_date, time_slot_val, @capacity, @capacity);
+            END IF;
             
             SET j = j + 1;
-END WHILE;
+        END WHILE;
         
         SET i = i + 1;
-END WHILE;
+    END WHILE;
 END
 ;;
 delimiter ;

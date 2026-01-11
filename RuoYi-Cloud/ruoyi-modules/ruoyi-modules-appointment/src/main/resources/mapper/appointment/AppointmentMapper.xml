@@ -10,6 +10,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="scheduleId"    column="schedule_id"    />
         <result property="status"    column="status"    />
         <result property="bookedAt"    column="booked_at"    />
+        <result property="appointmentTime" column="appointment_time" />
         <result property="patientName" column="patient_name" />
         <result property="doctorName" column="doctor_name" />
         <result property="workDate" column="work_date" />
@@ -18,7 +19,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectAppointmentVo">
-        select a.id, a.patient_id, a.schedule_id, a.status, a.booked_at,
+        select a.id, a.patient_id, a.schedule_id, a.status, a.booked_at, a.appointment_time,
                p.name as patient_name,
                d.name as doctor_name,
                s.work_date, s.time_slot, s.doctor_id

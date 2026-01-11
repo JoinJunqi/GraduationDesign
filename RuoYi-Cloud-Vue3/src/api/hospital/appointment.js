@@ -43,6 +43,22 @@ export function cancelAppointment(id) {
   })
 }
 
+// 发起取消申请
+export function requestCancel(id) {
+  return request({
+    url: '/ruoyi-hospital-appointment/appointment/request-cancel/' + id,
+    method: 'post'
+  })
+}
+
+// 撤销取消申请
+export function cancelRequest(id) {
+  return request({
+    url: '/ruoyi-hospital-appointment/appointment/cancel-request/' + id,
+    method: 'post'
+  })
+}
+
 // 删除预约
 export function delAppointment(id) {
   return request({

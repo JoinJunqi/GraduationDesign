@@ -5,6 +5,7 @@
         <el-step title="选择科室" />
         <el-step title="选择医生" />
         <el-step title="选择排班" />
+        <el-step title="选择时段" />
         <el-step title="确认预约" />
       </el-steps>
     </el-card>
@@ -83,8 +84,34 @@
       <el-empty v-if="scheduleList.length === 0" description="该医生暂无排班计划" />
     </div>
 
-    <!-- Step 4: Confirm -->
+    <!-- Step 4: Select Time Slot -->
     <div v-if="activeStep === 3">
+      <div class="mb20">
+        <el-button icon="Back" @click="activeStep = 2">返回重选排班</el-button>
+        <span class="ml20">就诊日期：<el-tag>{{ parseTime(selectedSchedule.workDate, '{y}-{m}-{d}') }}</el-tag></span>
+        <span class="ml10">班次：<el-tag type="warning">{{ selectedSchedule.timeSlot }}</el-tag></span>
+      </div>
+      <el-card>
+        <template #header>请选择具体就诊时间 (15分钟/号)</template>
+        <el-row :gutter="10">
+          <el-col v-for="time in availableTimeSlots" :key="time" :span="4" class="mb10">
+            <el-button 
+              :type="selectedTime === time ? 'primary' : 'default'" 
+              class="time-slot-btn"
+              @click="handleSelectTime(time)"
+            >
+              {{ time }}
+            </el-button>
+          </el-col>
+        </el-row>
+        <div class="mt20 text-center">
+          <el-button type="primary" size="large" :disabled="!selectedTime" @click="activeStep = 4">下一步</el-button>
+        </div>
+      </el-card>
+    </div>
+
+    <!-- Step 5: Confirm -->
+    <div v-if="activeStep === 4">
       <el-card class="confirm-card">
         <template #header>
           <div class="card-header">
@@ -98,9 +125,12 @@
           <el-descriptions-item label="就诊班次">
              <el-tag>{{ selectedSchedule.timeSlot }}</el-tag>
           </el-descriptions-item>
+          <el-descriptions-item label="就诊时间">
+             <el-tag type="success" effect="dark">{{ selectedTime }}</el-tag>
+          </el-descriptions-item>
         </el-descriptions>
         <div class="mt20 text-center">
-          <el-button @click="activeStep = 2">返回修改</el-button>
+          <el-button @click="activeStep = 3">返回修改</el-button>
           <el-button type="success" size="large" @click="confirmAppointment" :loading="submitting">确认提交预约</el-button>
         </div>
       </el-card>
@@ -131,6 +161,32 @@ const scheduleList = ref([]);
 const selectedDept = ref({});
 const selectedDoctor = ref({});
 const selectedSchedule = ref({});
+const selectedTime = ref("");
+const availableTimeSlots = ref([]);
+
+/** 生成时间段 */
+function generateTimeSlots(slotType) {
+  const slots = [];
+  if (slotType === '上午' || slotType === '全天') {
+    // 8:00 - 11:30
+    for (let h = 8; h <= 11; h++) {
+      for (let m = 0; m < 60; m += 15) {
+        if (h === 11 && m > 15) break; 
+        slots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:00`);
+      }
+    }
+  }
+  if (slotType === '下午' || slotType === '全天') {
+    // 14:00 - 17:30
+    for (let h = 14; h <= 17; h++) {
+      for (let m = 0; m < 60; m += 15) {
+        if (h === 17 && m > 15) break;
+        slots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:00`);
+      }
+    }
+  }
+  return slots;
+}
 
 /** 加载科室列表 */
 function getDeptList() {
@@ -198,7 +254,14 @@ function getScheduleList(doctorId) {
 /** 选择排班 */
 function handleSelectSchedule(schedule) {
   selectedSchedule.value = schedule;
+  availableTimeSlots.value = generateTimeSlots(schedule.timeSlot);
+  selectedTime.value = "";
   activeStep.value = 3;
+}
+
+/** 选择时间 */
+function handleSelectTime(time) {
+  selectedTime.value = time;
 }
 
 /** 提交预约 */
@@ -207,12 +270,17 @@ function confirmAppointment() {
     proxy.$modal.msgError("请先选择一个排班");
     return;
   }
+  if (!selectedTime.value) {
+    proxy.$modal.msgError("请选择就诊时段");
+    return;
+  }
   
   submitting.value = true;
   console.log('Submitting appointment for schedule:', selectedSchedule.value.id);
   
   const data = {
-    scheduleId: selectedSchedule.value.id
+    scheduleId: selectedSchedule.value.id,
+    appointmentTime: selectedTime.value
   };
   
   addAppointment(data).then(response => {

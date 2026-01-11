@@ -27,12 +27,16 @@ public class Appointment implements Serializable {
     /** 排班ID */
     private Long scheduleId;
 
-    /** 状态(待就诊,已取消,已完成) */
+    /** 状态(待就诊,已取消,已完成,取消申请中) */
     private String status;
 
     /** 预约时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date bookedAt;
+
+    /** 预约时段 (如 08:00:00) */
+    @JsonFormat(pattern = "HH:mm:ss")
+    private String appointmentTime;
 
     /** 医生ID (查询用) */
     @TableField(exist = false)

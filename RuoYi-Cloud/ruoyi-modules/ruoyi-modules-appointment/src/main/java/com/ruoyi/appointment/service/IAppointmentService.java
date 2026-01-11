@@ -7,6 +7,8 @@ import java.util.List;
 public interface IAppointmentService extends IService<Appointment> {
     boolean createAppointment(Appointment appointment);
     boolean cancelAppointment(Long appointmentId);
+    boolean requestCancel(Long appointmentId);
+    boolean cancelRequest(Long appointmentId);
     List<Appointment> selectAppointmentList(Appointment appointment);
     java.util.Map<String, Object> selectAppointmentStats();
 }

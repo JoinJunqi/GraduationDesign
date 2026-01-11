@@ -59,14 +59,13 @@
 
     <el-table v-loading="loading" :data="scheduleList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="ID" align="center" prop="id" sortable="custom" />
-      <el-table-column label="科室" align="center" prop="deptName" />
-      <el-table-column label="医生" align="center" prop="doctorName" sortable="custom" />
       <el-table-column label="出诊日期" align="center" prop="workDate" width="120" sortable="custom">
         <template #default="scope">
           <span>{{ parseTime(scope.row.workDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
+      <el-table-column label="科室" align="center" prop="deptName" />
+      <el-table-column label="医生" align="center" prop="doctorName" sortable="custom" />
       <el-table-column label="班次" align="center" prop="timeSlot" sortable="custom" />
       <el-table-column label="总号源" align="center" prop="totalCapacity" sortable="custom" />
       <el-table-column label="剩余号源" align="center" prop="availableSlots" sortable="custom" />
@@ -102,17 +101,18 @@
           />
         </el-form-item>
         <el-form-item label="班次" prop="timeSlot">
-          <el-select v-model="form.timeSlot" placeholder="请选择班次">
+          <el-select v-model="form.timeSlot" placeholder="请选择班次" @change="handleTimeSlotChange">
             <el-option label="上午" value="上午" />
             <el-option label="下午" value="下午" />
             <el-option label="全天" value="全天" />
           </el-select>
         </el-form-item>
         <el-form-item label="总号源" prop="totalCapacity">
-          <el-input-number v-model="form.totalCapacity" :min="1" />
+          <el-input-number v-model="form.totalCapacity" :min="1" :disabled="true" />
+          <div class="help-block" style="font-size: 12px; color: #909399;">按15分钟/号计算</div>
         </el-form-item>
         <el-form-item label="剩余号源" prop="availableSlots">
-          <el-input-number v-model="form.availableSlots" :min="0" />
+          <el-input-number v-model="form.availableSlots" :min="0" :disabled="true" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -185,6 +185,18 @@ function handleSortChange(column) {
   getList();
 }
 
+/** 班次变更自动计算号源 */
+function handleTimeSlotChange(val) {
+  let capacity = 0;
+  if (val === '上午' || val === '下午') {
+    capacity = 14; // 3.5小时 * 60 / 15 = 14
+  } else if (val === '全天') {
+    capacity = 28; // 7小时 * 60 / 15 = 28
+  }
+  form.value.totalCapacity = capacity;
+  form.value.availableSlots = capacity;
+}
+
 /** 查询排班列表 */
 function getList() {
   loading.value = true;
@@ -209,8 +221,8 @@ function reset() {
     doctorName: isDoctor.value ? currentDoctorName.value : null,
     workDate: null,
     timeSlot: null,
-    totalCapacity: 20,
-    availableSlots: 20
+    totalCapacity: 0,
+    availableSlots: 0
   };
   proxy.resetForm("scheduleRef");
 }

@@ -56,6 +56,18 @@ public class AppointmentController extends BaseController
         return ResultVO.success(appointmentService.cancelAppointment(id));
     }
 
+    @PostMapping("/request-cancel/{id}")
+    public ResultVO<Boolean> requestCancel(@PathVariable Long id)
+    {
+        return ResultVO.success(appointmentService.requestCancel(id));
+    }
+
+    @PostMapping("/cancel-request/{id}")
+    public ResultVO<Boolean> cancelRequest(@PathVariable Long id)
+    {
+        return ResultVO.success(appointmentService.cancelRequest(id));
+    }
+
     @PutMapping("/status")
     public ResultVO<Boolean> updateStatus(@RequestParam("id") Long id, @RequestParam("status") String status)
     {

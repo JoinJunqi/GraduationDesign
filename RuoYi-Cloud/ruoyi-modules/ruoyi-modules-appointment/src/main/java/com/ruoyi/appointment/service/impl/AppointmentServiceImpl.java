@@ -127,6 +127,17 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
             throw new ServiceException("您已预约过该时段，请勿重复预约");
         }
 
+        // 1.1 检查该时段是否已被占用
+        if (appointment.getAppointmentTime() != null) {
+            Long timeCount = this.count(new LambdaQueryWrapper<Appointment>()
+                    .eq(Appointment::getScheduleId, appointment.getScheduleId())
+                    .eq(Appointment::getAppointmentTime, appointment.getAppointmentTime())
+                    .ne(Appointment::getStatus, "已取消"));
+            if (timeCount > 0) {
+                throw new ServiceException("该具体时段已被预约，请选择其他时段");
+            }
+        }
+
         // 2. 检查排班是否存在及剩余号源 (Redis 优先)
         Long scheduleId = appointment.getScheduleId();
         String redisKey = getScheduleRedisKey(scheduleId);
@@ -228,35 +239,23 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean cancelAppointment(Long appointmentId) {
+        log.info("Cancelling appointment ID: {}", appointmentId);
         Appointment appointment = this.getById(appointmentId);
         if (appointment == null) {
             throw new ServiceException("预约记录不存在");
         }
-        
-        if (!"待就诊".equals(appointment.getStatus())) {
-            throw new ServiceException("当前状态不可取消");
+
+        if ("已取消".equals(appointment.getStatus())) {
+            throw new ServiceException("预约已取消，请勿重复操作");
         }
 
-        // 1. 归还号源 (Redis 优先)
+        // 1. 恢复 Redis 号源
         Long scheduleId = appointment.getScheduleId();
         String redisKey = getScheduleRedisKey(scheduleId);
-        
-        Long remaining;
-        // 先检查 Redis key 是否存在
-        if (Boolean.TRUE.equals(redisService.redisTemplate.hasKey(redisKey))) {
-            remaining = redisService.redisTemplate.opsForValue().increment(redisKey);
-        } else {
-            // Redis 不存在，从数据库加载并加1
-            ResultVO<Schedule> scheduleResult = remoteScheduleService.getById(scheduleId);
-            if (scheduleResult != null && scheduleResult.getData() != null) {
-                remaining = (long) (scheduleResult.getData().getAvailableSlots() + 1);
-                redisService.setCacheObject(redisKey, remaining.intValue(), 24L, java.util.concurrent.TimeUnit.HOURS);
-            } else {
-                throw new ServiceException("排班信息不存在");
-            }
-        }
+        Long remaining = redisService.redisTemplate.opsForValue().increment(redisKey);
+        log.info("Redis slots incremented for schedule {}. New remaining: {}", scheduleId, remaining);
 
-        // 2. 同步到排班服务
+        // 2. 更新数据库排班号源 (Feign)
         Schedule updateSchedule = new Schedule();
         updateSchedule.setId(scheduleId);
         updateSchedule.setAvailableSlots(remaining != null ? remaining.intValue() : 0);
@@ -264,6 +263,32 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
 
         // 3. 更新预约状态
         appointment.setStatus("已取消");
+        return this.updateById(appointment);
+    }
+
+    @Override
+    public boolean requestCancel(Long appointmentId) {
+        Appointment appointment = this.getById(appointmentId);
+        if (appointment == null) {
+            throw new ServiceException("预约记录不存在");
+        }
+        if (!"待就诊".equals(appointment.getStatus())) {
+            throw new ServiceException("只有待就诊状态可以发起取消申请");
+        }
+        appointment.setStatus("取消申请中");
+        return this.updateById(appointment);
+    }
+
+    @Override
+    public boolean cancelRequest(Long appointmentId) {
+        Appointment appointment = this.getById(appointmentId);
+        if (appointment == null) {
+            throw new ServiceException("预约记录不存在");
+        }
+        if (!"取消申请中".equals(appointment.getStatus())) {
+            throw new ServiceException("当前状态不可撤回申请");
+        }
+        appointment.setStatus("待就诊");
         return this.updateById(appointment);
     }
 
