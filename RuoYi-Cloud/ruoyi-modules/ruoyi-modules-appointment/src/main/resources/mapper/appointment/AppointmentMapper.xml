@@ -35,6 +35,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="scheduleId != null "> and a.schedule_id = #{scheduleId}</if>
             <if test="status != null  and status != ''"> and a.status = #{status}</if>
             <if test="doctorId != null "> and s.doctor_id = #{doctorId}</if>
+            <if test="patientName != null and patientName != ''"> and p.name like concat('%', #{patientName}, '%')</if>
         </where>
     </select>
     

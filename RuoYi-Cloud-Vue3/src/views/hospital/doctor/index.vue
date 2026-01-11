@@ -81,7 +81,7 @@
 </template>
 
 <script setup name="Doctor">
-import { listDoctorAll, delDoctor } from "@/api/hospital/doctor";
+import { listDoctor, delDoctor } from "@/api/hospital/doctor.js";
 
 const { proxy } = getCurrentInstance();
 const router = useRouter();
@@ -105,7 +105,7 @@ const { queryParams } = toRefs(data);
 /** 查询医生列表 */
 function getList() {
   loading.value = true;
-  listDoctorAll(queryParams.value).then(response => {
+  listDoctor(queryParams.value).then(response => {
     doctorList.value = response.data;
     loading.value = false;
   });
