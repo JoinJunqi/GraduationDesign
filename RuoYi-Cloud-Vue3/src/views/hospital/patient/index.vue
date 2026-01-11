@@ -4,7 +4,15 @@
       <el-form-item label="姓名" prop="name">
         <el-input
           v-model="queryParams.name"
-          placeholder="请输入姓名"
+          placeholder="请输入患者姓名"
+          clearable
+          @keyup.enter="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="登录账号" prop="username">
+        <el-input
+          v-model="queryParams.username"
+          placeholder="请输入登录账号"
           clearable
           @keyup.enter="handleQuery"
         />
@@ -16,6 +24,18 @@
           clearable
           @keyup.enter="handleQuery"
         />
+      </el-form-item>
+      <el-form-item label="状态" prop="isActive">
+        <el-select
+          v-model="queryParams.isActive"
+          placeholder="状态"
+          clearable
+          style="width: 100px"
+          @change="handleQuery"
+        >
+          <el-option label="启用" :value="1" />
+          <el-option label="停用" :value="0" />
+        </el-select>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
@@ -59,10 +79,20 @@
     <el-table v-loading="loading" :data="patientList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="id" sortable="custom" />
-      <el-table-column label="登录账号" align="center" prop="username" sortable="custom" />
       <el-table-column label="姓名" align="center" prop="name" sortable="custom" />
+      <el-table-column label="登录账号" align="center" prop="username" sortable="custom" />
       <el-table-column label="手机号" align="center" prop="phone" />
       <el-table-column label="身份证号" align="center" prop="idCard" />
+      <el-table-column label="状态" align="center" prop="isActive" sortable="custom">
+        <template #default="scope">
+          <el-switch
+            v-model="scope.row.isActive"
+            :active-value="1"
+            :inactive-value="0"
+            @change="handleStatusChange(scope.row)"
+          ></el-switch>
+        </template>
+      </el-table-column>
       <el-table-column label="创建时间" align="center" prop="createdAt" width="180" sortable="custom">
         <template #default="scope">
           <span>{{ parseTime(scope.row.createdAt) }}</span>
@@ -70,6 +100,7 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
+          <el-button link type="primary" icon="Key" @click="handleResetPwd(scope.row)" v-hasPermi="['hospital:patient:edit']">重置密码</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:patient:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hospital:patient:remove']">删除</el-button>
         </template>
@@ -87,9 +118,12 @@
 </template>
 
 <script setup name="Patient">
-import { listPatient, delPatient } from "@/api/hospital/patient";
+import { listPatient, getPatient, delPatient, addPatient, updatePatient, resetPatientPwd } from "@/api/hospital/patient";
+import { getCurrentInstance, ref, reactive, toRefs, onMounted } from "vue";
+import { useRouter } from "vue-router";
 
 const { proxy } = getCurrentInstance();
+const { parseTime } = proxy;
 const router = useRouter();
 
 const patientList = ref([]);
@@ -106,7 +140,9 @@ const data = reactive({
     pageSize: 10,
     name: null,
     phone: null,
-    orderByColumn: "createdAt",
+    username: null,
+    isActive: null,
+    orderByColumn: "id",
     isAsc: "descending"
   }
 });
@@ -132,6 +168,7 @@ function handleSortChange(column) {
 
 /** 搜索按钮操作 */
 function handleQuery() {
+  queryParams.value.pageNum = 1;
   getList();
 }
 
@@ -150,25 +187,54 @@ function handleSelectionChange(selection) {
 
 /** 新增按钮操作 */
 function handleAdd() {
-  router.push("/hospital/patient/add");
+  router.push("/hospital/patient-detail/add");
 }
 
 /** 修改按钮操作 */
 function handleUpdate(row) {
   const id = row.id || ids.value;
-  router.push("/hospital/patient/edit/" + id);
+  router.push("/hospital/patient-detail/edit/" + id);
 }
 
 /** 删除按钮操作 */
 function handleDelete(row) {
   const patientIds = row.id || ids.value;
-  proxy.$modal.confirm('是否确认删除患者编号为"' + patientIds + '"的数据项？').then(function() {
+  proxy.$modal.confirm('是否确认删除患者编号为"' + patientIds + '"的数据项？').then(function () {
     return delPatient(patientIds);
   }).then(() => {
     getList();
     proxy.$modal.msgSuccess("删除成功");
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
-getList();
+/** 状态修改 */
+function handleStatusChange(row) {
+  let text = row.isActive === 1 ? "启用" : "停用";
+  proxy.$modal.confirm('确认要"' + text + '""' + row.name + '"吗？').then(function () {
+    return updatePatient({ id: row.id, isActive: row.isActive });
+  }).then(() => {
+    proxy.$modal.msgSuccess(text + "成功");
+  }).catch(function () {
+    row.isActive = row.isActive === 1 ? 0 : 1;
+  });
+}
+
+/** 重置密码按钮操作 */
+function handleResetPwd(row) {
+  proxy.$prompt('请输入"' + row.name + '"的新密码', "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    closeOnClickModal: false,
+    inputPattern: /^.{5,20}$/,
+    inputErrorMessage: "密码长度需在 5 到 20 个字符之间",
+  }).then(({ value }) => {
+    resetPatientPwd(row.id, value).then(response => {
+      proxy.$modal.msgSuccess("修改成功，新密码为：" + value);
+    });
+  }).catch(() => { });
+}
+
+onMounted(() => {
+  getList();
+});
 </script>

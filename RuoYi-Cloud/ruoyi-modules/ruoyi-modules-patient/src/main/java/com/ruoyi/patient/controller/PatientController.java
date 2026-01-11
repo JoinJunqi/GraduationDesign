@@ -88,4 +88,10 @@ public class PatientController extends BaseController
     {
         return ResultVO.success(patientService.updatePassword(oldPassword, newPassword));
     }
+
+    @PutMapping("/resetPwd")
+    public ResultVO<Boolean> resetPwd(@RequestBody Patient patient)
+    {
+        return ResultVO.success(patientService.resetPatientPwd(patient.getId(), patient.getPassword()) > 0);
+    }
 }

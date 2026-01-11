@@ -205,8 +205,10 @@
 <script setup name="HospitalNotice">
 import { listNotice, getNotice, delNotice, addNotice, updateNotice } from "@/api/hospital/notice";
 import useUserStore from "@/store/modules/user";
+import { getCurrentInstance, ref, reactive, toRefs, onMounted } from "vue";
 
 const { proxy } = getCurrentInstance();
+const { parseTime } = proxy;
 const userStore = useUserStore();
 
 const noticeList = ref([]);
@@ -236,6 +238,10 @@ const data = reactive({
 });
 
 const { queryParams, form, rules } = toRefs(data);
+
+onMounted(() => {
+  getList();
+});
 
 /** 查询通知列表 */
 function getList() {
@@ -362,5 +368,7 @@ function getPriorityTag(priority) {
   return map[priority] || 'info';
 }
 
-getList();
+onMounted(() => {
+  getList();
+});
 </script>

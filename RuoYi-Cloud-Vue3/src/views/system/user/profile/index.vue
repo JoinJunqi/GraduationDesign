@@ -75,7 +75,7 @@ import { ref, reactive, onMounted, computed } from 'vue';
 import userAvatar from "./userAvatar";
 import userInfo from "./userInfo";
 import resetPwd from "./resetPwd";
-import { getInfo } from "@/api/login";
+import { getUserProfile } from "@/api/system/user";
 import useUserStore from "@/store/modules/user";
 
 const userStore = useUserStore();
@@ -88,21 +88,18 @@ const state = reactive({
 });
 
 function getUser() {
-  getInfo().then(response => {
+  getUserProfile().then(response => {
     const data = response.data;
     if (loginType.value === 'patient') {
-      state.user = data.patient || {};
+      state.user = data.patient || data.user || data;
       state.roleGroup = "患者";
     } else if (loginType.value === 'doctor') {
-      state.user = data.doctor || {};
+      state.user = data.doctor || data.user || data;
       state.roleGroup = "医生";
     } else {
       state.user = data.user || data;
-      if (data.roles && data.roles.length > 0) {
-        state.roleGroup = data.roles.join(" / ");
-      } else {
-        state.roleGroup = "无角色";
-      }
+      state.roleGroup = data.roleGroup;
+      state.postGroup = data.postGroup;
     }
   });
 };

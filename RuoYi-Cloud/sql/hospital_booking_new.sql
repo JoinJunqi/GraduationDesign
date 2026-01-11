@@ -11,7 +11,7 @@
  Target Server Version : 50732 (5.7.32-log)
  File Encoding         : 65001
 
- Date: 12/01/2026 01:06:55
+ Date: 12/01/2026 02:55:34
 */
 
 SET NAMES utf8mb4;
@@ -2295,7 +2295,6 @@ INSERT INTO `sys_menu` VALUES (10, '医生新增', 4, 2, '#', '', NULL, '', '1',
 INSERT INTO `sys_menu` VALUES (11, '医生修改', 4, 3, '#', '', NULL, '', '1', '0', 'F', '0', '0', 'hospital:doctor:edit', '#', 'admin', '2026-01-08 16:14:48', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (12, '医生删除', 4, 4, '#', '', NULL, '', '1', '0', 'F', '0', '0', 'hospital:doctor:remove', '#', 'admin', '2026-01-08 16:14:48', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (13, '预约挂号', 1, 8, 'register', 'hospital/appointment/register', NULL, '', '1', '0', 'C', '0', '0', 'hospital:appointment:register', 'edit', 'admin', '2026-01-10 20:06:16', '', NULL, '');
-INSERT INTO `sys_menu` VALUES (14, '预约挂号', 1, 8, 'register', 'hospital/appointment/register', NULL, '', '1', '0', 'C', '0', '0', 'hospital:appointment:register', 'edit', 'admin', '2026-01-10 21:41:33', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (15, '医院信息管理', 1, 9, 'notice', 'hospital/notice/index', NULL, '', '1', '0', 'C', '0', '0', 'hospital:notice:list', 'message', 'admin', '2026-01-12 10:00:00', '', NULL, '');
 
 -- ----------------------------

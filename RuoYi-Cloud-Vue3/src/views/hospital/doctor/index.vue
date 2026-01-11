@@ -9,13 +9,40 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="所属科室" prop="deptId">
+      <el-form-item label="登录账号" prop="username">
         <el-input
-          v-model="queryParams.deptId"
-          placeholder="请输入科室ID"
+          v-model="queryParams.username"
+          placeholder="请输入登录账号"
           clearable
           @keyup.enter="handleQuery"
         />
+      </el-form-item>
+      <el-form-item label="所属科室" prop="deptId">
+        <el-select
+          v-model="queryParams.deptId"
+          placeholder="请选择科室"
+          clearable
+          @change="handleQuery"
+        >
+          <el-option
+            v-for="item in departmentOptions"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="状态" prop="isActive">
+        <el-select
+          v-model="queryParams.isActive"
+          placeholder="状态"
+          clearable
+          style="width: 100px"
+          @change="handleQuery"
+        >
+          <el-option label="在职" :value="1" />
+          <el-option label="离职" :value="0" />
+        </el-select>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
@@ -65,9 +92,12 @@
       <el-table-column label="账号" align="center" prop="username" sortable="custom" />
       <el-table-column label="状态" align="center" prop="isActive" sortable="custom">
         <template #default="scope">
-          <el-tag :type="scope.row.isActive ? 'success' : 'danger'">
-            {{ scope.row.isActive ? '在职' : '离职' }}
-          </el-tag>
+          <el-switch
+            v-model="scope.row.isActive"
+            :active-value="true"
+            :inactive-value="false"
+            @change="handleStatusChange(scope.row)"
+          ></el-switch>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
@@ -90,7 +120,10 @@
 </template>
 
 <script setup name="Doctor">
-import { listDoctor, delDoctor, resetDoctorPwd } from "@/api/hospital/doctor.js";
+import { listDoctor, delDoctor, resetDoctorPwd, updateDoctor } from "@/api/hospital/doctor.js";
+import { listDepartment } from "@/api/hospital/department";
+import { getCurrentInstance, ref, reactive, toRefs, onMounted } from "vue";
+import { useRouter } from "vue-router";
 
 const { proxy } = getCurrentInstance();
 const router = useRouter();
@@ -102,19 +135,41 @@ const ids = ref([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
+const departmentOptions = ref([]);
 
 const data = reactive({
   queryParams: {
     pageNum: 1,
     pageSize: 10,
     name: null,
+    username: null,
     deptId: null,
+    isActive: null,
     orderByColumn: "id",
-    isAsc: "ascending"
+    isAsc: "descending"
   }
 });
 
 const { queryParams } = toRefs(data);
+
+/** 医生状态修改 */
+function handleStatusChange(row) {
+  let text = row.isActive ? "启用" : "停用";
+  proxy.$modal.confirm('确认要"' + text + '""' + row.name + '"医生吗？').then(function () {
+    return updateDoctor({ id: row.id, isActive: row.isActive });
+  }).then(() => {
+    proxy.$modal.msgSuccess(text + "成功");
+  }).catch(function () {
+    row.isActive = !row.isActive;
+  });
+}
+
+/** 查询科室列表 */
+function getDepartmentList() {
+  listDepartment().then(response => {
+    departmentOptions.value = response.rows;
+  });
+}
 
 /** 查询医生列表 */
 function getList() {
@@ -135,6 +190,7 @@ function handleSortChange(column) {
 
 /** 搜索按钮操作 */
 function handleQuery() {
+  queryParams.value.pageNum = 1;
   getList();
 }
 
@@ -153,13 +209,24 @@ function handleSelectionChange(selection) {
 
 /** 新增按钮操作 */
 function handleAdd() {
-  router.push("/hospital/doctor/add");
+  router.push("/hospital/doctor-detail/add");
 }
 
 /** 修改按钮操作 */
 function handleUpdate(row) {
   const id = row.id || ids.value;
-  router.push("/hospital/doctor/edit/" + id);
+  router.push("/hospital/doctor-detail/edit/" + id);
+}
+
+/** 删除按钮操作 */
+function handleDelete(row) {
+  const doctorIds = row.id || ids.value;
+  proxy.$modal.confirm('是否确认删除医生编号为"' + doctorIds + '"的数据项？').then(function () {
+    return delDoctor(doctorIds);
+  }).then(() => {
+    getList();
+    proxy.$modal.msgSuccess("删除成功");
+  }).catch(() => { });
 }
 
 /** 重置密码按钮操作 */
@@ -169,24 +236,16 @@ function handleResetPwd(row) {
     cancelButtonText: "取消",
     closeOnClickModal: false,
     inputPattern: /^.{5,20}$/,
-    inputErrorMessage: "密码长度需在 5 到 20 个字符之间",
+    inputErrorMessage: "用户密码长度必须介于 5 和 20 之间",
   }).then(({ value }) => {
     resetDoctorPwd(row.id, value).then(response => {
-      proxy.$modal.msgSuccess("修改成功，新密码为：" + value);
+      proxy.$modal.msgSuccess("修改成功，新密码是：" + value);
     });
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
-/** 删除按钮操作 */
-function handleDelete(row) {
-  const doctorIds = row.id || ids.value;
-  proxy.$modal.confirm('是否确认删除医生编号为"' + doctorIds + '"的数据项？').then(function() {
-    return delDoctor(doctorIds);
-  }).then(() => {
-    getList();
-    proxy.$modal.msgSuccess("删除成功");
-  }).catch(() => {});
-}
-
-getList();
+onMounted(() => {
+  getList();
+  getDepartmentList();
+});
 </script>

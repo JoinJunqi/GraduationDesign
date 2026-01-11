@@ -49,6 +49,12 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
         if (patient.getIdCard() != null && !patient.getIdCard().isEmpty()) {
             queryWrapper.eq(Patient::getIdCard, patient.getIdCard());
         }
+        if (patient.getUsername() != null && !patient.getUsername().isEmpty()) {
+            queryWrapper.like(Patient::getUsername, patient.getUsername());
+        }
+        if (patient.getIsActive() != null) {
+            queryWrapper.eq(Patient::getIsActive, patient.getIsActive());
+        }
         return patientMapper.selectList(queryWrapper);
     }
 
@@ -75,7 +81,7 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
     public int resetPatientPwd(Long userId, String password) {
         Patient patient = new Patient();
         patient.setId(userId);
-        patient.setPasswordHash(password);
+        patient.setPasswordHash(SecurityUtils.encryptPassword(password));
         return patientMapper.updateById(patient);
     }
 
@@ -140,7 +146,12 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
         if (!checkUsernameUnique(patient.getUsername())) {
             throw new ServiceException("新增失败，账号 '" + patient.getUsername() + "' 已存在");
         }
-        patient.setPasswordHash(SecurityUtils.encryptPassword(patient.getPasswordHash()));
+        if (patient.getPassword() != null && !patient.getPassword().isEmpty()) {
+            patient.setPasswordHash(SecurityUtils.encryptPassword(patient.getPassword()));
+        } else {
+            // 默认密码
+            patient.setPasswordHash(SecurityUtils.encryptPassword("123456"));
+        }
         return save(patient);
     }
 
@@ -152,8 +163,8 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
         if (!checkIdCardUnique(patient)) {
             throw new ServiceException("修改失败，身份证号 '" + patient.getIdCard() + "' 已存在");
         }
-        if (patient.getPasswordHash() != null && !patient.getPasswordHash().isEmpty()) {
-            patient.setPasswordHash(SecurityUtils.encryptPassword(patient.getPasswordHash()));
+        if (patient.getPassword() != null && !patient.getPassword().isEmpty()) {
+            patient.setPasswordHash(SecurityUtils.encryptPassword(patient.getPassword()));
         }
         return updateById(patient);
     }
@@ -192,6 +203,6 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
         if (SecurityUtils.matchesPassword(newPassword, password)) {
             throw new ServiceException("新密码不能与旧密码相同");
         }
-        return resetPatientPwd(userId, SecurityUtils.encryptPassword(newPassword)) > 0;
+        return resetPatientPwd(userId, newPassword) > 0;
     }
 }

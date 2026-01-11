@@ -126,12 +126,13 @@
 </template>
 
 <script setup name="Schedule">
-import { ref, reactive, toRefs, computed, getCurrentInstance } from 'vue';
+import { ref, reactive, toRefs, computed, getCurrentInstance, onMounted } from 'vue';
 import { listSchedule, getSchedule, delSchedule, addSchedule, updateSchedule } from "@/api/hospital/schedule";
 import useUserStore from "@/store/modules/user";
 
 const userStore = useUserStore();
 const { proxy } = getCurrentInstance();
+const { parseTime } = proxy;
 
 const isDoctor = computed(() => userStore.roles.includes('doctor'));
 const currentDoctorName = computed(() => userStore.nickName);
@@ -177,6 +178,10 @@ const data = reactive({
 });
 
 const { queryParams, form, rules } = toRefs(data);
+
+onMounted(() => {
+  getList();
+});
 
 /** 排序触发事件 */
 function handleSortChange(column) {
@@ -298,5 +303,4 @@ function handleDelete(row) {
   }).catch(() => {});
 }
 
-getList();
 </script>

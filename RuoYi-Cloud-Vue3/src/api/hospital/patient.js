@@ -43,23 +43,16 @@ export function delPatient(id) {
   })
 }
 
-// 患者注册
-export function registerPatient(data) {
+// 重置患者密码
+export function resetPatientPwd(id, password) {
+  const data = {
+    id,
+    password
+  }
   return request({
-    url: '/ruoyi-hospital-patient/patient/register',
-    headers: {
-      isToken: false
-    },
-    method: 'post',
+    url: '/ruoyi-hospital-patient/patient/resetPwd',
+    method: 'put',
     data: data
-  })
-}
-
-// 获取患者个人信息
-export function getPatientProfile() {
-  return request({
-    url: '/ruoyi-hospital-patient/patient/profile',
-    method: 'get'
   })
 }
 

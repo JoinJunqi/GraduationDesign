@@ -126,8 +126,10 @@
 
 <script setup name="Department">
 import { listDepartment, getDepartment, delDepartment, addDepartment, updateDepartment, getDepartmentIntro, saveDepartmentIntro } from "@/api/hospital/department";
+import { getCurrentInstance, ref, reactive, toRefs, onMounted } from "vue";
 
 const { proxy } = getCurrentInstance();
+const { parseTime } = proxy;
 
 const departmentList = ref([]);
 const open = ref(false);
@@ -290,5 +292,7 @@ function handleDelete(row) {
   }).catch(() => {});
 }
 
-getList();
+onMounted(() => {
+  getList();
+});
 </script>

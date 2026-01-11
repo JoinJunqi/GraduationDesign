@@ -75,7 +75,9 @@ export function getUserProfile() {
   const loginType = localStorage.getItem('loginType') || 'admin'
   let url = '/system/admin/profile'
   if (loginType === 'patient') {
-    url = '/patient/profile'
+    url = '/ruoyi-hospital-patient/patient/profile'
+  } else if (loginType === 'doctor') {
+    url = '/ruoyi-hospital-doctor/doctor/profile'
   }
   return request({
     url: url,
@@ -88,7 +90,9 @@ export function updateUserProfile(data) {
   const loginType = localStorage.getItem('loginType') || 'admin'
   let url = '/system/admin/profile'
   if (loginType === 'patient') {
-    url = '/patient/profile'
+    url = '/ruoyi-hospital-patient/patient/profile'
+  } else if (loginType === 'doctor') {
+    url = '/ruoyi-hospital-doctor/doctor/profile'
   }
   return request({
     url: url,
@@ -102,7 +106,9 @@ export function updateUserPwd(oldPassword, newPassword) {
   const loginType = localStorage.getItem('loginType') || 'admin'
   let url = '/system/admin/profile/updatePwd'
   if (loginType === 'patient') {
-    url = '/patient/profile/updatePwd'
+    url = '/ruoyi-hospital-patient/patient/profile/updatePwd'
+  } else if (loginType === 'doctor') {
+    url = '/ruoyi-hospital-doctor/doctor/profile/updatePwd'
   }
   const data = {
     oldPassword,

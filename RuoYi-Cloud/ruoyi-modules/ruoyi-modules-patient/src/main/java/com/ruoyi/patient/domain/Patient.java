@@ -38,6 +38,13 @@ public class Patient implements Serializable {
     /** 头像 */
     private String avatar;
 
+    /** 是否有效(1是,0否) */
+    private Integer isActive;
+
     /** 创建时间 */
     private Date createdAt;
+
+    /** 重置密码用 (不存库) */
+    @TableField(exist = false)
+    private String password;
 }

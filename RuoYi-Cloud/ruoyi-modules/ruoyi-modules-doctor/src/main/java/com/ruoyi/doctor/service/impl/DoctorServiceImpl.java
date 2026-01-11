@@ -96,8 +96,8 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
         if (!checkUsernameUnique(doctor.getUsername())) {
             throw new ServiceException("新增失败，账号 '" + doctor.getUsername() + "' 已存在");
         }
-        if (doctor.getPasswordHash() != null && !doctor.getPasswordHash().isEmpty()) {
-            doctor.setPasswordHash(SecurityUtils.encryptPassword(doctor.getPasswordHash()));
+        if (doctor.getPassword() != null && !doctor.getPassword().isEmpty()) {
+            doctor.setPasswordHash(SecurityUtils.encryptPassword(doctor.getPassword()));
         } else {
             // 默认密码
             doctor.setPasswordHash(SecurityUtils.encryptPassword("123456"));
@@ -107,8 +107,11 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
 
     @Override
     public boolean updateDoctor(Doctor doctor) {
-        if (doctor.getPasswordHash() != null && !doctor.getPasswordHash().isEmpty()) {
-            doctor.setPasswordHash(SecurityUtils.encryptPassword(doctor.getPasswordHash()));
+        if (doctor.getPassword() != null && !doctor.getPassword().isEmpty()) {
+            doctor.setPasswordHash(SecurityUtils.encryptPassword(doctor.getPassword()));
+        } else {
+            // 如果没传新密码，则不修改密码字段
+            doctor.setPasswordHash(null);
         }
         return updateById(doctor);
     }

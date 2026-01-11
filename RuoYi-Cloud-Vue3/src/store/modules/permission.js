@@ -63,9 +63,17 @@ const usePermissionStore = defineStore(
           getRouters().then(res => {
             let menuData = res.data
             
-            // 移除管理员界面的“预约挂号”功能入口（预约挂号是患者端功能）
+            // 路由去重处理（防止后端返回重复的根菜单）
+            const seenPaths = new Set();
             menuData = menuData.filter(route => {
-              if (route.path === '/hospital' || route.path === 'hospital') {
+              const fullPath = route.path.startsWith('/') ? route.path : '/' + route.path;
+              if (seenPaths.has(fullPath)) {
+                return false;
+              }
+              seenPaths.add(fullPath);
+              
+              // 移除管理员界面的“预约挂号”功能入口（预约挂号是患者端功能）
+              if (fullPath === '/hospital') {
                 if (route.children) {
                   route.children = route.children.filter(child => 
                     child.path !== 'register' && child.name !== 'Register' && 
