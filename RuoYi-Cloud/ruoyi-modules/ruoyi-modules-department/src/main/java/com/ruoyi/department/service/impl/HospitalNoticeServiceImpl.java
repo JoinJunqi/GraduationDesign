@@ -15,12 +15,10 @@ import java.util.List;
 @Service
 public class HospitalNoticeServiceImpl extends ServiceImpl<HospitalNoticeMapper, HospitalNotice> implements IHospitalNoticeService {
     @Override
-    public List<HospitalNotice> selectActiveNoticeList() {
-        Date now = new Date();
+    public List<HospitalNotice> selectActiveNoticeList(String targetAudience) {
         return this.list(new LambdaQueryWrapper<HospitalNotice>()
                 .eq(HospitalNotice::getIsActive, 1)
-                .le(HospitalNotice::getPublishTime, now)
-                .and(w -> w.isNull(HospitalNotice::getExpireTime).or().ge(HospitalNotice::getExpireTime, now))
+                .and(targetAudience != null, w -> w.eq(HospitalNotice::getTargetAudience, "全部").or().eq(HospitalNotice::getTargetAudience, targetAudience))
                 .orderByDesc(HospitalNotice::getIsTop)
                 .orderByDesc(HospitalNotice::getPublishTime));
     }

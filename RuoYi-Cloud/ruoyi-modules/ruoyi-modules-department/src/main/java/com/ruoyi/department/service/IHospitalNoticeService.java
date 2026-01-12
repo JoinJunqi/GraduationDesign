@@ -10,8 +10,9 @@ import java.util.List;
 public interface IHospitalNoticeService extends IService<HospitalNotice> {
     /**
      * 查询有效通知列表
+     * @param targetAudience 目标受众
      */
-    List<HospitalNotice> selectActiveNoticeList();
+    List<HospitalNotice> selectActiveNoticeList(String targetAudience);
 
     /**
      * 查询通知列表

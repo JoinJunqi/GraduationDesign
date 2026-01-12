@@ -132,7 +132,7 @@ import { useRouter } from 'vue-router'
 import useUserStore from '@/store/modules/user'
 import { parseTime } from '@/utils/ruoyi'
 import { listDepartmentWithIntro } from '@/api/hospital/department'
-import { listNotice, getNotice } from '@/api/hospital/notice'
+import { listActiveNotice, getNotice } from '@/api/hospital/notice'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -170,7 +170,13 @@ function getDeptList() {
 }
 
 function getNoticeList() {
-  listNotice().then(res => {
+  const audienceMap = {
+    'admin': '管理员',
+    'patient': '患者',
+    'doctor': '医生'
+  }
+  
+  listActiveNotice({ targetAudience: audienceMap[userStore.loginType] }).then(res => {
     noticeList.value = res.data
   })
 }

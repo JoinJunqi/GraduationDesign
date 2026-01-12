@@ -19,7 +19,7 @@ public class HospitalNoticeController extends BaseController {
     private IHospitalNoticeService hospitalNoticeService;
 
     /**
-     * 查询有效通知列表
+     * 查询通知列表
      */
     @GetMapping("/list")
     public TableDataInfo list(HospitalNotice notice) {
@@ -27,6 +27,14 @@ public class HospitalNoticeController extends BaseController {
         startOrderBy();
         List<HospitalNotice> list = hospitalNoticeService.selectNoticeList(notice);
         return getDataTable(list);
+    }
+
+    /**
+     * 获取供首页展示的有效通知列表
+     */
+    @GetMapping("/activeList")
+    public ResultVO<List<HospitalNotice>> activeList(@RequestParam(value = "targetAudience", required = false) String targetAudience) {
+        return ResultVO.success(hospitalNoticeService.selectActiveNoticeList(targetAudience));
     }
 
     /**

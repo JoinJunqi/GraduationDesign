@@ -9,6 +9,15 @@ export function listNotice(query) {
   })
 }
 
+// 查询供首页展示的有效通知列表
+export function listActiveNotice(query) {
+  return request({
+    url: '/ruoyi-hospital-department/notice/activeList',
+    method: 'get',
+    params: query
+  })
+}
+
 // 获取通知详细信息
 export function getNotice(id) {
   return request({
