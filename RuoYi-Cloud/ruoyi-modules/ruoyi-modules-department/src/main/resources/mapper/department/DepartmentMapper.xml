@@ -14,7 +14,7 @@
     <select id="selectDepartmentWithIntroList" resultMap="DepartmentResult">
         SELECT d.*, di.overview
         FROM department d
-        LEFT JOIN department_intro di ON d.id = di.dept_id
+        LEFT JOIN department_intro di ON d.id = di.dept_id AND di.is_active = 1
         <where>
             <if test="name != null and name != ''">
                 AND d.name LIKE CONCAT('%', #{name}, '%')

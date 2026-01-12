@@ -34,9 +34,28 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
     private boolean isAdminUser() {
         LoginUser loginUser = SecurityUtils.getLoginUser();
         if (loginUser == null) return false;
+        
+        // 1. 检查角色标识 (不区分大小写)
         Set<String> roles = loginUser.getRoles();
-        // 严格检查角色标识，不再仅依赖ID=1判断，因为不同表的ID可能冲突
-        return roles != null && (roles.contains("admin") || roles.contains("ROLE_ADMIN"));
+        if (roles != null) {
+            for (String role : roles) {
+                if ("admin".equalsIgnoreCase(role) || "ROLE_ADMIN".equalsIgnoreCase(role)) {
+                    return true;
+                }
+            }
+        }
+        
+        // 2. 检查用户ID (RuoYi默认超级管理员ID为1)
+        if (loginUser.getUserid() != null && loginUser.getUserid() == 1L) {
+            return true;
+        }
+
+        // 3. 检查系统用户标识 (如果存在)
+        if (loginUser.getSysUser() != null && loginUser.getSysUser().isAdmin()) {
+            return true;
+        }
+
+        return false;
     }
 
     @Override
@@ -49,8 +68,13 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         if (isAdminUser()) {
             log.info("Admin access: viewing all records");
         } else if (roles.contains("doctor")) {
-            log.info("Doctor access: filtering by doctorId={}", userId);
-            medicalRecord.setDoctorId(userId);
+            // 医生视角：如果提供了患者查询条件，则允许查看该患者的所有病历；否则只看自己开具的病历
+            if (medicalRecord.getPatientId() != null || (medicalRecord.getPatientName() != null && !medicalRecord.getPatientName().isEmpty())) {
+                log.info("Doctor access: searching for patient history. Not filtering by doctorId.");
+            } else {
+                log.info("Doctor access: no patient filter, defaulting to own records. doctorId={}", userId);
+                medicalRecord.setDoctorId(userId);
+            }
         } else if (roles.contains("patient")) {
             log.info("Patient access: filtering by patientId={}", userId);
             medicalRecord.setPatientId(userId);

@@ -42,6 +42,36 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         return SCHEDULE_SLOTS_KEY + scheduleId;
     }
 
+    /**
+     * 判断是否为管理员
+     */
+    private boolean isAdminUser() {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (loginUser == null) return false;
+        
+        // 1. 检查角色标识 (不区分大小写)
+        Set<String> roles = loginUser.getRoles();
+        if (roles != null) {
+            for (String role : roles) {
+                if ("admin".equalsIgnoreCase(role) || "ROLE_ADMIN".equalsIgnoreCase(role)) {
+                    return true;
+                }
+            }
+        }
+        
+        // 2. 检查用户ID (RuoYi默认超级管理员ID为1)
+        if (loginUser.getUserid() != null && loginUser.getUserid() == 1L) {
+            return true;
+        }
+
+        // 3. 检查系统用户标识 (如果存在)
+        if (loginUser.getSysUser() != null && loginUser.getSysUser().isAdmin()) {
+            return true;
+        }
+
+        return false;
+    }
+
     private boolean hasRole(String role) {
         LoginUser loginUser = SecurityUtils.getLoginUser();
         if (loginUser == null || loginUser.getRoles() == null) {
@@ -56,7 +86,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         Set<String> roles = SecurityUtils.getLoginUser().getRoles();
         log.info("selectAppointmentList - userId: {}, roles: {}, appointment: {}", userId, roles, appointment);
 
-        if (hasRole("admin")) {
+        if (isAdminUser()) {
             // 管理员可以看所有
             log.info("Admin access: viewing all appointments");
         } else if (hasRole("doctor")) {

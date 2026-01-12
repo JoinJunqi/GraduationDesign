@@ -14,7 +14,18 @@
           <el-option label="待就诊" value="待就诊" />
           <el-option label="已取消" value="已取消" />
           <el-option label="已完成" value="已完成" />
+          <el-option label="取消申请中" value="取消申请中" />
         </el-select>
+      </el-form-item>
+      <el-form-item label="就诊日期" prop="workDate">
+        <el-date-picker
+          v-model="queryParams.workDate"
+          type="date"
+          value-format="YYYY-MM-DD"
+          placeholder="选择日期"
+          clearable
+          @change="handleQuery"
+        />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
@@ -57,7 +68,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="appointmentList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
+    <el-table v-loading="loading" :data="appointmentList" @selection-change="handleSelectionChange" @sort-change="handleSortChange" :row-class-name="tableRowClassName">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="患者姓名" align="center" prop="patientName" sortable="custom" />
       <el-table-column label="医生" align="center" prop="doctorName" sortable="custom" />
@@ -143,14 +154,17 @@
 </template>
 
 <script setup name="Appointment">
-import { ref, reactive, toRefs, getCurrentInstance, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, reactive, toRefs, getCurrentInstance, computed, onMounted, onUnmounted, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { listAppointment, getAppointment, delAppointment, addAppointment, updateAppointment, cancelAppointment, requestCancel, cancelRequest } from "@/api/hospital/appointment.js";
 import { parseTime } from "@/utils/ruoyi";
 import useUserStore from "@/store/modules/user";
+import { ElNotification } from 'element-plus';
 
 const { proxy } = getCurrentInstance();
 const userStore = useUserStore();
+const route = useRoute();
+const router = useRouter();
 const loginType = computed(() => userStore.loginType);
 const isPatient = computed(() => loginType.value === 'patient');
 const isDoctor = computed(() => loginType.value === 'doctor');
@@ -165,6 +179,7 @@ const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const title = ref("");
+const newAppointmentId = ref(null);
 
 const data = reactive({
   form: {},
@@ -173,6 +188,7 @@ const data = reactive({
     pageSize: 10,
     patientName: null,
     status: null,
+    workDate: null,
     orderByColumn: "bookedAt",
     isAsc: "descending"
   },
@@ -188,12 +204,23 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data);
 
-const router = useRouter();
-
 /** 跳转到挂号页面 */
 function handleRegister() {
   router.push({ path: '/hospital/register' });
 }
+
+/** 监听路由参数变化，处理新预约提醒点击跳转 */
+watch(() => route.query.newId, (newId) => {
+  if (newId) {
+    newAppointmentId.value = parseInt(newId);
+    resetQuery();
+    
+    // 5秒后移除高亮
+    setTimeout(() => {
+      newAppointmentId.value = null;
+    }, 5000);
+  }
+}, { immediate: true });
 
 /** 排序触发事件 */
 function handleSortChange(column) {
@@ -214,7 +241,19 @@ function getList() {
   });
 }
 
+/** 表格行样式：用于闪烁提醒 */
+function tableRowClassName({ row }) {
+  if (row.id === newAppointmentId.value) {
+    return 'new-appointment-row';
+  }
+  return '';
+}
+
 onMounted(() => {
+  // 如果是医生且没有特定ID查询，默认显示今天的预约
+  if (isDoctor.value && !route.query.newId && !queryParams.value.workDate) {
+    queryParams.value.workDate = parseTime(new Date(), '{y}-{m}-{d}');
+  }
   getList();
 });
 
@@ -353,6 +392,17 @@ function handleDelete(row) {
     proxy.$modal.msgSuccess("删除成功");
   }).catch(() => {});
 }
-
-getList();
 </script>
+
+<style scoped>
+.new-appointment-row {
+  animation: flash-animation 2s ease-in-out infinite;
+  background-color: #fdf6ec !important;
+}
+
+@keyframes flash-animation {
+  0% { background-color: #fdf6ec; }
+  50% { background-color: #faecd8; }
+  100% { background-color: #fdf6ec; }
+}
+</style>
