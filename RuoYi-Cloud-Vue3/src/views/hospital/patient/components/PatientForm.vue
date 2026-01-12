@@ -16,8 +16,8 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="登录密码" prop="passwordHash" v-if="!form.id">
-              <el-input v-model="form.passwordHash" placeholder="请输入登录密码" type="password" show-password/>
+            <el-form-item label="登录密码" prop="password" v-if="!form.id">
+              <el-input v-model="form.password" placeholder="请输入登录密码" type="password" show-password/>
             </el-form-item>
           </el-col>
         </el-row>
@@ -41,6 +41,14 @@
               <el-input v-model="form.idCard" placeholder="请输入身份证号" />
             </el-form-item>
           </el-col>
+          <el-col :span="12">
+            <el-form-item label="状态" prop="isActive">
+              <el-radio-group v-model="form.isActive">
+                <el-radio :label="1">启用</el-radio>
+                <el-radio :label="0">停用</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
         </el-row>
 
         <el-form-item>
@@ -54,31 +62,42 @@
 
 <script setup name="PatientForm">
 import { getPatient, addPatient, updatePatient } from "@/api/hospital/patient";
+import { getCurrentInstance, ref, reactive, toRefs } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
 const { proxy } = getCurrentInstance();
 const route = useRoute();
+const router = useRouter();
 
 const data = reactive({
   form: {
     id: null,
     username: null,
-    passwordHash: null,
+    password: null,
     name: null,
     phone: null,
-    idCard: null
+    idCard: null,
+    isActive: 1
   },
   rules: {
     username: [
-      { required: true, message: "登录账号不能为空", trigger: "blur" }
+      { required: true, message: "登录账号不能为空", trigger: "blur" },
+      { min: 4, max: 20, message: "账号长度必须在 4 到 20 个字符之间", trigger: "blur" }
     ],
     name: [
       { required: true, message: "姓名不能为空", trigger: "blur" }
     ],
-    passwordHash: [
-      { required: true, message: "密码不能为空", trigger: "blur" }
+    password: [
+      { required: true, message: "密码不能为空", trigger: "blur" },
+      { min: 6, max: 20, message: "密码长度必须在 6 到 20 个字符之间", trigger: "blur" }
     ],
     phone: [
-      { required: true, message: "手机号不能为空", trigger: "blur" }
+      { required: true, message: "手机号不能为空", trigger: "blur" },
+      { pattern: /^1[3-9]\d{9}$/, message: "请输入正确的手机号", trigger: "blur" }
+    ],
+    idCard: [
+      { required: true, message: "身份证号不能为空", trigger: "blur" },
+      { pattern: /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/, message: "请输入正确的身份证号", trigger: "blur" }
     ]
   }
 });

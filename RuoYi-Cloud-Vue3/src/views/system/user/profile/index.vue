@@ -5,7 +5,7 @@
             <el-card class="box-card">
                <template v-slot:header>
                  <div class="clearfix">
-                   <span>个人信息</span>
+                   <span>{{ loginType === 'admin' ? '管理员信息' : '个人信息' }}</span>
                  </div>
                </template>
                <div>
@@ -24,10 +24,6 @@
                      <li class="list-group-item">
                         <svg-icon icon-class="phone" />手机号码
                         <div class="pull-right">{{ state.user.phonenumber || state.user.phone }}</div>
-                     </li>
-                     <li class="list-group-item" v-if="state.user.email">
-                        <svg-icon icon-class="email" />用户邮箱
-                        <div class="pull-right">{{ state.user.email }}</div>
                      </li>
                      <li class="list-group-item" v-if="state.user.idCard">
                         <svg-icon icon-class="post" />身份证号
@@ -58,7 +54,7 @@
                </template>
                <el-tabs v-model="activeTab">
                   <el-tab-pane label="基本资料" name="userinfo">
-                     <userInfo :user="state.user" />
+                     <userInfo :user="state.user" @refresh="getUser" />
                   </el-tab-pane>
                   <el-tab-pane label="修改密码" name="resetPwd">
                      <resetPwd />

@@ -20,5 +20,7 @@ public class Admin extends BaseEntity {
     private String username;
     private String passwordHash;
     private String name;
+    private String phone;
+    private Integer adminLevel;
     private Integer isActive;
 }

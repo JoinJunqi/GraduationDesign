@@ -61,6 +61,13 @@
       <el-table-column label="ID" align="center" prop="userId" sortable="custom" />
       <el-table-column label="登录账号" align="center" prop="userName" sortable="custom" />
       <el-table-column label="姓名" align="center" prop="nickName" sortable="custom" />
+      <el-table-column label="等级" align="center" prop="adminLevel">
+        <template #default="scope">
+          <el-tag :type="scope.row.adminLevel === 1 ? 'danger' : 'info'">
+            {{ scope.row.adminLevel === 1 ? '超级管理员' : '普通管理员' }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="状态" align="center" prop="status" sortable="custom">
         <template #default="scope">
           <el-tag :type="scope.row.status === '0' ? 'success' : 'danger'">
@@ -75,8 +82,23 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:admin:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hospital:admin:remove']">删除</el-button>
+          <el-button 
+            v-if="scope.row.userId !== (currentUser?.userId || -1)"
+            link 
+            type="primary" 
+            icon="Edit" 
+            @click="handleUpdate(scope.row)" 
+            v-hasPermi="['hospital:admin:edit']"
+          >修改</el-button>
+          <el-button 
+            v-if="scope.row.userId !== (currentUser?.userId || -1)"
+            link 
+            type="primary" 
+            icon="Delete" 
+            @click="handleDelete(scope.row)" 
+            v-hasPermi="['hospital:admin:remove']"
+          >删除</el-button>
+          <span v-else>--</span>
         </template>
       </el-table-column>
     </el-table>
@@ -101,6 +123,12 @@
         <el-form-item label="姓名" prop="nickName">
           <el-input v-model="form.nickName" placeholder="请输入姓名" />
         </el-form-item>
+        <el-form-item label="管理员等级" prop="adminLevel">
+          <el-radio-group v-model="form.adminLevel">
+            <el-radio :label="0">普通管理员</el-radio>
+            <el-radio :label="1">超级管理员</el-radio>
+          </el-radio-group>
+        </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
             <el-radio label="0">启用</el-radio>
@@ -120,8 +148,13 @@
 
 <script setup name="Admin">
 import { listAdmin, getAdmin, delAdmin, addAdmin, updateAdmin } from "@/api/hospital/admin";
+import { getCurrentInstance, ref, reactive, toRefs, onMounted, computed } from "vue";
+import useUserStore from "@/store/modules/user";
 
+const userStore = useUserStore();
+const currentUser = computed(() => userStore.user);
 const { proxy } = getCurrentInstance();
+const { parseTime } = proxy;
 
 const adminList = ref([]);
 const open = ref(false);
@@ -152,6 +185,12 @@ const data = reactive({
     ],
     password: [
       { required: true, message: "密码不能为空", trigger: "blur" }
+    ],
+    adminLevel: [
+      { required: true, message: "管理员等级不能为空", trigger: "change" }
+    ],
+    status: [
+      { required: true, message: "状态不能为空", trigger: "change" }
     ]
   }
 });
@@ -181,6 +220,7 @@ function reset() {
     userName: null,
     password: null,
     nickName: null,
+    adminLevel: 0,
     status: "0"
   };
   proxy.resetForm("adminRef");
@@ -188,8 +228,22 @@ function reset() {
 
 /** 排序触发事件 */
 function handleSortChange(column) {
-  queryParams.value.orderByColumn = column.prop;
-  queryParams.value.isAsc = column.order;
+  const sortMap = {
+    userId: 'id',
+    userName: 'username',
+    nickName: 'name',
+    status: 'is_active',
+    createTime: 'created_at'
+  };
+  queryParams.value.orderByColumn = sortMap[column.prop] || column.prop;
+  // 将 el-table 的 ascending/descending 转换为后端识别的 asc/desc
+  if (column.order === 'ascending') {
+    queryParams.value.isAsc = 'asc';
+  } else if (column.order === 'descending') {
+    queryParams.value.isAsc = 'desc';
+  } else {
+    queryParams.value.isAsc = null;
+  }
   getList();
 }
 
@@ -261,5 +315,7 @@ function handleDelete(row) {
   }).catch(() => {});
 }
 
-getList();
+onMounted(() => {
+  getList();
+});
 </script>

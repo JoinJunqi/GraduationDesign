@@ -45,6 +45,9 @@ public class SysUser extends BaseEntity
     @Excel(name = "手机号码", cellType = ColumnType.TEXT)
     private String phonenumber;
 
+    /** 管理员等级 (0普通管理员, 1超级管理员) */
+    private Integer adminLevel;
+
     /** 用户性别 */
     @Excel(name = "用户性别", readConverterExp = "0=男,1=女,2=未知")
     private String sex;
@@ -111,6 +114,10 @@ public class SysUser extends BaseEntity
 
     public boolean isAdmin()
     {
+        // 如果是超级管理员(adminLevel为1)，则认为是管理员
+        if (this.adminLevel != null && this.adminLevel == 1) {
+            return true;
+        }
         return isAdmin(this.userId);
     }
 
@@ -175,6 +182,16 @@ public class SysUser extends BaseEntity
     public void setPhonenumber(String phonenumber)
     {
         this.phonenumber = phonenumber;
+    }
+
+    public Integer getAdminLevel()
+    {
+        return adminLevel;
+    }
+
+    public void setAdminLevel(Integer adminLevel)
+    {
+        this.adminLevel = adminLevel;
     }
 
     public String getSex()

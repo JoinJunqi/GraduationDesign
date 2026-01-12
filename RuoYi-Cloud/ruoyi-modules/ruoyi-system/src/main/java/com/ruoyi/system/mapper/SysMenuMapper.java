@@ -27,6 +27,13 @@ public interface SysMenuMapper
     public List<String> selectMenuPerms();
 
     /**
+     * 查询所有权限
+     * 
+     * @return 权限列表
+     */
+    public List<String> selectMenuPermsAll();
+
+    /**
      * 根据用户查询系统菜单列表
      * 
      * @param menu 菜单信息

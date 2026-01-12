@@ -10,6 +10,8 @@ import com.ruoyi.system.api.domain.SysUser;
 import com.ruoyi.system.service.ISysUserService;
 import com.ruoyi.common.security.utils.SecurityUtils;
 import org.springframework.web.multipart.MultipartFile;
+import com.ruoyi.common.core.exception.ServiceException;
+import com.ruoyi.common.core.utils.ServletUtils;
 
 @RestController
 @RequestMapping("/admin")
@@ -19,13 +21,33 @@ public class AdminController extends BaseController
     private ISysUserService userService;
 
     /**
+     * 校验当前登录用户是否为超级管理员
+     */
+    private void checkSuperAdmin()
+    {
+        SysUser currentUser = userService.selectUserById(SecurityUtils.getUserId());
+        if (currentUser == null || currentUser.getAdminLevel() == null || currentUser.getAdminLevel() != 1)
+        {
+            throw new ServiceException("权限不足，仅超级管理员可操作");
+        }
+    }
+
+    /**
      * 查询管理员列表
      */
     @GetMapping("/list")
     public TableDataInfo list(SysUser user)
     {
+        checkSuperAdmin();
         startPage();
-        startOrderBy();
+        // 显式处理排序，防止 PageHelper 将 userId 错误映射为 user_id
+        String orderByColumn = ServletUtils.getParameter("orderByColumn");
+        String isAsc = ServletUtils.getParameter("isAsc");
+        if ("userId".equals(orderByColumn) || "id".equals(orderByColumn)) {
+            com.github.pagehelper.PageHelper.orderBy("id " + ("descending".equals(isAsc) || "desc".equals(isAsc) ? "desc" : "asc"));
+        } else {
+            startOrderBy();
+        }
         List<SysUser> list = userService.selectUserList(user);
         return getDataTable(list);
     }
@@ -36,6 +58,7 @@ public class AdminController extends BaseController
     @GetMapping("/{userId}")
     public ResultVO<SysUser> getInfo(@PathVariable Long userId)
     {
+        checkSuperAdmin();
         return ResultVO.success(userService.selectUserById(userId));
     }
 
@@ -45,6 +68,7 @@ public class AdminController extends BaseController
     @PostMapping
     public ResultVO<Boolean> add(@RequestBody SysUser user)
     {
+        checkSuperAdmin();
         return ResultVO.success(userService.insertUser(user) > 0);
     }
 
@@ -54,6 +78,11 @@ public class AdminController extends BaseController
     @PutMapping
     public ResultVO<Boolean> edit(@RequestBody SysUser user)
     {
+        checkSuperAdmin();
+        if (user.getUserId() != null && user.getUserId().equals(SecurityUtils.getUserId()))
+        {
+            throw new ServiceException("不允许在管理员管理界面修改自己的账号信息/权限");
+        }
         return ResultVO.success(userService.updateUser(user) > 0);
     }
 
@@ -63,6 +92,14 @@ public class AdminController extends BaseController
     @DeleteMapping("/{userIds}")
     public ResultVO<Boolean> remove(@PathVariable Long[] userIds)
     {
+        checkSuperAdmin();
+        for (Long userId : userIds)
+        {
+            if (userId.equals(SecurityUtils.getUserId()))
+            {
+                throw new ServiceException("不允许删除自己的账号");
+            }
+        }
         return ResultVO.success(userService.deleteUserByIds(userIds) > 0);
     }
 

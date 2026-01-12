@@ -294,6 +294,7 @@ public class SysUserServiceImpl implements ISysUserService
     @Override
     public boolean updateUserProfile(SysUser user)
     {
+        user.setUserId(SecurityUtils.getUserId());
         return userMapper.updateUser(user) > 0;
     }
 

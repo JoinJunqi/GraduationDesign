@@ -85,40 +85,40 @@ export const constantRoutes = [
       }
     ]
   },
-  // 医院管理-业务详情页路由配置
+  // 医院管理隐藏路由配置
   {
-    path: '/hospital/doctor',
+    path: '/hospital/doctor-detail',
     component: Layout,
     hidden: true,
     children: [
       {
         path: 'add',
-        component: () => import('@/views/hospital/doctor/components/DoctorForm'),
+        component: () => import('@/views/hospital/doctor/components/DoctorForm.vue'),
         name: 'DoctorAdd',
         meta: { title: '添加医生', activeMenu: '/hospital/doctor' }
       },
       {
         path: 'edit/:id(\\d+)',
-        component: () => import('@/views/hospital/doctor/components/DoctorForm'),
+        component: () => import('@/views/hospital/doctor/components/DoctorForm.vue'),
         name: 'DoctorEdit',
         meta: { title: '修改医生', activeMenu: '/hospital/doctor' }
       }
     ]
   },
   {
-    path: '/hospital/patient',
+    path: '/hospital/patient-detail',
     component: Layout,
     hidden: true,
     children: [
       {
         path: 'add',
-        component: () => import('@/views/hospital/patient/components/PatientForm'),
+        component: () => import('@/views/hospital/patient/components/PatientForm.vue'),
         name: 'PatientAdd',
         meta: { title: '添加患者', activeMenu: '/hospital/patient' }
       },
       {
         path: 'edit/:id(\\d+)',
-        component: () => import('@/views/hospital/patient/components/PatientForm'),
+        component: () => import('@/views/hospital/patient/components/PatientForm.vue'),
         name: 'PatientEdit',
         meta: { title: '修改患者', activeMenu: '/hospital/patient' }
       }

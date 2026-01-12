@@ -34,6 +34,10 @@ public class SysPermissionServiceImpl implements ISysPermissionService
         {
             roles.add("admin");
         }
+        else
+        {
+            roles.add("common");
+        }
         return roles;
     }
 
@@ -54,7 +58,9 @@ public class SysPermissionServiceImpl implements ISysPermissionService
         }
         else
         {
-            perms.addAll(menuService.selectMenuPermsByUserId(user.getUserId()));
+            // 由于数据库中不存在 sys_role_menu 等 RBAC 表，普通管理员暂时赋予基础权限或留空
+            // 避免调用 menuService.selectMenuPermsByUserId 触发 SQL 异常
+            perms.add("common"); 
         }
         return perms;
     }

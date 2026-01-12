@@ -22,6 +22,9 @@ import com.ruoyi.system.domain.vo.TreeSelect;
 import com.ruoyi.system.mapper.SysMenuMapper;
 import com.ruoyi.system.service.ISysMenuService;
 
+import com.ruoyi.system.service.ISysUserService;
+import org.springframework.context.annotation.Lazy;
+
 /**
  * 菜单 业务层处理
  * 
@@ -34,6 +37,10 @@ public class SysMenuServiceImpl implements ISysMenuService
 
     @Autowired
     private SysMenuMapper menuMapper;
+
+    @Lazy
+    @Autowired
+    private ISysUserService userService;
 
     /**
      * 根据用户查询系统菜单列表
@@ -57,15 +64,21 @@ public class SysMenuServiceImpl implements ISysMenuService
     public List<SysMenu> selectMenuList(SysMenu menu, Long userId)
     {
         List<SysMenu> menuList = null;
+        SysUser user = userService.selectUserById(userId);
         // 管理员显示所有菜单信息
-        if (SysUser.isAdmin(userId))
+        if (user != null && user.isAdmin())
         {
             menuList = menuMapper.selectMenuList(menu);
         }
         else
         {
-            menu.getParams().put("userId", userId);
-            menuList = menuMapper.selectMenuListByUserId(menu);
+            // 避免调用 selectMenuListByUserId 触发 SQL 异常
+            menuList = menuMapper.selectMenuList(menu);
+            if (menuList != null) {
+                menuList = menuList.stream()
+                        .filter(m -> ! "管理员管理".equals(m.getMenuName()) && ! "Admin Management".equalsIgnoreCase(m.getMenuName()))
+                        .collect(java.util.stream.Collectors.toList());
+            }
         }
         return menuList;
     }
@@ -79,13 +92,26 @@ public class SysMenuServiceImpl implements ISysMenuService
     @Override
     public Set<String> selectMenuPermsByUserId(Long userId)
     {
-        List<String> perms = menuMapper.selectMenuPermsByUserId(userId);
-        Set<String> permsSet = new HashSet<>();
-        for (String perm : perms)
+        SysUser user = userService.selectUserById(userId);
+        List<String> perms = null;
+        if (user != null && user.isAdmin())
         {
-            if (StringUtils.isNotEmpty(perm))
+            perms = menuMapper.selectMenuPermsAll();
+        }
+        else
+        {
+            // 避免调用 selectMenuPermsByUserId 触发 SQL 异常
+            perms = new ArrayList<>();
+            perms.add("common");
+        }
+        Set<String> permsSet = new HashSet<>();
+        if (perms != null) {
+            for (String perm : perms)
             {
-                permsSet.addAll(Arrays.asList(perm.trim().split(",")));
+                if (StringUtils.isNotEmpty(perm))
+                {
+                    permsSet.addAll(Arrays.asList(perm.trim().split(",")));
+                }
             }
         }
         return permsSet;
@@ -101,13 +127,21 @@ public class SysMenuServiceImpl implements ISysMenuService
     public List<SysMenu> selectMenuTreeByUserId(Long userId)
     {
         List<SysMenu> menus = null;
-        if (SecurityUtils.isAdmin(userId))
+        SysUser user = userService.selectUserById(userId);
+        if (user != null && user.isAdmin())
         {
             menus = menuMapper.selectMenuTreeAll();
         }
         else
         {
-            menus = menuMapper.selectMenuTreeByUserId(userId);
+            // 如果不是超级管理员，依然加载所有菜单，但过滤掉“管理员管理”
+            // 这样做是因为数据库中不存在 sys_role_menu 等 RBAC 表，无法进行权限关联查询
+            menus = menuMapper.selectMenuTreeAll();
+            if (menus != null) {
+                menus = menus.stream()
+                        .filter(m -> ! "管理员管理".equals(m.getMenuName()) && ! "Admin Management".equalsIgnoreCase(m.getMenuName()))
+                        .collect(java.util.stream.Collectors.toList());
+            }
         }
         return getChildPerms(menus, 0);
     }

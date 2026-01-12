@@ -1,21 +1,18 @@
 <template>
-   <el-form ref="userRef" :model="user" :rules="rules" label-width="80px">
+   <el-form ref="userRef" :model="form" :rules="rules" label-width="80px">
       <el-form-item :label="loginType === 'patient' ? '姓名' : '用户昵称'" :prop="loginType === 'patient' ? 'name' : 'nickName'">
-         <el-input v-if="loginType === 'patient'" v-model="user.name" maxlength="30" />
-         <el-input v-else v-model="user.nickName" maxlength="30" />
+         <el-input v-if="loginType === 'patient'" v-model="form.name" maxlength="30" />
+         <el-input v-else v-model="form.nickName" maxlength="30" />
       </el-form-item>
       <el-form-item label="手机号码" :prop="loginType === 'patient' ? 'phone' : 'phonenumber'">
-         <el-input v-if="loginType === 'patient'" v-model="user.phone" maxlength="11" />
-         <el-input v-else v-model="user.phonenumber" maxlength="11" />
+         <el-input v-if="loginType === 'patient'" v-model="form.phone" maxlength="11" />
+         <el-input v-else v-model="form.phonenumber" maxlength="11" />
       </el-form-item>
       <el-form-item v-if="loginType === 'patient'" label="身份证号" prop="idCard">
-         <el-input v-model="user.idCard" maxlength="18" />
+         <el-input v-model="form.idCard" maxlength="18" />
       </el-form-item>
-      <el-form-item v-if="loginType !== 'patient'" label="邮箱" prop="email">
-         <el-input v-model="user.email" maxlength="50" />
-      </el-form-item>
-      <el-form-item v-if="loginType !== 'patient'" label="性别">
-         <el-radio-group v-model="user.sex">
+      <el-form-item v-if="loginType !== 'patient' && loginType !== 'admin'" label="性别">
+         <el-radio-group v-model="form.sex">
             <el-radio label="0">男</el-radio>
             <el-radio label="1">女</el-radio>
          </el-radio-group>
@@ -28,7 +25,7 @@
 </template>
 
 <script setup>
-import { getCurrentInstance, ref, computed } from "vue";
+import { getCurrentInstance, ref, computed, watch } from "vue";
 import { updateUserProfile } from "@/api/system/user.js";
 import { updatePatientProfile } from "@/api/hospital/patient.js";
 import { updateDoctorProfile } from "@/api/hospital/doctor.js";
@@ -40,14 +37,24 @@ const props = defineProps({
   }
 });
 
+const emit = defineEmits(["refresh"]);
+
 const userStore = useUserStore();
 const { proxy } = getCurrentInstance();
 const loginType = computed(() => userStore.loginType);
 
+const userRef = ref(null);
+const form = ref({});
+
+watch(() => props.user, (val) => {
+  if (val) {
+    form.value = { ...val };
+  }
+}, { immediate: true, deep: true });
+
 const rules = ref({
   nickName: [{ required: true, message: "用户昵称不能为空", trigger: "blur" }],
   name: [{ required: true, message: "姓名不能为空", trigger: "blur" }],
-  email: [{ required: true, message: "邮箱地址不能为空", trigger: "blur" }, { type: "email", message: "请输入正确的邮箱地址", trigger: ["blur", "change"] }],
   phonenumber: [{ required: true, message: "手机号码不能为空", trigger: "blur" }, { pattern: /^1[3|4|5|6|7|8|9][0-9]\d{8}$/, message: "请输入正确的手机号码", trigger: "blur" }],
   phone: [{ required: true, message: "手机号码不能为空", trigger: "blur" }, { pattern: /^1[3|4|5|6|7|8|9][0-9]\d{8}$/, message: "请输入正确的手机号码", trigger: "blur" }],
   idCard: [{ required: true, message: "身份证号不能为空", trigger: "blur" }, { pattern: /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/, message: "请输入正确的身份证号", trigger: "blur" }],
@@ -55,7 +62,7 @@ const rules = ref({
 
 /** 提交按钮 */
 function submit() {
-  proxy.$refs.userRef.validate(valid => {
+  userRef.value.validate(valid => {
     if (valid) {
       let updateApi = updateUserProfile;
       if (loginType.value === 'patient') {
@@ -64,8 +71,9 @@ function submit() {
         updateApi = updateDoctorProfile;
       }
       
-      updateApi(props.user).then(response => {
+      updateApi(form.value).then(response => {
         proxy.$modal.msgSuccess("修改成功");
+        emit("refresh");
       });
     }
   });
