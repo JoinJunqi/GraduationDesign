@@ -66,3 +66,12 @@ export function delAppointment(id) {
     method: 'delete'
   })
 }
+
+// 更新预约状态
+export function updateAppointmentStatus(id, status) {
+  return request({
+    url: '/ruoyi-hospital-appointment/appointment/status',
+    method: 'put',
+    params: { id, status }
+  })
+}

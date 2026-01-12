@@ -152,10 +152,10 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
             medicalRecord.setVisitTime(new Date());
         }
         
-        log.info("Final medical record to save: {}", medicalRecord);
-        boolean saved = save(medicalRecord);
-        if (saved && medicalRecord.getAppointmentId() != null) {
-            // 就诊完成，更新预约状态为“已完成”
+        // 1. 如果有关联预约，先更新预约状态（避免死锁）
+        // 为什么先更新？因为 INSERT INTO medical_record 会持有 appointment 表的 S 锁（外键检查）
+        // 如果先 INSERT 再调远程更新，远程更新需要 appointment 表的 X 锁，会导致循环等待。
+        if (medicalRecord.getAppointmentId() != null) {
             log.info("Updating appointment status to '已完成' for appointmentId={}", medicalRecord.getAppointmentId());
             ResultVO<Boolean> result = remoteAppointmentService.updateStatus(medicalRecord.getAppointmentId(), "已完成");
             if (result == null || !result.getData()) {
@@ -163,10 +163,13 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                 throw new ServiceException("更新预约状态失败");
             }
         }
-        return saved;
+
+        log.info("Final medical record to save: {}", medicalRecord);
+        return save(medicalRecord);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean updateMedicalRecord(MedicalRecord medicalRecord) {
         MedicalRecord oldRecord = getById(medicalRecord.getId());
         if (oldRecord == null) {
@@ -177,6 +180,11 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         Set<String> roles = getRoles();
         
         log.info("Update medical record ID: {}. User: {}, roles: {}", medicalRecord.getId(), userId, roles);
+
+        // 如果有关联预约且是医生操作，尝试更新状态（以防万一之前没更新成功）
+        if (medicalRecord.getAppointmentId() != null && roles.contains("doctor")) {
+            remoteAppointmentService.updateStatus(medicalRecord.getAppointmentId(), "已完成");
+        }
 
         if (isAdminUser()) {
             return updateById(medicalRecord);

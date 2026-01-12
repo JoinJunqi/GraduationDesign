@@ -11,7 +11,7 @@
  Target Server Version : 50732 (5.7.32-log)
  File Encoding         : 65001
 
- Date: 12/01/2026 02:55:34
+ Date: 13/01/2026 02:37:05
 */
 
 SET NAMES utf8mb4;
@@ -26,16 +26,20 @@ CREATE TABLE `admin`  (
   `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '登录账号',
   `password_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '密码哈希',
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '管理员姓名',
+  `phone` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '手机号',
+  `admin_level` tinyint(1) NOT NULL DEFAULT 0 COMMENT '管理员等级(0普通管理员,1超级管理员)',
   `is_active` tinyint(1) NULL DEFAULT 1 COMMENT '是否启用(1是,0否)',
   `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `username`(`username`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '管理员信息表' ROW_FORMAT = Dynamic;
+  UNIQUE INDEX `username`(`username`) USING BTREE,
+  UNIQUE INDEX `phone`(`phone`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '管理员信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of admin
 -- ----------------------------
-INSERT INTO `admin` VALUES (1, 'admin', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '系统管理员1', 1, '2026-01-08 19:54:43');
+INSERT INTO `admin` VALUES (1, 'admin', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '系统管理员', '13800000000', 1, 1, '2026-01-08 19:54:43');
+INSERT INTO `admin` VALUES (2, 'admintest', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '测试管理员', '13900000001', 0, 1, '2026-01-12 17:46:11');
 
 -- ----------------------------
 -- Table structure for appointment
@@ -45,37 +49,37 @@ CREATE TABLE `appointment`  (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '预约ID',
   `patient_id` int(11) NOT NULL COMMENT '患者ID',
   `schedule_id` int(11) NOT NULL COMMENT '排班ID',
-  `status` enum('待就诊','已取消','已完成') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '待就诊' COMMENT '状态',
+  `status` enum('待就诊','已取消','已完成','已过期') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '待就诊' COMMENT '状态',
   `booked_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '预约时间',
   `appointment_time` time NULL DEFAULT NULL COMMENT '预约时段（如08:00:00）',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_schedule_unique`(`schedule_id`) USING BTREE,
+  INDEX `idx_schedule_id`(`schedule_id`) USING BTREE,
   INDEX `patient_id`(`patient_id`) USING BTREE,
   INDEX `idx_appointment_time`(`appointment_time`) USING BTREE,
   CONSTRAINT `appointment_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `appointment_ibfk_2` FOREIGN KEY (`schedule_id`) REFERENCES `schedule` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1240 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '预约记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1243 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '预约记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of appointment
 -- ----------------------------
 INSERT INTO `appointment` VALUES (3, 1, 4, '已完成', '2026-01-09 09:00:00', '08:15:00');
 INSERT INTO `appointment` VALUES (6, 2, 6, '已完成', '2026-01-10 08:00:00', '16:15:00');
-INSERT INTO `appointment` VALUES (21, 8, 27, '待就诊', '2026-01-11 18:10:42', '17:00:00');
+INSERT INTO `appointment` VALUES (21, 8, 27, '已过期', '2026-01-11 18:10:42', '17:00:00');
 INSERT INTO `appointment` VALUES (24, 10, 30, '已取消', '2026-01-11 18:10:42', '08:00:00');
-INSERT INTO `appointment` VALUES (52, 7, 70, '待就诊', '2026-01-09 18:10:42', '15:15:00');
+INSERT INTO `appointment` VALUES (52, 7, 70, '已过期', '2026-01-09 18:10:42', '15:15:00');
 INSERT INTO `appointment` VALUES (53, 9, 71, '已取消', '2026-01-07 18:10:42', '16:45:00');
 INSERT INTO `appointment` VALUES (62, 8, 82, '已取消', '2026-01-09 18:10:42', '15:45:00');
 INSERT INTO `appointment` VALUES (66, 13, 86, '已完成', '2026-01-11 18:10:42', '09:15:00');
-INSERT INTO `appointment` VALUES (70, 9, 93, '待就诊', '2026-01-10 18:10:42', '10:30:00');
+INSERT INTO `appointment` VALUES (70, 9, 93, '已过期', '2026-01-10 18:10:42', '10:30:00');
 INSERT INTO `appointment` VALUES (73, 2, 96, '已完成', '2026-01-10 18:10:42', '09:00:00');
-INSERT INTO `appointment` VALUES (99, 11, 137, '待就诊', '2026-01-10 18:10:42', '16:30:00');
+INSERT INTO `appointment` VALUES (99, 11, 137, '已过期', '2026-01-10 18:10:42', '16:30:00');
 INSERT INTO `appointment` VALUES (110, 3, 150, '已完成', '2026-01-11 18:10:42', '11:45:00');
 INSERT INTO `appointment` VALUES (113, 13, 154, '已取消', '2026-01-11 18:10:42', '17:15:00');
-INSERT INTO `appointment` VALUES (115, 12, 156, '待就诊', '2026-01-09 18:10:42', '13:45:00');
+INSERT INTO `appointment` VALUES (115, 12, 156, '已过期', '2026-01-09 18:10:42', '13:45:00');
 INSERT INTO `appointment` VALUES (129, 8, 175, '已完成', '2026-01-10 18:10:42', '14:15:00');
 INSERT INTO `appointment` VALUES (142, 4, 190, '已完成', '2026-01-10 18:10:42', '11:15:00');
-INSERT INTO `appointment` VALUES (150, 1, 198, '待就诊', '2026-01-08 18:10:42', '15:30:00');
+INSERT INTO `appointment` VALUES (150, 1, 198, '已过期', '2026-01-08 18:10:42', '15:30:00');
 INSERT INTO `appointment` VALUES (171, 6, 232, '已取消', '2026-01-10 18:10:42', '11:00:00');
 INSERT INTO `appointment` VALUES (176, 1, 238, '已取消', '2026-01-11 18:10:42', '15:00:00');
 INSERT INTO `appointment` VALUES (183, 13, 245, '已完成', '2026-01-11 18:10:42', '15:45:00');
@@ -84,26 +88,26 @@ INSERT INTO `appointment` VALUES (190, 2, 255, '已取消', '2026-01-11 18:10:42
 INSERT INTO `appointment` VALUES (202, 12, 273, '已完成', '2026-01-10 18:10:42', '08:45:00');
 INSERT INTO `appointment` VALUES (205, 4, 276, '已取消', '2026-01-11 18:10:42', '09:00:00');
 INSERT INTO `appointment` VALUES (210, 8, 282, '已完成', '2026-01-09 18:10:42', '11:00:00');
-INSERT INTO `appointment` VALUES (211, 5, 283, '待就诊', '2026-01-11 18:10:42', '08:15:00');
+INSERT INTO `appointment` VALUES (211, 5, 283, '已过期', '2026-01-11 18:10:42', '08:15:00');
 INSERT INTO `appointment` VALUES (217, 9, 291, '已取消', '2026-01-09 18:10:42', '09:45:00');
 INSERT INTO `appointment` VALUES (239, 4, 325, '已取消', '2026-01-09 18:10:42', '16:00:00');
 INSERT INTO `appointment` VALUES (240, 1, 327, '已完成', '2026-01-10 18:10:42', '10:00:00');
 INSERT INTO `appointment` VALUES (260, 14, 354, '已取消', '2026-01-09 18:10:42', '09:30:00');
 INSERT INTO `appointment` VALUES (270, 11, 368, '已取消', '2026-01-10 18:10:42', '09:30:00');
-INSERT INTO `appointment` VALUES (271, 5, 369, '待就诊', '2026-01-09 18:10:42', '17:15:00');
+INSERT INTO `appointment` VALUES (271, 5, 369, '已过期', '2026-01-09 18:10:42', '17:15:00');
 INSERT INTO `appointment` VALUES (295, 12, 404, '已完成', '2026-01-08 18:10:42', '11:30:00');
-INSERT INTO `appointment` VALUES (302, 7, 416, '待就诊', '2026-01-11 18:10:42', '17:45:00');
+INSERT INTO `appointment` VALUES (302, 7, 416, '已过期', '2026-01-11 18:10:42', '17:45:00');
 INSERT INTO `appointment` VALUES (305, 9, 420, '已取消', '2026-01-09 18:10:42', '10:15:00');
 INSERT INTO `appointment` VALUES (308, 6, 425, '已取消', '2026-01-10 18:10:42', '08:45:00');
 INSERT INTO `appointment` VALUES (320, 5, 446, '已完成', '2026-01-07 18:10:42', '10:45:00');
 INSERT INTO `appointment` VALUES (324, 2, 450, '已完成', '2026-01-09 18:10:42', '16:15:00');
-INSERT INTO `appointment` VALUES (328, 10, 455, '待就诊', '2026-01-10 18:10:42', '11:00:00');
+INSERT INTO `appointment` VALUES (328, 10, 455, '已过期', '2026-01-10 18:10:42', '11:00:00');
 INSERT INTO `appointment` VALUES (329, 13, 456, '已取消', '2026-01-10 18:10:42', '14:15:00');
-INSERT INTO `appointment` VALUES (351, 11, 485, '待就诊', '2026-01-11 18:10:42', '10:15:00');
-INSERT INTO `appointment` VALUES (362, 10, 501, '待就诊', '2026-01-10 18:10:42', '16:30:00');
-INSERT INTO `appointment` VALUES (391, 10, 537, '待就诊', '2026-01-09 18:10:43', '10:00:00');
-INSERT INTO `appointment` VALUES (410, 3, 569, '待就诊', '2026-01-07 18:10:43', '17:00:00');
-INSERT INTO `appointment` VALUES (421, 14, 583, '待就诊', '2026-01-08 18:10:43', '08:30:00');
+INSERT INTO `appointment` VALUES (351, 11, 485, '已过期', '2026-01-11 18:10:42', '10:15:00');
+INSERT INTO `appointment` VALUES (362, 10, 501, '已过期', '2026-01-10 18:10:42', '16:30:00');
+INSERT INTO `appointment` VALUES (391, 10, 537, '已过期', '2026-01-09 18:10:43', '10:00:00');
+INSERT INTO `appointment` VALUES (410, 3, 569, '已过期', '2026-01-07 18:10:43', '17:00:00');
+INSERT INTO `appointment` VALUES (421, 14, 583, '已过期', '2026-01-08 18:10:43', '08:30:00');
 INSERT INTO `appointment` VALUES (422, 5, 584, '已取消', '2026-01-08 18:10:43', '09:30:00');
 INSERT INTO `appointment` VALUES (423, 13, 586, '已取消', '2026-01-08 18:10:43', '14:00:00');
 INSERT INTO `appointment` VALUES (442, 2, 613, '已取消', '2026-01-10 18:10:43', '17:15:00');
@@ -111,50 +115,50 @@ INSERT INTO `appointment` VALUES (445, 6, 617, '已取消', '2026-01-10 18:10:43
 INSERT INTO `appointment` VALUES (448, 7, 621, '已完成', '2026-01-11 18:10:43', '17:15:00');
 INSERT INTO `appointment` VALUES (461, 13, 640, '已取消', '2026-01-11 18:10:43', '11:15:00');
 INSERT INTO `appointment` VALUES (464, 7, 644, '已取消', '2026-01-10 18:10:43', '14:45:00');
-INSERT INTO `appointment` VALUES (465, 14, 645, '待就诊', '2026-01-10 18:10:43', '17:30:00');
-INSERT INTO `appointment` VALUES (470, 7, 651, '待就诊', '2026-01-08 18:10:43', '12:15:00');
-INSERT INTO `appointment` VALUES (479, 7, 663, '待就诊', '2026-01-11 18:10:43', '13:00:00');
-INSERT INTO `appointment` VALUES (480, 10, 664, '待就诊', '2026-01-09 18:10:43', '14:45:00');
+INSERT INTO `appointment` VALUES (465, 14, 645, '已过期', '2026-01-10 18:10:43', '17:30:00');
+INSERT INTO `appointment` VALUES (470, 7, 651, '已过期', '2026-01-08 18:10:43', '12:15:00');
+INSERT INTO `appointment` VALUES (479, 7, 663, '已过期', '2026-01-11 18:10:43', '13:00:00');
+INSERT INTO `appointment` VALUES (480, 10, 664, '已过期', '2026-01-09 18:10:43', '14:45:00');
 INSERT INTO `appointment` VALUES (501, 11, 693, '已完成', '2026-01-09 18:10:43', '12:45:00');
-INSERT INTO `appointment` VALUES (505, 12, 697, '待就诊', '2026-01-10 18:10:43', '15:45:00');
-INSERT INTO `appointment` VALUES (507, 8, 700, '待就诊', '2026-01-09 18:10:43', '13:15:00');
+INSERT INTO `appointment` VALUES (505, 12, 697, '已过期', '2026-01-10 18:10:43', '15:45:00');
+INSERT INTO `appointment` VALUES (507, 8, 700, '已过期', '2026-01-09 18:10:43', '13:15:00');
 INSERT INTO `appointment` VALUES (518, 6, 713, '已完成', '2026-01-10 18:10:43', '09:00:00');
-INSERT INTO `appointment` VALUES (519, 14, 714, '待就诊', '2026-01-10 18:10:43', '15:45:00');
-INSERT INTO `appointment` VALUES (541, 13, 741, '待就诊', '2026-01-11 18:10:43', '08:15:00');
+INSERT INTO `appointment` VALUES (519, 14, 714, '已过期', '2026-01-10 18:10:43', '15:45:00');
+INSERT INTO `appointment` VALUES (541, 13, 741, '已过期', '2026-01-11 18:10:43', '08:15:00');
 INSERT INTO `appointment` VALUES (556, 6, 762, '已取消', '2026-01-11 18:10:43', '08:45:00');
 INSERT INTO `appointment` VALUES (564, 8, 774, '已取消', '2026-01-10 18:10:43', '09:30:00');
-INSERT INTO `appointment` VALUES (573, 5, 787, '待就诊', '2026-01-08 18:10:43', '14:00:00');
-INSERT INTO `appointment` VALUES (581, 9, 797, '待就诊', '2026-01-07 18:10:43', '13:00:00');
-INSERT INTO `appointment` VALUES (607, 14, 829, '待就诊', '2026-01-09 18:10:43', '16:45:00');
-INSERT INTO `appointment` VALUES (611, 5, 834, '待就诊', '2026-01-07 18:10:43', '09:00:00');
+INSERT INTO `appointment` VALUES (573, 5, 787, '已过期', '2026-01-08 18:10:43', '14:00:00');
+INSERT INTO `appointment` VALUES (581, 9, 797, '已过期', '2026-01-07 18:10:43', '13:00:00');
+INSERT INTO `appointment` VALUES (607, 14, 829, '已过期', '2026-01-09 18:10:43', '16:45:00');
+INSERT INTO `appointment` VALUES (611, 5, 834, '已过期', '2026-01-07 18:10:43', '09:00:00');
 INSERT INTO `appointment` VALUES (615, 13, 838, '已取消', '2026-01-09 18:10:43', '15:30:00');
 INSERT INTO `appointment` VALUES (618, 4, 845, '已取消', '2026-01-11 18:10:43', '16:15:00');
 INSERT INTO `appointment` VALUES (627, 8, 857, '已完成', '2026-01-10 18:10:43', '11:00:00');
-INSERT INTO `appointment` VALUES (674, 10, 913, '待就诊', '2026-01-10 18:10:43', '08:30:00');
+INSERT INTO `appointment` VALUES (674, 10, 913, '已过期', '2026-01-10 18:10:43', '08:30:00');
 INSERT INTO `appointment` VALUES (675, 8, 914, '已完成', '2026-01-11 18:10:43', '12:15:00');
 INSERT INTO `appointment` VALUES (701, 2, 945, '已取消', '2026-01-09 18:10:43', '17:00:00');
-INSERT INTO `appointment` VALUES (711, 3, 959, '待就诊', '2026-01-10 18:10:43', '15:45:00');
+INSERT INTO `appointment` VALUES (711, 3, 959, '已过期', '2026-01-10 18:10:43', '15:45:00');
 INSERT INTO `appointment` VALUES (717, 7, 968, '已完成', '2026-01-11 18:10:43', '08:00:00');
 INSERT INTO `appointment` VALUES (722, 5, 975, '已取消', '2026-01-08 18:10:43', '10:30:00');
 INSERT INTO `appointment` VALUES (726, 1, 986, '已取消', '2026-01-08 18:10:43', '11:00:00');
-INSERT INTO `appointment` VALUES (742, 12, 1009, '待就诊', '2026-01-11 18:10:43', '10:00:00');
+INSERT INTO `appointment` VALUES (742, 12, 1009, '已过期', '2026-01-11 18:10:43', '10:00:00');
 INSERT INTO `appointment` VALUES (755, 13, 1030, '已完成', '2026-01-10 18:10:43', '17:00:00');
 INSERT INTO `appointment` VALUES (756, 5, 1032, '已取消', '2026-01-11 18:10:43', '14:30:00');
 INSERT INTO `appointment` VALUES (761, 11, 1037, '已取消', '2026-01-11 18:10:43', '16:15:00');
-INSERT INTO `appointment` VALUES (768, 4, 1044, '待就诊', '2026-01-11 18:10:43', '15:30:00');
+INSERT INTO `appointment` VALUES (768, 4, 1044, '已过期', '2026-01-11 18:10:43', '15:30:00');
 INSERT INTO `appointment` VALUES (784, 14, 1073, '已完成', '2026-01-08 18:10:43', '12:00:00');
-INSERT INTO `appointment` VALUES (787, 14, 1079, '待就诊', '2026-01-09 18:10:43', '16:45:00');
+INSERT INTO `appointment` VALUES (787, 14, 1079, '已过期', '2026-01-09 18:10:43', '16:45:00');
 INSERT INTO `appointment` VALUES (792, 14, 1088, '已取消', '2026-01-10 18:10:43', '09:15:00');
-INSERT INTO `appointment` VALUES (807, 11, 1108, '待就诊', '2026-01-10 18:10:43', '14:00:00');
-INSERT INTO `appointment` VALUES (809, 3, 1110, '待就诊', '2026-01-08 18:10:43', '11:45:00');
-INSERT INTO `appointment` VALUES (813, 5, 1115, '待就诊', '2026-01-07 18:10:43', '09:00:00');
+INSERT INTO `appointment` VALUES (807, 11, 1108, '已过期', '2026-01-10 18:10:43', '14:00:00');
+INSERT INTO `appointment` VALUES (809, 3, 1110, '已过期', '2026-01-08 18:10:43', '11:45:00');
+INSERT INTO `appointment` VALUES (813, 5, 1115, '已过期', '2026-01-07 18:10:43', '09:00:00');
 INSERT INTO `appointment` VALUES (816, 7, 1118, '已完成', '2026-01-09 18:10:43', '14:00:00');
-INSERT INTO `appointment` VALUES (824, 8, 1127, '待就诊', '2026-01-11 18:10:43', '17:00:00');
+INSERT INTO `appointment` VALUES (824, 8, 1127, '已过期', '2026-01-11 18:10:43', '17:00:00');
 INSERT INTO `appointment` VALUES (829, 3, 1132, '已完成', '2026-01-10 18:10:43', '17:30:00');
-INSERT INTO `appointment` VALUES (850, 2, 1160, '待就诊', '2026-01-10 18:10:43', '10:30:00');
+INSERT INTO `appointment` VALUES (850, 2, 1160, '已过期', '2026-01-10 18:10:43', '10:30:00');
 INSERT INTO `appointment` VALUES (852, 4, 1163, '已完成', '2026-01-10 18:10:43', '10:30:00');
 INSERT INTO `appointment` VALUES (865, 1, 1185, '已取消', '2026-01-10 18:10:43', '12:00:00');
-INSERT INTO `appointment` VALUES (866, 11, 1186, '待就诊', '2026-01-10 18:10:43', '08:15:00');
+INSERT INTO `appointment` VALUES (866, 11, 1186, '已过期', '2026-01-10 18:10:43', '08:15:00');
 INSERT INTO `appointment` VALUES (868, 2, 1188, '已完成', '2026-01-09 18:10:43', '09:15:00');
 INSERT INTO `appointment` VALUES (869, 2, 1189, '已完成', '2026-01-09 18:10:43', '16:00:00');
 INSERT INTO `appointment` VALUES (870, 9, 1190, '已完成', '2026-01-08 18:10:43', '14:45:00');
@@ -164,47 +168,48 @@ INSERT INTO `appointment` VALUES (900, 13, 1230, '已取消', '2026-01-11 18:10:
 INSERT INTO `appointment` VALUES (903, 1, 1234, '已完成', '2026-01-09 18:10:43', '15:15:00');
 INSERT INTO `appointment` VALUES (912, 5, 1246, '已取消', '2026-01-11 18:10:43', '08:45:00');
 INSERT INTO `appointment` VALUES (917, 2, 1253, '已完成', '2026-01-10 18:10:43', '08:00:00');
-INSERT INTO `appointment` VALUES (919, 6, 1257, '待就诊', '2026-01-10 18:10:43', '09:45:00');
+INSERT INTO `appointment` VALUES (919, 6, 1257, '已过期', '2026-01-10 18:10:43', '09:45:00');
 INSERT INTO `appointment` VALUES (922, 4, 1261, '已完成', '2026-01-11 18:10:43', '10:15:00');
 INSERT INTO `appointment` VALUES (929, 9, 1273, '已取消', '2026-01-10 18:10:43', '17:00:00');
-INSERT INTO `appointment` VALUES (942, 6, 1287, '待就诊', '2026-01-09 18:10:43', '10:30:00');
-INSERT INTO `appointment` VALUES (950, 3, 1300, '待就诊', '2026-01-10 18:10:43', '17:45:00');
-INSERT INTO `appointment` VALUES (952, 14, 1302, '待就诊', '2026-01-10 18:10:43', '14:15:00');
-INSERT INTO `appointment` VALUES (957, 9, 1309, '待就诊', '2026-01-09 18:10:43', '16:15:00');
+INSERT INTO `appointment` VALUES (942, 6, 1287, '已过期', '2026-01-09 18:10:43', '10:30:00');
+INSERT INTO `appointment` VALUES (950, 3, 1300, '已过期', '2026-01-10 18:10:43', '17:45:00');
+INSERT INTO `appointment` VALUES (952, 14, 1302, '已过期', '2026-01-10 18:10:43', '14:15:00');
+INSERT INTO `appointment` VALUES (957, 9, 1309, '已过期', '2026-01-09 18:10:43', '16:15:00');
 INSERT INTO `appointment` VALUES (968, 10, 1323, '已完成', '2026-01-11 18:10:43', '14:30:00');
 INSERT INTO `appointment` VALUES (978, 4, 1338, '已完成', '2026-01-11 18:10:43', '13:15:00');
 INSERT INTO `appointment` VALUES (992, 9, 1361, '已取消', '2026-01-11 18:10:43', '16:30:00');
 INSERT INTO `appointment` VALUES (1003, 9, 1377, '已完成', '2026-01-11 18:10:43', '17:00:00');
 INSERT INTO `appointment` VALUES (1012, 11, 1393, '已取消', '2026-01-09 18:10:43', '11:30:00');
-INSERT INTO `appointment` VALUES (1017, 8, 1398, '待就诊', '2026-01-09 18:10:43', '08:45:00');
+INSERT INTO `appointment` VALUES (1017, 8, 1398, '已过期', '2026-01-09 18:10:43', '08:45:00');
 INSERT INTO `appointment` VALUES (1030, 4, 1419, '已完成', '2026-01-11 18:10:43', '11:00:00');
 INSERT INTO `appointment` VALUES (1037, 12, 1429, '已完成', '2026-01-11 18:10:43', '16:00:00');
 INSERT INTO `appointment` VALUES (1041, 7, 1433, '已完成', '2026-01-10 18:10:43', '09:15:00');
 INSERT INTO `appointment` VALUES (1056, 12, 1450, '已完成', '2026-01-08 18:10:43', '09:30:00');
 INSERT INTO `appointment` VALUES (1061, 1, 1458, '已取消', '2026-01-09 18:10:43', '11:15:00');
-INSERT INTO `appointment` VALUES (1084, 10, 1487, '待就诊', '2026-01-11 18:10:43', '16:00:00');
+INSERT INTO `appointment` VALUES (1084, 10, 1487, '已过期', '2026-01-11 18:10:43', '16:00:00');
 INSERT INTO `appointment` VALUES (1090, 4, 1496, '已完成', '2026-01-10 18:10:43', '09:15:00');
-INSERT INTO `appointment` VALUES (1095, 12, 1501, '待就诊', '2026-01-08 18:10:43', '08:00:00');
+INSERT INTO `appointment` VALUES (1095, 12, 1501, '已过期', '2026-01-08 18:10:43', '08:00:00');
 INSERT INTO `appointment` VALUES (1101, 3, 1509, '已取消', '2026-01-11 18:10:43', '08:45:00');
 INSERT INTO `appointment` VALUES (1112, 6, 1528, '已取消', '2026-01-11 18:10:43', '17:15:00');
-INSERT INTO `appointment` VALUES (1117, 3, 1537, '待就诊', '2026-01-10 18:10:43', '08:15:00');
+INSERT INTO `appointment` VALUES (1117, 3, 1537, '已过期', '2026-01-10 18:10:43', '08:15:00');
 INSERT INTO `appointment` VALUES (1128, 1, 1549, '已取消', '2026-01-09 18:10:43', '13:15:00');
 INSERT INTO `appointment` VALUES (1143, 10, 1568, '已取消', '2026-01-10 18:10:43', '09:30:00');
 INSERT INTO `appointment` VALUES (1146, 6, 1573, '已完成', '2026-01-10 18:10:43', '09:45:00');
-INSERT INTO `appointment` VALUES (1158, 11, 1587, '待就诊', '2026-01-10 18:10:43', '08:30:00');
-INSERT INTO `appointment` VALUES (1180, 6, 1617, '待就诊', '2026-01-11 18:10:43', '08:45:00');
+INSERT INTO `appointment` VALUES (1158, 11, 1587, '已过期', '2026-01-10 18:10:43', '08:30:00');
+INSERT INTO `appointment` VALUES (1180, 6, 1617, '已过期', '2026-01-11 18:10:43', '08:45:00');
 INSERT INTO `appointment` VALUES (1183, 14, 1622, '已完成', '2026-01-11 18:10:43', '10:45:00');
 INSERT INTO `appointment` VALUES (1191, 12, 1632, '已取消', '2026-01-10 18:10:43', '17:00:00');
-INSERT INTO `appointment` VALUES (1196, 3, 1638, '待就诊', '2026-01-10 18:10:43', '09:30:00');
+INSERT INTO `appointment` VALUES (1196, 3, 1638, '已过期', '2026-01-10 18:10:43', '09:30:00');
 INSERT INTO `appointment` VALUES (1207, 11, 1650, '已取消', '2026-01-10 18:10:43', '15:15:00');
 INSERT INTO `appointment` VALUES (1217, 12, 1668, '已完成', '2026-01-09 18:10:43', '13:30:00');
 INSERT INTO `appointment` VALUES (1233, 7, 1689, '已完成', '2026-01-10 18:10:43', '16:45:00');
 INSERT INTO `appointment` VALUES (1234, 1, 1635, '已取消', '2026-01-11 21:14:07', '15:45:00');
 INSERT INTO `appointment` VALUES (1235, 1, 1651, '已取消', '2026-01-11 21:14:20', '11:15:00');
 INSERT INTO `appointment` VALUES (1236, 1, 1575, '已取消', '2026-01-11 21:15:19', '17:15:00');
-INSERT INTO `appointment` VALUES (1237, 1, 9, '待就诊', '2026-01-11 21:46:13', '15:15:00');
-INSERT INTO `appointment` VALUES (1238, 1, 16, '待就诊', '2026-01-11 21:46:33', '08:30:00');
-INSERT INTO `appointment` VALUES (1239, 1, 8, '待就诊', '2026-01-11 22:42:08', '11:15:00');
+INSERT INTO `appointment` VALUES (1237, 1, 9, '已过期', '2026-01-11 21:46:13', '15:15:00');
+INSERT INTO `appointment` VALUES (1239, 1, 8, '已过期', '2026-01-11 22:42:08', '11:15:00');
+INSERT INTO `appointment` VALUES (1240, 1, 7, '已取消', '2026-01-13 01:28:45', '08:45:00');
+INSERT INTO `appointment` VALUES (1241, 1, 66, '已取消', '2026-01-13 02:18:22', '08:30:00');
 
 -- ----------------------------
 -- Table structure for department
@@ -417,7 +422,7 @@ INSERT INTO `hospital_notice` VALUES (6, '专家门诊时间调整', '因学术�
 INSERT INTO `hospital_notice` VALUES (7, '疫情防控重要提醒', '当前处于呼吸道传染病高发季节，请来院患者及家属全程佩戴口罩，配合体温检测，保持安全距离。有发热、咳嗽等症状请主动告知预检分诊人员。', '温馨提示', '全部', '紧急', '2026-02-03 08:00:00', '2026-03-31 23:59:59', 1, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
 INSERT INTO `hospital_notice` VALUES (8, '新停车场投入使用', '医院新建地下停车场已于2026年2月1日正式投入使用，新增车位200个，实行智能化管理。前30分钟免费，后续按标准收费。', '医院动态', '全部', '普通', '2026-02-01 10:00:00', '2026-03-01 23:59:59', 0, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
 INSERT INTO `hospital_notice` VALUES (9, '糖尿病俱乐部活动通知', '糖尿病俱乐部定于2026年2月15日下午2点举办\"糖尿病饮食管理\"主题活动，届时将有营养师现场指导，欢迎糖友参加。', '医院动态', '患者', '普通', '2026-02-05 14:00:00', '2026-02-15 23:59:59', 0, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
-INSERT INTO `hospital_notice` VALUES (10, '医疗收费标准公示', '根据市卫健委要求，我院2026年度医疗服务价格标准已更新，具体收费标准详见门诊大厅公示栏或医院官方网站。', '政策法规', '全部', '重要', '2026-01-01 00:00:00', '2026-12-31 23:59:59', 0, 1, 1, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
+INSERT INTO `hospital_notice` VALUES (10, '医疗收费标准公示', '根据市卫健委要求，我院2026年度医疗服务价格标准已更新，具体收费标准详见门诊大厅公示栏或医院官方网站。', '政策法规', '全部', '重要', '2026-01-01 00:00:00', '2026-12-31 23:59:59', 0, 1, 3, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
 INSERT INTO `hospital_notice` VALUES (11, '志愿者招募公告', '我院现面向社会招募医疗志愿者，要求年龄18-65岁，身体健康，有爱心和责任心。报名时间：即日起至2月28日。', '医院动态', '全部', '普通', '2026-02-10 09:00:00', '2026-02-28 23:59:59', 0, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
 INSERT INTO `hospital_notice` VALUES (12, '孕妇学校开课通知', '孕妇学校2026年春季班将于2月20日开课，课程内容包括孕期保健、分娩准备、新生儿护理等。欢迎准爸妈报名参加。', '医院动态', '患者', '普通', '2026-02-12 10:00:00', '2026-02-20 23:59:59', 0, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
 INSERT INTO `hospital_notice` VALUES (13, '医疗质量安全月活动', '我院将于3月开展\"医疗质量安全月\"活动，期间将组织多项质量改进措施和患者安全教育活动，欢迎监督。', '医院动态', '全部', '重要', '2026-02-25 15:00:00', '2026-03-31 23:59:59', 0, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
@@ -426,8 +431,8 @@ INSERT INTO `hospital_notice` VALUES (15, '医院APP新版上线', '我院官方
 INSERT INTO `hospital_notice` VALUES (16, '爱心献血活动通知', '我院将于2026年3月1日联合市中心血站开展无偿献血活动，地点：门诊楼前广场。献血有益健康，欢迎参与。', '医院动态', '全部', '普通', '2026-02-28 09:00:00', '2026-03-01 23:59:59', 0, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
 INSERT INTO `hospital_notice` VALUES (17, '医保政策调整说明', '根据最新医保政策，2026年3月1日起部分药品和诊疗项目报销比例有所调整，具体变化请咨询医保办。', '政策法规', '患者', '重要', '2026-02-15 16:00:00', '2026-03-31 23:59:59', 1, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
 INSERT INTO `hospital_notice` VALUES (18, '医院环境改造公告', '为改善就诊环境，医院将于2026年3月进行部分区域装修改造，施工期间可能产生噪音，敬请谅解。', '温馨提示', '全部', '普通', '2026-02-20 08:30:00', '2026-03-31 23:59:59', 0, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
-INSERT INTO `hospital_notice` VALUES (19, '专家义诊活动预告', '为庆祝建院70周年，我院将于2026年3月15日举办大型专家义诊活动，届时各科专家将免费为市民提供咨询服务。', '医院动态', '患者', '重要', '2026-03-01 10:00:00', '2026-03-15 23:59:59', 1, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
-INSERT INTO `hospital_notice` VALUES (20, '医疗投诉渠道公示', '为更好服务患者，现将医疗投诉渠道公示：投诉电话：XXXX-XXXXXXX，投诉邮箱：ts@hospital.com，现场投诉：医患关系办公室。', '政策法规', '患者', '普通', '2026-01-10 09:00:00', '2026-12-31 23:59:59', 0, 1, 1, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
+INSERT INTO `hospital_notice` VALUES (19, '专家义诊活动预告', '为庆祝建院70周年，我院将于2026年3月15日举办大型专家义诊活动，届时各科专家将免费为市民提供咨询服务。', '医院动态', '患者', '重要', '2026-03-01 10:00:00', '2026-03-15 23:59:59', 1, 1, 2, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
+INSERT INTO `hospital_notice` VALUES (20, '医疗投诉渠道公示', '为更好服务患者，现将医疗投诉渠道公示：投诉电话：XXXX-XXXXXXX，投诉邮箱：ts@hospital.com，现场投诉：医患关系办公室。', '政策法规', '患者', '普通', '2026-01-10 09:00:00', '2026-12-31 23:59:59', 0, 1, 3, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11');
 
 -- ----------------------------
 -- Table structure for medical_record
@@ -450,7 +455,7 @@ CREATE TABLE `medical_record`  (
   CONSTRAINT `medical_record_ibfk_1` FOREIGN KEY (`appointment_id`) REFERENCES `appointment` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `medical_record_ibfk_2` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `medical_record_ibfk_3` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 424 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '电子病历表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 430 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '电子病历表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of medical_record
@@ -514,6 +519,7 @@ CREATE TABLE `patient`  (
   `id_card` char(18) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '身份证号',
   `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '头像地址',
   `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `is_active` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否启用(1启用,0禁用)',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `username`(`username`) USING BTREE,
   UNIQUE INDEX `id_card`(`id_card`) USING BTREE
@@ -522,20 +528,20 @@ CREATE TABLE `patient`  (
 -- ----------------------------
 -- Records of patient
 -- ----------------------------
-INSERT INTO `patient` VALUES (1, 'patient1', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '赵患者1', '13800138000', '110101199001011234', NULL, '2026-01-09 02:44:31');
-INSERT INTO `patient` VALUES (2, 'patient002', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '钱患者', '13900139000', '110101199505055678', NULL, '2026-01-09 02:44:31');
-INSERT INTO `patient` VALUES (3, 'wangwei', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '王伟', '13800138001', '110101198501011234', NULL, '2026-01-11 10:00:00');
-INSERT INTO `patient` VALUES (4, 'liming', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '李明', '13800138002', '110101199002022345', NULL, '2026-01-11 10:00:00');
-INSERT INTO `patient` VALUES (5, 'zhangwei', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '张伟', '13800138003', '110101198803033456', NULL, '2026-01-11 10:00:00');
-INSERT INTO `patient` VALUES (6, 'liuyang', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '刘洋', '13800138004', '110101199504044567', NULL, '2026-01-11 10:00:00');
-INSERT INTO `patient` VALUES (7, 'chenmin', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '陈敏', '13800138005', '110101198705055678', NULL, '2026-01-11 10:00:00');
-INSERT INTO `patient` VALUES (8, '张磊', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '张磊', '13800138000', '110101198310151550', NULL, '2026-01-11 18:09:56');
-INSERT INTO `patient` VALUES (9, '李杰', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '李杰', '13800138001', '110101198803100810', NULL, '2026-01-11 18:09:56');
-INSERT INTO `patient` VALUES (10, '赵洋', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '赵洋', '13800138002', '110101197001143685', NULL, '2026-01-11 18:09:56');
-INSERT INTO `patient` VALUES (11, '赵杰', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '赵杰', '13800138003', '110101200401190165', NULL, '2026-01-11 18:09:56');
-INSERT INTO `patient` VALUES (12, '王洋', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '王洋', '13800138004', '110101196102115061', NULL, '2026-01-11 18:09:56');
-INSERT INTO `patient` VALUES (13, '刘娜', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '刘娜', '13800138005', '110101198402101623', NULL, '2026-01-11 18:09:56');
-INSERT INTO `patient` VALUES (14, '周洋', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '周洋', '13800138006', '110101198712035409', NULL, '2026-01-11 18:09:56');
+INSERT INTO `patient` VALUES (1, 'patient1', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '赵患者1', '13800138000', '110101199001011234', NULL, '2026-01-09 02:44:31', 1);
+INSERT INTO `patient` VALUES (2, 'patient002', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '钱患者', '13900139000', '110101199505055678', NULL, '2026-01-09 02:44:31', 1);
+INSERT INTO `patient` VALUES (3, 'wangwei', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '王伟', '13800138001', '110101198501011234', NULL, '2026-01-11 10:00:00', 1);
+INSERT INTO `patient` VALUES (4, 'liming', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '李明', '13800138002', '110101199002022345', NULL, '2026-01-11 10:00:00', 1);
+INSERT INTO `patient` VALUES (5, 'zhangwei', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '张伟', '13800138003', '110101198803033456', NULL, '2026-01-11 10:00:00', 1);
+INSERT INTO `patient` VALUES (6, 'liuyang', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '刘洋', '13800138004', '110101199504044567', NULL, '2026-01-11 10:00:00', 1);
+INSERT INTO `patient` VALUES (7, 'chenmin', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '陈敏', '13800138005', '110101198705055678', NULL, '2026-01-11 10:00:00', 1);
+INSERT INTO `patient` VALUES (8, '张磊', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '张磊', '13800138000', '110101198310151550', NULL, '2026-01-11 18:09:56', 1);
+INSERT INTO `patient` VALUES (9, '李杰', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '李杰', '13800138001', '110101198803100810', NULL, '2026-01-11 18:09:56', 1);
+INSERT INTO `patient` VALUES (10, '赵洋', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '赵洋', '13800138002', '110101197001143685', NULL, '2026-01-11 18:09:56', 1);
+INSERT INTO `patient` VALUES (11, '赵杰', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '赵杰', '13800138003', '110101200401190165', NULL, '2026-01-11 18:09:56', 1);
+INSERT INTO `patient` VALUES (12, '王洋', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '王洋', '13800138004', '110101196102115061', NULL, '2026-01-11 18:09:56', 1);
+INSERT INTO `patient` VALUES (13, '刘娜', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '刘娜', '13800138005', '110101198402101623', NULL, '2026-01-11 18:09:56', 1);
+INSERT INTO `patient` VALUES (14, '周洋', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '周洋', '13800138006', '110101198712035409', NULL, '2026-01-11 18:09:56', 1);
 
 -- ----------------------------
 -- Table structure for schedule
@@ -563,7 +569,7 @@ INSERT INTO `schedule` VALUES (3, 2, '2026-01-10', '上午', 15, 15, '2026-01-09
 INSERT INTO `schedule` VALUES (4, 1, '2026-01-10', '上午', 20, 20, '2026-01-09 22:48:13');
 INSERT INTO `schedule` VALUES (5, 2, '2026-01-10', '下午', 15, 15, '2026-01-09 22:48:13');
 INSERT INTO `schedule` VALUES (6, 3, '2026-01-11', '全天', 10, 10, '2026-01-09 22:48:13');
-INSERT INTO `schedule` VALUES (7, 1, '2026-01-12', '上午', 20, 20, '2026-01-11 18:10:33');
+INSERT INTO `schedule` VALUES (7, 1, '2026-01-12', '上午', 20, 19, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (8, 2, '2026-01-12', '上午', 20, 19, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (9, 3, '2026-01-12', '全天', 40, 39, '2026-01-11 18:10:33');
 INSERT INTO `schedule` VALUES (10, 4, '2026-01-12', '全天', 40, 40, '2026-01-11 18:10:33');
@@ -2295,6 +2301,7 @@ INSERT INTO `sys_menu` VALUES (10, '医生新增', 4, 2, '#', '', NULL, '', '1',
 INSERT INTO `sys_menu` VALUES (11, '医生修改', 4, 3, '#', '', NULL, '', '1', '0', 'F', '0', '0', 'hospital:doctor:edit', '#', 'admin', '2026-01-08 16:14:48', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (12, '医生删除', 4, 4, '#', '', NULL, '', '1', '0', 'F', '0', '0', 'hospital:doctor:remove', '#', 'admin', '2026-01-08 16:14:48', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (13, '预约挂号', 1, 8, 'register', 'hospital/appointment/register', NULL, '', '1', '0', 'C', '0', '0', 'hospital:appointment:register', 'edit', 'admin', '2026-01-10 20:06:16', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (14, '预约挂号', 1, 8, 'register', 'hospital/appointment/register', NULL, '', '1', '0', 'C', '0', '0', 'hospital:appointment:register', 'edit', 'admin', '2026-01-10 21:41:33', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (15, '医院信息管理', 1, 9, 'notice', 'hospital/notice/index', NULL, '', '1', '0', 'C', '0', '0', 'hospital:notice:list', 'message', 'admin', '2026-01-12 10:00:00', '', NULL, '');
 
 -- ----------------------------

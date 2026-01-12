@@ -54,7 +54,7 @@
 </template>
 
 <script setup>
-import { ElMessageBox } from 'element-plus'
+import { ElMessageBox, ElNotification } from 'element-plus'
 import Breadcrumb from '@/components/Breadcrumb'
 import TopNav from '@/components/TopNav'
 import Hamburger from '@/components/Hamburger'
@@ -66,10 +66,70 @@ import RuoYiDoc from '@/components/RuoYi/Doc'
 import useAppStore from '@/store/modules/app'
 import useUserStore from '@/store/modules/user'
 import useSettingsStore from '@/store/modules/settings'
+import { onMounted, onUnmounted, ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { listAppointment } from "@/api/hospital/appointment.js"
 
 const appStore = useAppStore()
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()
+const router = useRouter()
+
+const lastCheckTime = ref(new Date())
+let pollingTimer = null
+const isDoctor = computed(() => userStore.loginType === 'doctor')
+
+/** 检查新预约 (轮询) */
+function checkNewAppointments() {
+  if (!isDoctor.value) return
+  
+  const query = {
+    pageNum: 1,
+    pageSize: 5,
+    orderByColumn: "bookedAt",
+    isAsc: "descending"
+  }
+  
+  listAppointment(query).then(response => {
+    if (response.rows && response.rows.length > 0) {
+      const latest = response.rows[0]
+      const bookedAt = new Date(latest.bookedAt)
+      
+      if (bookedAt > lastCheckTime.value) {
+        lastCheckTime.value = bookedAt
+        
+        const notification = ElNotification({
+          title: '新预约提醒',
+          message: `患者 ${latest.patientName} 提交了新的预约 (${latest.appointmentTime})`,
+          type: 'info',
+          duration: 15000,
+          onClick: () => {
+            router.push({ 
+              path: '/hospital/appointment', 
+              query: { 
+                newId: latest.id,
+                _t: Date.now() // 确保即使在同一页面也能触发 watch
+              } 
+            })
+            notification.close()
+          }
+        })
+      }
+    }
+  })
+}
+
+onMounted(() => {
+  if (isDoctor.value) {
+    pollingTimer = setInterval(checkNewAppointments, 10000)
+  }
+})
+
+onUnmounted(() => {
+  if (pollingTimer) {
+    clearInterval(pollingTimer)
+  }
+})
 
 function toggleSideBar() {
   appStore.toggleSideBar()
