@@ -10,6 +10,8 @@
       <app-main />
       <settings ref="settingRef" />
     </div>
+    <!-- 患者侧边栏日程 -->
+    <AppointmentSidebar v-if="isPatient" />
   </div>
 </template>
 
@@ -19,14 +21,19 @@ import Sidebar from './components/Sidebar/index.vue'
 import { AppMain, Navbar, Settings, TagsView } from './components'
 import useAppStore from '@/store/modules/app'
 import useSettingsStore from '@/store/modules/settings'
+import useUserStore from '@/store/modules/user'
+import AppointmentSidebar from '@/views/hospital/appointment/AppointmentSidebar.vue'
 
 const settingsStore = useSettingsStore()
+const userStore = useUserStore()
 const theme = computed(() => settingsStore.theme)
 const sideTheme = computed(() => settingsStore.sideTheme)
 const sidebar = computed(() => useAppStore().sidebar)
 const device = computed(() => useAppStore().device)
 const needTagsView = computed(() => settingsStore.tagsView)
 const fixedHeader = computed(() => settingsStore.fixedHeader)
+
+const isPatient = computed(() => userStore.loginType === 'patient')
 
 const classObj = computed(() => ({
   hideSidebar: !sidebar.value.opened,
