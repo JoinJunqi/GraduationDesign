@@ -108,10 +108,12 @@
           </el-select>
         </el-form-item>
         <el-form-item label="总号源" prop="totalCapacity">
-          <el-input-number v-model="form.totalCapacity" :min="1" :disabled="true" />
-          <div class="help-block" style="font-size: 12px; color: #909399;">按15分钟/号计算</div>
+          <el-input-number v-model="form.totalCapacity" :min="1" :max="form.maxCapacity || 28" />
+          <div class="help-block" style="font-size: 12px; color: #909399;">
+            按15分钟/号计算，该时段上限为 {{ form.maxCapacity || 28 }} 个号
+          </div>
         </el-form-item>
-        <el-form-item label="剩余号源" prop="availableSlots">
+        <el-form-item label="剩余号源" prop="availableSlots" v-if="form.id">
           <el-input-number v-model="form.availableSlots" :min="0" :disabled="true" />
         </el-form-item>
       </el-form>
@@ -147,6 +149,7 @@ const single = ref(true);
 const multiple = ref(true);
 const title = ref("");
 const total = ref(0);
+const originalTotalCapacity = ref(0);
 
 const data = reactive({
   form: {},
@@ -190,7 +193,7 @@ function handleSortChange(column) {
   getList();
 }
 
-/** 班次变更自动计算号源 */
+/** 班次变更自动计算号源上限 */
 function handleTimeSlotChange(val) {
   let capacity = 0;
   if (val === '上午' || val === '下午') {
@@ -198,6 +201,7 @@ function handleTimeSlotChange(val) {
   } else if (val === '全天') {
     capacity = 28; // 7小时 * 60 / 15 = 28
   }
+  form.value.maxCapacity = capacity;
   form.value.totalCapacity = capacity;
   form.value.availableSlots = capacity;
 }
@@ -227,7 +231,8 @@ function reset() {
     workDate: null,
     timeSlot: null,
     totalCapacity: 0,
-    availableSlots: 0
+    availableSlots: 0,
+    maxCapacity: 28
   };
   proxy.resetForm("scheduleRef");
 }
@@ -263,8 +268,15 @@ function handleUpdate(row) {
   const id = row.id || ids.value;
   getSchedule(id).then(response => {
     form.value = response.data;
+    originalTotalCapacity.value = form.value.totalCapacity;
     if (isDoctor.value && !form.value.doctorName) {
       form.value.doctorName = currentDoctorName.value;
+    }
+    // 设置号源上限
+    if (form.value.timeSlot === '上午' || form.value.timeSlot === '下午') {
+      form.value.maxCapacity = 14;
+    } else if (form.value.timeSlot === '全天') {
+      form.value.maxCapacity = 28;
     }
     open.value = true;
     title.value = "修改排班";
@@ -276,16 +288,32 @@ function submitForm() {
   proxy.$refs["scheduleRef"].validate(valid => {
     if (valid) {
       if (form.value.id != null) {
+        // 修改时，如果调整了总号源，需要同步调整剩余号源
+        const diff = form.value.totalCapacity - originalTotalCapacity.value;
+        if (diff !== 0) {
+          form.value.availableSlots = Math.max(0, form.value.availableSlots + diff);
+        }
         updateSchedule(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功");
           open.value = false;
           getList();
         });
       } else {
-        addSchedule(form.value).then(response => {
-          proxy.$modal.msgSuccess("新增成功");
-          open.value = false;
-          getList();
+        // 新增时检查重复日期
+        const checkQuery = {
+          doctorId: form.value.doctorId,
+          workDate: form.value.workDate
+        };
+        listSchedule(checkQuery).then(res => {
+          if (res.rows && res.rows.length > 0) {
+            proxy.$modal.msgError("该日期已存在排班，请勿重复添加");
+            return;
+          }
+          addSchedule(form.value).then(response => {
+            proxy.$modal.msgSuccess("新增成功");
+            open.value = false;
+            getList();
+          });
         });
       }
     }

@@ -123,7 +123,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button type="success" @click="handleFinishConsultation" v-if="isDoctor">就诊完成</el-button>
+          <el-button type="primary" @click="submitForm">仅保存病历</el-button>
           <el-button @click="cancel">取 消</el-button>
         </div>
       </template>
@@ -151,6 +152,7 @@
 
 <script setup name="Record">
 import { getCurrentInstance, computed, ref, reactive, toRefs, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { listRecord, getRecord, delRecord, addRecord, updateRecord } from "@/api/hospital/record.js";
 import { parseTime } from "@/utils/ruoyi";
 import useUserStore from "@/store/modules/user";
@@ -159,6 +161,7 @@ console.log('Record index component setup started');
 
 const { proxy } = getCurrentInstance();
 const userStore = useUserStore();
+const route = useRoute();
 
 const loginType = computed(() => userStore.loginType);
 const isAdmin = computed(() => loginType.value === 'admin');
@@ -257,7 +260,35 @@ function handleQuery() {
 onMounted(() => {
   console.log('Record index component mounted');
   getList();
+  
+  // 处理从预约列表跳转过来的“开始就诊”
+  if (route.query.appointmentId) {
+    handleAdd();
+    form.value.appointmentId = route.query.appointmentId;
+    form.value.patientId = route.query.patientId;
+    form.value.patientName = route.query.patientName;
+    form.value.doctorId = userStore.id; // 使用 store 中的 id
+    form.value.visitTime = parseTime(new Date());
+  }
 });
+
+/** 就诊完成操作 */
+function handleFinishConsultation() {
+  proxy.$refs["recordRef"].validate(valid => {
+    if (valid) {
+      // 保存并完成就诊（后端会自动更新预约状态）
+      const saveAction = form.value.id != null ? updateRecord(form.value) : addRecord(form.value);
+      
+      saveAction.then(response => {
+        proxy.$modal.msgSuccess("就诊完成，病历已保存");
+        open.value = false;
+        getList();
+      }).catch(err => {
+        console.error('Failed to finish consultation:', err);
+      });
+    }
+  });
+}
 
 /** 重置按钮操作 */
 function resetQuery() {

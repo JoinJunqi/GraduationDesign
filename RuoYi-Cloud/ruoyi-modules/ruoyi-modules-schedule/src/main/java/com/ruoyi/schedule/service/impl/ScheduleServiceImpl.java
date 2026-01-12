@@ -84,13 +84,12 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             throw new ServiceException("医生信息不能为空");
         }
 
-        // 检查排班冲突
+        // 检查排班冲突 (同一天只能有一个排班记录)
         Long count = scheduleMapper.selectCount(new LambdaQueryWrapper<Schedule>()
                 .eq(Schedule::getDoctorId, schedule.getDoctorId())
-                .eq(Schedule::getWorkDate, schedule.getWorkDate())
-                .eq(Schedule::getTimeSlot, schedule.getTimeSlot()));
+                .eq(Schedule::getWorkDate, schedule.getWorkDate()));
         if (count > 0) {
-            throw new ServiceException("该医生在该时段已有排班");
+            throw new ServiceException("该医生在 " + schedule.getWorkDate() + " 已有排班，请勿重复操作");
         }
         
         schedule.setAvailableSlots(schedule.getTotalCapacity());
@@ -105,14 +104,13 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateSchedule(Schedule schedule) {
-        // 检查排班冲突 (仅在修改了时间或医生时检查)
-        if (schedule.getDoctorId() != null && schedule.getWorkDate() != null && schedule.getTimeSlot() != null) {
-            Schedule oldSchedule = scheduleMapper.selectOne(new LambdaQueryWrapper<Schedule>()
+        // 检查排班冲突 (仅在修改了日期时检查)
+        if (schedule.getDoctorId() != null && schedule.getWorkDate() != null) {
+            Schedule existingSchedule = scheduleMapper.selectOne(new LambdaQueryWrapper<Schedule>()
                     .eq(Schedule::getDoctorId, schedule.getDoctorId())
-                    .eq(Schedule::getWorkDate, schedule.getWorkDate())
-                    .eq(Schedule::getTimeSlot, schedule.getTimeSlot()));
-            if (oldSchedule != null && !oldSchedule.getId().equals(schedule.getId())) {
-                throw new ServiceException("该医生在该时段已有其他排班");
+                    .eq(Schedule::getWorkDate, schedule.getWorkDate()));
+            if (existingSchedule != null && !existingSchedule.getId().equals(schedule.getId())) {
+                throw new ServiceException("该医生在 " + schedule.getWorkDate() + " 已有其他排班记录");
             }
         }
         

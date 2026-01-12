@@ -124,6 +124,19 @@ export const constantRoutes = [
       }
     ]
   },
+  {
+    path: '/hospital/consultation',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/hospital/appointment/consultation.vue'),
+        name: 'Consultation',
+        meta: { title: '就诊工作台', activeMenu: '/hospital/appointment' }
+      }
+    ]
+  },
 ]
 
 // 动态路由，基于用户权限动态去加载

@@ -35,7 +35,7 @@ public class AppointmentController extends BaseController
     @GetMapping(value = "/{id}")
     public ResultVO<Appointment> getInfo(@PathVariable("id") Long id)
     {
-        return ResultVO.success(appointmentService.getById(id));
+        return ResultVO.success(appointmentService.selectAppointmentById(id));
     }
 
     @PostMapping("/create")

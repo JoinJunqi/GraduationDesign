@@ -85,6 +85,28 @@
         <el-card shadow="hover" class="side-card">
           <template #header>
             <div class="card-header">
+              <span class="header-title"><el-icon><Clock /></el-icon> 门诊时间</span>
+            </div>
+          </template>
+          <div class="working-hours">
+            <div class="hour-item">
+              <div class="hour-label">上午门诊：</div>
+              <div class="hour-value">08:00 - 11:30</div>
+            </div>
+            <div class="hour-item">
+              <div class="hour-label">下午门诊：</div>
+              <div class="hour-value">14:00 - 17:30</div>
+            </div>
+            <el-divider />
+            <div class="hour-tip">
+              <el-icon><InfoFilled /></el-icon> 每15分钟为一个预约号源
+            </div>
+          </div>
+        </el-card>
+
+        <el-card shadow="hover" class="side-card" style="margin-top: 20px;">
+          <template #header>
+            <div class="card-header">
               <span class="header-title"><el-icon><Help /></el-icon> 就诊指南</span>
             </div>
           </template>
@@ -332,6 +354,36 @@ function getNoticeTag(priority) {
           overflow: hidden;
         }
       }
+    }
+  }
+
+  .working-hours {
+    padding: 10px;
+    .hour-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      .hour-label {
+        color: #606266;
+        font-weight: bold;
+      }
+      .hour-value {
+        color: #409EFF;
+        font-size: 16px;
+        font-weight: bold;
+      }
+    }
+    .hour-tip {
+      font-size: 13px;
+      color: #909399;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      justify-content: center;
+    }
+    .el-divider {
+      margin: 15px 0;
     }
   }
 

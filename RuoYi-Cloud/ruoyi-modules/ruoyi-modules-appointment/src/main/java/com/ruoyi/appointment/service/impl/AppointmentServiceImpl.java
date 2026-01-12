@@ -322,5 +322,13 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         return this.updateById(appointment);
     }
 
+    @Override
+    public Appointment selectAppointmentById(Long id) {
+        Appointment query = new Appointment();
+        query.setId(id);
+        List<Appointment> list = appointmentMapper.selectAppointmentList(query);
+        return (list != null && !list.isEmpty()) ? list.get(0) : null;
+    }
+
 
 }

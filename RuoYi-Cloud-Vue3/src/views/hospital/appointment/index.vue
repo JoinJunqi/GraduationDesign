@@ -225,11 +225,9 @@ function hasAppointment(day) {
 /** 开始就诊 */
 function handleStartConsultation(row) {
   router.push({
-    path: '/hospital/record',
+    path: '/hospital/consultation/index',
     query: {
-      appointmentId: row.id,
-      patientId: row.patientId,
-      patientName: row.patientName
+      appointmentId: row.id
     }
   });
 }
