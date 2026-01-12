@@ -58,4 +58,8 @@ public class Appointment implements Serializable {
     /** 班次 (展示用) */
     @TableField(exist = false)
     private String timeSlot;
+
+    /** 科室名称 (展示用) */
+    @TableField(exist = false)
+    private String deptName;
 }

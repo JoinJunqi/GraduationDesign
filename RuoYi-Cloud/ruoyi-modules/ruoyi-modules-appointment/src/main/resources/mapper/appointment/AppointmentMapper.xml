@@ -16,17 +16,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="workDate" column="work_date" />
         <result property="timeSlot" column="time_slot" />
         <result property="doctorId" column="doctor_id" />
+        <result property="deptName" column="dept_name" />
     </resultMap>
 
     <sql id="selectAppointmentVo">
         select a.id, a.patient_id, a.schedule_id, a.status, a.booked_at, a.appointment_time,
                p.name as patient_name,
                d.name as doctor_name,
-               s.work_date, s.time_slot, s.doctor_id
+               s.work_date, s.time_slot, s.doctor_id,
+               dept.name as dept_name
         from appointment a
         left join patient p on a.patient_id = p.id
         left join schedule s on a.schedule_id = s.id
         left join doctor d on s.doctor_id = d.id
+        left join department dept on d.dept_id = dept.id
     </sql>
 
     <select id="selectAppointmentList" parameterType="com.ruoyi.appointment.domain.Appointment" resultMap="AppointmentResult">
