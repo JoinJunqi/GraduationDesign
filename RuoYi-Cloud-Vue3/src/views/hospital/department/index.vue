@@ -9,6 +9,14 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="显示已删除" prop="includeDeleted">
+        <el-switch
+          v-model="queryParams.params.includeDeleted"
+          active-value="true"
+          inactive-value="false"
+          @change="handleQuery"
+        />
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -51,7 +59,18 @@
     <el-table v-loading="loading" :data="departmentList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="id" sortable="custom" />
-      <el-table-column label="科室名称" align="center" prop="name" sortable="custom" />
+      <el-table-column label="科室名称" align="center" prop="name" sortable="custom">
+        <template #default="scope">
+          <span>{{ scope.row.name }}</span>
+          <el-tag v-if="scope.row.isDeleted === 1" type="danger" style="margin-left: 5px">已删除</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="删除时间" align="center" prop="deletedAt" width="180" v-if="queryParams.params.includeDeleted === 'true'">
+        <template #default="scope">
+          <span v-if="scope.row.isDeleted === 1">{{ parseTime(scope.row.deletedAt) }}</span>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="创建时间" align="center" prop="createdAt" width="180" sortable="custom">
         <template #default="scope">
           <span>{{ parseTime(scope.row.createdAt) }}</span>
@@ -59,9 +78,12 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" icon="InfoFilled" @click="handleIntro(scope.row)" v-hasPermi="['hospital:department:edit']">介绍</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:department:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hospital:department:remove']">删除</el-button>
+          <template v-if="scope.row.isDeleted !== 1">
+            <el-button link type="primary" icon="InfoFilled" @click="handleIntro(scope.row)" v-hasPermi="['hospital:department:edit']">介绍</el-button>
+            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:department:edit']">修改</el-button>
+            <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hospital:department:remove']">删除</el-button>
+          </template>
+          <el-tag v-else type="info">无可用操作</el-tag>
         </template>
       </el-table-column>
     </el-table>
@@ -150,6 +172,9 @@ const data = reactive({
     pageNum: 1,
     pageSize: 10,
     name: null,
+    params: {
+      includeDeleted: "false"
+    },
     orderByColumn: "id",
     isAsc: "ascending"
   },

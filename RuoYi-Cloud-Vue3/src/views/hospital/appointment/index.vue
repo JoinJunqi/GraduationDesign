@@ -49,6 +49,14 @@
                 @change="handleQuery"
               />
             </el-form-item>
+            <el-form-item label="显示已删除" prop="includeDeleted">
+              <el-switch
+                v-model="queryParams.params.includeDeleted"
+                active-value="true"
+                inactive-value="false"
+                @change="handleQuery"
+              />
+            </el-form-item>
             <el-form-item>
               <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
               <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -92,7 +100,12 @@
 
           <el-table v-loading="loading" :data="appointmentList" @selection-change="handleSelectionChange" @sort-change="handleSortChange" :row-class-name="tableRowClassName">
             <el-table-column type="selection" width="55" align="center" />
-            <el-table-column label="患者姓名" align="center" prop="patientName" sortable="custom" />
+            <el-table-column label="患者姓名" align="center" prop="patientName" sortable="custom">
+              <template #default="scope">
+                <span>{{ scope.row.patientName }}</span>
+                <el-tag v-if="scope.row.isDeleted === 1" type="danger" style="margin-left: 5px">已删除</el-tag>
+              </template>
+            </el-table-column>
             <el-table-column label="医生" align="center" prop="doctorName" sortable="custom" />
             <el-table-column label="就诊日期" align="center" prop="workDate" sortable="custom">
               <template #default="scope">
@@ -107,6 +120,12 @@
                 </el-tag>
               </template>
             </el-table-column>
+            <el-table-column label="删除时间" align="center" prop="deletedAt" width="180" v-if="queryParams.params.includeDeleted === 'true'">
+              <template #default="scope">
+                <span v-if="scope.row.isDeleted === 1">{{ parseTime(scope.row.deletedAt) }}</span>
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
             <el-table-column label="预约时间" align="center" prop="bookedAt" width="160" sortable="custom">
               <template #default="scope">
                 <span>{{ parseTime(scope.row.bookedAt) }}</span>
@@ -115,28 +134,31 @@
             <el-table-column label="预约时段" align="center" prop="appointmentTime" width="100" />
             <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200">
               <template #default="scope">
-                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="isAdmin" v-hasPermi="['hospital:appointment:edit']">修改</el-button>
-                
-                <!-- 患者端操作 -->
-                <el-button link type="danger" icon="CircleClose" @click="handleCancel(scope.row)" v-if="isPatient && scope.row.status === '待就诊'">取消预约</el-button>
-                
-                <!-- 医生端操作 -->
-                <template v-if="isDoctor">
-                  <el-button link type="success" icon="VideoPlay" @click="handleStartConsultation(scope.row)" v-if="scope.row.status === '待就诊'">开始就诊</el-button>
-                  <el-button link type="danger" icon="MessageBox" @click="handleRequestCancel(scope.row)" v-if="scope.row.status === '待就诊'">申请取消</el-button>
-                  <div v-if="scope.row.status === '取消申请中'" style="display: inline-block;">
-                    <span style="color: #F56C6C; font-size: 12px; margin-right: 5px;">已申请取消</span>
-                    <el-button link type="primary" @click="handleRevokeRequest(scope.row)">撤销</el-button>
-                  </div>
-                </template>
+                <template v-if="scope.row.isDeleted !== 1">
+                  <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="isAdmin" v-hasPermi="['hospital:appointment:edit']">修改</el-button>
+                  
+                  <!-- 患者端操作 -->
+                  <el-button link type="danger" icon="CircleClose" @click="handleCancel(scope.row)" v-if="isPatient && scope.row.status === '待就诊'">取消预约</el-button>
+                  
+                  <!-- 医生端操作 -->
+                  <template v-if="isDoctor">
+                    <el-button link type="success" icon="VideoPlay" @click="handleStartConsultation(scope.row)" v-if="scope.row.status === '待就诊'">开始就诊</el-button>
+                    <el-button link type="danger" icon="MessageBox" @click="handleRequestCancel(scope.row)" v-if="scope.row.status === '待就诊'">申请取消</el-button>
+                    <div v-if="scope.row.status === '取消申请中'" style="display: inline-block;">
+                      <span style="color: #F56C6C; font-size: 12px; margin-right: 5px;">已申请取消</span>
+                      <el-button link type="primary" @click="handleRevokeRequest(scope.row)">撤销</el-button>
+                    </div>
+                  </template>
 
-                <!-- 管理员端操作 (审批) -->
-                <template v-if="isAdmin && scope.row.status === '取消申请中'">
-                  <el-button link type="success" icon="Check" @click="handleApproveCancel(scope.row)">通过</el-button>
-                  <el-button link type="danger" icon="Close" @click="handleRejectCancel(scope.row)">驳回</el-button>
-                </template>
+                  <!-- 管理员端操作 (审批) -->
+                  <template v-if="isAdmin && scope.row.status === '取消申请中'">
+                    <el-button link type="success" icon="Check" @click="handleApproveCancel(scope.row)">通过</el-button>
+                    <el-button link type="danger" icon="Close" @click="handleRejectCancel(scope.row)">驳回</el-button>
+                  </template>
 
-                <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="isAdmin" v-hasPermi="['hospital:appointment:remove']">删除</el-button>
+                  <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="isAdmin" v-hasPermi="['hospital:appointment:remove']">删除</el-button>
+                </template>
+                <el-tag v-else type="info">无可用操作</el-tag>
               </template>
             </el-table-column>
           </el-table>
@@ -241,7 +263,10 @@ const data = reactive({
     status: null,
     workDate: null,
     orderByColumn: "bookedAt",
-    isAsc: "descending"
+    isAsc: "descending",
+    params: {
+      includeDeleted: "false"
+    }
   },
   rules: {
     patientId: [

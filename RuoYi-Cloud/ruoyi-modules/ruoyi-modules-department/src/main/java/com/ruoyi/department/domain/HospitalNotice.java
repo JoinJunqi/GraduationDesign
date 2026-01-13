@@ -2,11 +2,15 @@ package com.ruoyi.department.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * 医院通知对象 hospital_notice
@@ -15,6 +19,10 @@ import java.util.Date;
 @TableName("hospital_notice")
 public class HospitalNotice implements Serializable {
     private static final long serialVersionUID = 1L;
+
+    /** 请求参数 */
+    @TableField(exist = false)
+    private Map<String, Object> params = new HashMap<>();
 
     /** 通知ID */
     @TableId(type = IdType.AUTO)
@@ -62,4 +70,11 @@ public class HospitalNotice implements Serializable {
     /** 更新时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedAt;
+
+    /** 是否删除(1是,0否) */
+    @TableLogic(value = "0", delval = "1")
+    private Integer isDeleted;
+
+    /** 删除时间 */
+    private Date deletedAt;
 }

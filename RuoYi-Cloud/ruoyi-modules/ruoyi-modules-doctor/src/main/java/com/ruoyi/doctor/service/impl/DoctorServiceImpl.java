@@ -118,7 +118,10 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
 
     @Override
     public boolean deleteDoctorByIds(Long[] ids) {
-        return removeBatchByIds(Arrays.asList(ids));
+        Doctor doctor = new Doctor();
+        doctor.setIsDeleted(1);
+        doctor.setDeletedAt(new Date());
+        return update(doctor, new LambdaQueryWrapper<Doctor>().in(Doctor::getId, Arrays.asList(ids)));
     }
 
     @Override

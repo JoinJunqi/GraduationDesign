@@ -17,6 +17,14 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="显示已删除" prop="includeDeleted">
+        <el-switch
+          v-model="queryParams.params.includeDeleted"
+          active-value="true"
+          inactive-value="false"
+          @change="handleQuery"
+        />
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -70,9 +78,18 @@
       </el-table-column>
       <el-table-column label="状态" align="center" prop="status" sortable="custom">
         <template #default="scope">
-          <el-tag :type="scope.row.status === '0' ? 'success' : 'danger'">
-            {{ scope.row.status === '0' ? '启用' : '禁用' }}
-          </el-tag>
+          <template v-if="scope.row.isDeleted !== 1">
+            <el-tag :type="scope.row.status === '0' ? 'success' : 'danger'">
+              {{ scope.row.status === '0' ? '启用' : '禁用' }}
+            </el-tag>
+          </template>
+          <el-tag v-else type="danger">已删除</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="删除时间" align="center" prop="deletedAt" width="180" v-if="queryParams.params.includeDeleted === 'true'">
+        <template #default="scope">
+          <span v-if="scope.row.isDeleted === 1">{{ parseTime(scope.row.deletedAt) }}</span>
+          <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="创建时间" align="center" prop="createTime" width="180" sortable="custom">
@@ -173,8 +190,11 @@ const data = reactive({
     pageSize: 10,
     userName: null,
     nickName: null,
-    orderByColumn: "userId",
-    isAsc: "ascending"
+    orderByColumn: "id",
+    isAsc: "descending",
+    params: {
+      includeDeleted: "false"
+    }
   },
   rules: {
     userName: [

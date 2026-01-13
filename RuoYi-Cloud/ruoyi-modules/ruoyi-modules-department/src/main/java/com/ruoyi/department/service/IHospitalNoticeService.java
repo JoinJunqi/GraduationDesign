@@ -18,4 +18,9 @@ public interface IHospitalNoticeService extends IService<HospitalNotice> {
      * 查询通知列表
      */
     List<HospitalNotice> selectNoticeList(HospitalNotice notice);
+
+    /**
+     * 批量删除通知
+     */
+    boolean deleteNoticeByIds(Long[] ids);
 }

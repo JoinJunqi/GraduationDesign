@@ -72,6 +72,6 @@ public class HospitalNoticeController extends BaseController {
      */
     @DeleteMapping("/{ids}")
     public ResultVO<Boolean> remove(@PathVariable Long[] ids) {
-        return ResultVO.success(hospitalNoticeService.removeBatchByIds(java.util.Arrays.asList(ids)));
+        return ResultVO.success(hospitalNoticeService.deleteNoticeByIds(ids));
     }
 }

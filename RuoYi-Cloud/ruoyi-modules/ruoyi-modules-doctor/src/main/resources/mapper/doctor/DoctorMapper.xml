@@ -13,11 +13,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="title"    column="title"    />
         <result property="isActive"    column="is_active"    />
         <result property="createdAt"    column="created_at"    />
+        <result property="isDeleted"    column="is_deleted"    />
+        <result property="deletedAt"    column="deleted_at"    />
         <result property="deptName"    column="dept_name"    />
     </resultMap>
 
     <sql id="selectDoctorVo">
-        select d.id, d.dept_id, d.username, d.password_hash, d.name, d.title, d.is_active, d.created_at,
+        select d.id, d.dept_id, d.username, d.password_hash, d.name, d.title, d.is_active, d.created_at, d.is_deleted, d.deleted_at,
                dept.name as dept_name
         from doctor d
         left join department dept on d.dept_id = dept.id
@@ -26,6 +28,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectDoctorList" parameterType="com.ruoyi.doctor.domain.Doctor" resultMap="DoctorResult">
         <include refid="selectDoctorVo"/>
         <where>  
+            <if test="params.includeDeleted == null or params.includeDeleted == '' or params.includeDeleted == 'false'">
+                and d.is_deleted = 0
+            </if>
             <if test="name != null  and name != ''"> and d.name like concat('%', #{name}, '%')</if>
             <if test="deptId != null "> and d.dept_id = #{deptId}</if>
             <if test="username != null  and username != ''"> and d.username = #{username}</if>

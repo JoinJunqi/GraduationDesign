@@ -39,23 +39,7 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
 
     @Override
     public List<Patient> selectPatientList(Patient patient) {
-        LambdaQueryWrapper<Patient> queryWrapper = new LambdaQueryWrapper<>();
-        if (patient.getName() != null && !patient.getName().isEmpty()) {
-            queryWrapper.like(Patient::getName, patient.getName());
-        }
-        if (patient.getPhone() != null && !patient.getPhone().isEmpty()) {
-            queryWrapper.eq(Patient::getPhone, patient.getPhone());
-        }
-        if (patient.getIdCard() != null && !patient.getIdCard().isEmpty()) {
-            queryWrapper.eq(Patient::getIdCard, patient.getIdCard());
-        }
-        if (patient.getUsername() != null && !patient.getUsername().isEmpty()) {
-            queryWrapper.like(Patient::getUsername, patient.getUsername());
-        }
-        if (patient.getIsActive() != null) {
-            queryWrapper.eq(Patient::getIsActive, patient.getIsActive());
-        }
-        return patientMapper.selectList(queryWrapper);
+        return patientMapper.selectPatientList(patient);
     }
 
     @Override
@@ -171,7 +155,10 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
 
     @Override
     public boolean deletePatientByIds(Long[] ids) {
-        return removeBatchByIds(Arrays.asList(ids));
+        Patient patient = new Patient();
+        patient.setIsDeleted(1);
+        patient.setDeletedAt(new Date());
+        return update(patient, new LambdaQueryWrapper<Patient>().in(Patient::getId, Arrays.asList(ids)));
     }
 
     @Override

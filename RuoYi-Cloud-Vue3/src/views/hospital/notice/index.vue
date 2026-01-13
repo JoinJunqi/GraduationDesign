@@ -18,6 +18,14 @@
           <el-option label="温馨提示" value="温馨提示" />
         </el-select>
       </el-form-item>
+      <el-form-item label="显示已删除" prop="includeDeleted">
+        <el-switch
+          v-model="queryParams.params.includeDeleted"
+          active-value="true"
+          inactive-value="false"
+          @change="handleQuery"
+        />
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -60,7 +68,12 @@
     <el-table v-loading="loading" :data="noticeList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="id" width="60" />
-      <el-table-column label="标题" align="center" prop="title" :show-overflow-tooltip="true" />
+      <el-table-column label="标题" align="center" prop="title" :show-overflow-tooltip="true">
+        <template #default="scope">
+          <span>{{ scope.row.title }}</span>
+          <el-tag v-if="scope.row.isDeleted === 1" type="danger" size="small" style="margin-left: 5px">已删除</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="类型" align="center" prop="noticeType" width="100">
         <template #default="scope">
           <el-tag :type="getNoticeTypeTag(scope.row.noticeType)">{{ scope.row.noticeType }}</el-tag>
@@ -92,10 +105,19 @@
         </template>
       </el-table-column>
       <el-table-column label="阅读量" align="center" prop="viewCount" width="70" />
+      <el-table-column label="删除时间" align="center" prop="deletedAt" width="160" v-if="queryParams.params.includeDeleted === 'true'">
+        <template #default="scope">
+          <span v-if="scope.row.isDeleted === 1">{{ parseTime(scope.row.deletedAt) }}</span>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:notice:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hospital:notice:remove']">删除</el-button>
+          <template v-if="scope.row.isDeleted !== 1">
+            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:notice:edit']">修改</el-button>
+            <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hospital:notice:remove']">删除</el-button>
+          </template>
+          <el-tag v-else type="info">无可用操作</el-tag>
         </template>
       </el-table-column>
     </el-table>
@@ -227,7 +249,10 @@ const data = reactive({
     pageNum: 1,
     pageSize: 10,
     title: null,
-    noticeType: null
+    noticeType: null,
+    params: {
+      includeDeleted: "false"
+    }
   },
   rules: {
     title: [{ required: true, message: "标题不能为空", trigger: "blur" }],

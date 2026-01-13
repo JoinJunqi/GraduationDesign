@@ -38,13 +38,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 根据用户名查询用户 (登录核心逻辑) -->
 	<select id="selectUserByUserName" parameterType="String" resultMap="SysUserResult">
 	    <include refid="selectUserVo"/>
-		where username = #{userName}
+		where username = #{userName} and is_deleted = 0
 	</select>
 	
     <!-- 根据ID查询用户 -->
 	<select id="selectUserById" parameterType="Long" resultMap="SysUserResult">
 		<include refid="selectUserVo"/>
-		where id = #{userId}
+		where id = #{userId} and is_deleted = 0
 	</select>
 	
     <!-- 查询用户列表 (管理端列表) -->
@@ -60,23 +60,27 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             '0' as del_flag,
             0 as dept_id
         from admin
-		where 1=1
-		<if test="userName != null and userName != ''">
-			AND username like concat('%', #{userName}, '%')
-		</if>
-        <if test="nickName != null and nickName != ''">
-			AND name like concat('%', #{nickName}, '%')
-		</if>
+		<where>
+            <if test="params.includeDeleted == null or params.includeDeleted == '' or params.includeDeleted == 'false'">
+                and is_deleted = 0
+            </if>
+            <if test="userName != null and userName != ''">
+                AND username like concat('%', #{userName}, '%')
+            </if>
+            <if test="nickName != null and nickName != ''">
+                AND name like concat('%', #{nickName}, '%')
+            </if>
+        </where>
 	</select>
 	
     <!-- 校验用户名唯一 -->
 	<select id="checkUserNameUnique" parameterType="String" resultMap="SysUserResult">
-		select id, username from admin where username = #{userName} limit 1
+		select id, username from admin where username = #{userName} and is_deleted = 0 limit 1
 	</select>
 
     <!-- 校验手机号唯一 -->
     <select id="checkPhoneUnique" parameterType="String" resultMap="SysUserResult">
-		select id, username, phone from admin where phone = #{phonenumber} limit 1
+		select id, username, phone from admin where phone = #{phonenumber} and is_deleted = 0 limit 1
 	</select>
 
     <!-- 校验Email唯一 (Admin无Email，返回空) -->
@@ -137,16 +141,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</update>
 	
     <!-- 删除用户 -->
-	<delete id="deleteUserById" parameterType="Long">
- 		delete from admin where id = #{userId}
- 	</delete>
+	<update id="deleteUserById" parameterType="Long">
+ 		update admin set is_deleted = 1, deleted_at = sysdate() where id = #{userId}
+ 	</update>
  	
- 	<delete id="deleteUserByIds" parameterType="Long">
- 		delete from admin where id in
+ 	<update id="deleteUserByIds" parameterType="Long">
+ 		update admin set is_deleted = 1, deleted_at = sysdate() where id in
  		<foreach collection="array" item="userId" open="(" separator="," close=")">
  			#{userId}
         </foreach> 
- 	</delete>
+ 	</update>
 
     <!-- 根据角色ID查询已分配用户列表 -->
     <select id="selectAllocatedList" parameterType="com.ruoyi.system.api.domain.SysUser" resultMap="SysUserResult">

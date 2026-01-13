@@ -11,6 +11,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="status"    column="status"    />
         <result property="bookedAt"    column="booked_at"    />
         <result property="appointmentTime" column="appointment_time" />
+        <result property="isDeleted"    column="is_deleted"    />
+        <result property="deletedAt"    column="deleted_at"    />
         <result property="patientName" column="patient_name" />
         <result property="doctorName" column="doctor_name" />
         <result property="workDate" column="work_date" />
@@ -20,7 +22,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectAppointmentVo">
-        select a.id, a.patient_id, a.schedule_id, a.status, a.booked_at, a.appointment_time,
+        select a.id, a.patient_id, a.schedule_id, a.status, a.booked_at, a.appointment_time, a.is_deleted, a.deleted_at,
                p.name as patient_name,
                d.name as doctor_name,
                s.work_date, s.time_slot, s.doctor_id,
@@ -35,6 +37,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectAppointmentList" parameterType="com.ruoyi.appointment.domain.Appointment" resultMap="AppointmentResult">
         <include refid="selectAppointmentVo"/>
         <where>  
+            <if test="params.includeDeleted == null or params.includeDeleted == '' or params.includeDeleted == 'false'">
+                and a.is_deleted = 0
+            </if>
             <if test="id != null "> and a.id = #{id}</if>
             <if test="patientId != null "> and a.patient_id = #{patientId}</if>
             <if test="scheduleId != null "> and a.schedule_id = #{scheduleId}</if>

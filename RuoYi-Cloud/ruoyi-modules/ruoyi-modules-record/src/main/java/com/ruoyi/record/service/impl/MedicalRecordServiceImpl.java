@@ -1,5 +1,6 @@
 package com.ruoyi.record.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.common.core.exception.ServiceException;
@@ -213,7 +214,10 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         log.info("Delete medical records: {}. User: {}, roles: {}", Arrays.toString(ids), userId, roles);
 
         if (isAdminUser()) {
-            return removeBatchByIds(Arrays.asList(ids));
+            MedicalRecord record = new MedicalRecord();
+            record.setIsDeleted(1);
+            record.setDeletedAt(new Date());
+            return update(record, new LambdaQueryWrapper<MedicalRecord>().in(MedicalRecord::getId, Arrays.asList(ids)));
         }
 
         // 既不是管理员，也不允许医生或患者删除

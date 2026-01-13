@@ -80,6 +80,6 @@ public class AppointmentController extends BaseController
     @DeleteMapping("/{ids}")
     public ResultVO<Boolean> remove(@PathVariable Long[] ids)
     {
-        return ResultVO.success(appointmentService.removeBatchByIds(Arrays.asList(ids)));
+        return ResultVO.success(appointmentService.deleteAppointmentByIds(ids));
     }
 }

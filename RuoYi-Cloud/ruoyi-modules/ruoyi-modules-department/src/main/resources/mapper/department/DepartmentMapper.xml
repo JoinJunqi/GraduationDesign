@@ -8,6 +8,8 @@
         <result property="id"    column="id"    />
         <result property="name"    column="name"    />
         <result property="createdAt"    column="created_at"    />
+        <result property="isDeleted"    column="is_deleted"    />
+        <result property="deletedAt"    column="deleted_at"    />
         <result property="overview"    column="overview"    />
     </resultMap>
 
@@ -16,6 +18,9 @@
         FROM department d
         LEFT JOIN department_intro di ON d.id = di.dept_id AND di.is_active = 1
         <where>
+            <if test="params.includeDeleted == null or params.includeDeleted == '' or params.includeDeleted == 'false'">
+                and d.is_deleted = 0
+            </if>
             <if test="name != null and name != ''">
                 AND d.name LIKE CONCAT('%', #{name}, '%')
             </if>

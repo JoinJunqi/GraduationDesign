@@ -25,6 +25,14 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="显示已删除" prop="includeDeleted">
+        <el-switch
+          v-model="queryParams.params.includeDeleted"
+          active-value="true"
+          inactive-value="false"
+          @change="handleQuery"
+        />
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -67,10 +75,21 @@
     <el-table v-loading="loading" :data="recordList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="编号" align="center" prop="id" width="80" sortable="custom" />
-      <el-table-column label="患者姓名" align="center" prop="patientName" v-if="!isPatient" sortable="custom" />
+      <el-table-column label="患者姓名" align="center" prop="patientName" v-if="!isPatient" sortable="custom">
+        <template #default="scope">
+          <span>{{ scope.row.patientName }}</span>
+          <el-tag v-if="scope.row.isDeleted === 1" type="danger" style="margin-left: 5px">已删除</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="就诊医生" align="center" prop="doctorName" v-if="!isDoctor" sortable="custom" />
       <el-table-column label="科室" align="center" prop="deptName" />
       <el-table-column label="诊断结果" align="center" prop="diagnosis" show-overflow-tooltip />
+      <el-table-column label="删除时间" align="center" prop="deletedAt" width="180" v-if="queryParams.params.includeDeleted === 'true'">
+        <template #default="scope">
+          <span v-if="scope.row.isDeleted === 1">{{ parseTime(scope.row.deletedAt) }}</span>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="就诊时间" align="center" prop="visitTime" width="180" sortable="custom">
         <template #default="scope">
           <span>{{ parseTime(scope.row.visitTime) }}</span>
@@ -79,8 +98,11 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="isAdmin || isDoctor">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="isAdmin">删除</el-button>
+          <template v-if="scope.row.isDeleted !== 1">
+            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="isAdmin || isDoctor">修改</el-button>
+            <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="isAdmin">删除</el-button>
+          </template>
+          <el-tag v-else type="info" style="margin-left: 5px">无更多操作</el-tag>
         </template>
       </el-table-column>
     </el-table>
@@ -189,7 +211,10 @@ const data = reactive({
     doctorName: null,
     diagnosis: null,
     orderByColumn: "visitTime",
-    isAsc: "descending"
+    isAsc: "descending",
+    params: {
+      includeDeleted: "false"
+    }
   }
 });
 

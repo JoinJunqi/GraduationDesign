@@ -330,5 +330,13 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         return (list != null && !list.isEmpty()) ? list.get(0) : null;
     }
 
+    @Override
+    public boolean deleteAppointmentByIds(Long[] ids) {
+        Appointment appointment = new Appointment();
+        appointment.setIsDeleted(1);
+        appointment.setDeletedAt(new Date());
+        return update(appointment, new LambdaQueryWrapper<Appointment>().in(Appointment::getId, Arrays.asList(ids)));
+    }
+
 
 }

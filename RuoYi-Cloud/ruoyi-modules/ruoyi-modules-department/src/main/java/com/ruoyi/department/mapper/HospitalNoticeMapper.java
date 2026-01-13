@@ -9,4 +9,11 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface HospitalNoticeMapper extends BaseMapper<HospitalNotice> {
+    /**
+     * 查询通知列表
+     * 
+     * @param notice 通知信息
+     * @return 通知列表
+     */
+    public java.util.List<HospitalNotice> selectNoticeList(HospitalNotice notice);
 }

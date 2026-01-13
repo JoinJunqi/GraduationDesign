@@ -3,11 +3,14 @@ package com.ruoyi.appointment.domain;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * 预约对象 appointment
@@ -16,6 +19,10 @@ import java.util.Date;
 @TableName("appointment")
 public class Appointment implements Serializable {
     private static final long serialVersionUID = 1L;
+
+    /** 请求参数 */
+    @TableField(exist = false)
+    private Map<String, Object> params = new HashMap<>();
 
     /** 预约ID */
     @TableId(type = IdType.AUTO)
@@ -37,6 +44,13 @@ public class Appointment implements Serializable {
     /** 预约时段 (如 08:00:00) */
     @JsonFormat(pattern = "HH:mm:ss")
     private String appointmentTime;
+
+    /** 是否删除(1是,0否) */
+    @TableLogic(value = "0", delval = "1")
+    private Integer isDeleted;
+
+    /** 删除时间 */
+    private Date deletedAt;
 
     /** 医生ID (查询用) */
     @TableField(exist = false)

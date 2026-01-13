@@ -12,4 +12,9 @@ public interface IAppointmentService extends IService<Appointment> {
     List<Appointment> selectAppointmentList(Appointment appointment);
     java.util.Map<String, Object> selectAppointmentStats();
     Appointment selectAppointmentById(Long id);
+
+    /**
+     * 批量删除预约
+     */
+    boolean deleteAppointmentByIds(Long[] ids);
 }

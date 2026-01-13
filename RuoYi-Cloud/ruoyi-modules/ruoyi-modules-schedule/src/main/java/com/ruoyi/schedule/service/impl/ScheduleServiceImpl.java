@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -152,6 +153,9 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         for (Long id : ids) {
             redisService.deleteObject(getRedisKey(id));
         }
-        return removeBatchByIds(Arrays.asList(ids));
+        Schedule schedule = new Schedule();
+        schedule.setIsDeleted(1);
+        schedule.setDeletedAt(new Date());
+        return update(schedule, new LambdaQueryWrapper<Schedule>().in(Schedule::getId, Arrays.asList(ids)));
     }
 }
