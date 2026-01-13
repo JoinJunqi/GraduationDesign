@@ -21,7 +21,6 @@
     </el-form>
 
     <el-table v-loading="loading" :data="auditList">
-      <el-table-column label="审核ID" align="center" prop="id" width="80" />
       <el-table-column label="审核类型" align="center" prop="auditType">
         <template #default="scope">
           <el-tag v-if="scope.row.auditType === 'APPOINTMENT_CANCEL'" type="warning">预约取消</el-tag>

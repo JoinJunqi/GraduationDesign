@@ -41,7 +41,6 @@
 
     <el-table v-loading="loading" :data="scheduleList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="ID" align="center" prop="id" sortable="custom" />
       <el-table-column label="医生" align="center" prop="doctorName" />
       <el-table-column label="出诊日期" align="center" prop="workDate" width="120" sortable="custom">
         <template #default="scope">

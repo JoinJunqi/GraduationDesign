@@ -74,7 +74,6 @@
 
     <el-table v-loading="loading" :data="recordList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="编号" align="center" prop="id" width="80" sortable="custom" />
       <el-table-column label="患者姓名" align="center" prop="patientName" v-if="!isPatient" sortable="custom">
         <template #default="scope">
           <span>{{ scope.row.patientName }}</span>

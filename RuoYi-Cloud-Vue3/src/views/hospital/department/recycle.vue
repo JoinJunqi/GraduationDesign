@@ -32,7 +32,6 @@
 
     <el-table v-loading="loading" :data="departmentList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="ID" align="center" prop="id" sortable="custom" />
       <el-table-column label="科室名称" align="center" prop="name" sortable="custom" />
       <el-table-column label="科室描述" align="center" prop="description" :show-overflow-tooltip="true" />
       <el-table-column label="删除时间" align="center" prop="deletedAt" width="180" sortable="custom">

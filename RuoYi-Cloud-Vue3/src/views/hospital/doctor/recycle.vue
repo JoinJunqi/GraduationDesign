@@ -47,7 +47,6 @@
 
     <el-table v-loading="loading" :data="doctorList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="ID" align="center" prop="id" sortable="custom" />
       <el-table-column label="姓名" align="center" prop="name" sortable="custom" />
       <el-table-column label="科室" align="center" prop="deptName" />
       <el-table-column label="职称" align="center" prop="title" />

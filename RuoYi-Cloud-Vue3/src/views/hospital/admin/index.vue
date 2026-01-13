@@ -66,7 +66,6 @@
 
     <el-table v-loading="loading" :data="adminList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="ID" align="center" prop="userId" sortable="custom" />
       <el-table-column label="登录账号" align="center" prop="userName" sortable="custom" />
       <el-table-column label="姓名" align="center" prop="nickName" sortable="custom" />
       <el-table-column label="等级" align="center" prop="adminLevel">

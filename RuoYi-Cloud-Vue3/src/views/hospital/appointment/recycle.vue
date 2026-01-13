@@ -40,7 +40,6 @@
 
     <el-table v-loading="loading" :data="appointmentList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="ID" align="center" prop="id" sortable="custom" />
       <el-table-column label="患者" align="center" prop="patientName" />
       <el-table-column label="科室" align="center" prop="deptName" />
       <el-table-column label="医生" align="center" prop="doctorName" />
