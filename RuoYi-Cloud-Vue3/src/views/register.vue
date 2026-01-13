@@ -110,8 +110,7 @@
 
 <script setup>
 import { ElMessageBox } from "element-plus"
-import { getCodeImg, register } from "@/api/login"
-import { registerPatient } from "@/api/hospital/patient"
+import { getCodeImg, register, registerPatient } from "@/api/login"
 
 const title = '患者注册'
 const loginType = localStorage.getItem('loginType') || 'admin'

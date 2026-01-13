@@ -42,3 +42,11 @@ export function delSchedule(id) {
     method: 'delete'
   })
 }
+
+// 恢复排班
+export function recoverSchedule(id) {
+  return request({
+    url: '/ruoyi-hospital-schedule/schedule/recover/' + id,
+    method: 'put'
+  })
+}
