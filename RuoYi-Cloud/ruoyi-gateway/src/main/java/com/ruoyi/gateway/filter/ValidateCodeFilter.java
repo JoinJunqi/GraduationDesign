@@ -1,6 +1,8 @@
 package com.ruoyi.gateway.filter;
 
 import java.nio.charset.StandardCharsets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -26,13 +28,15 @@ import reactor.core.publisher.Mono;
 @Component
 public class ValidateCodeFilter extends AbstractGatewayFilterFactory<Object>
 {
+    private static final Logger log = LoggerFactory.getLogger(ValidateCodeFilter.class);
+
     private final static String[] VALIDATE_URL = new String[] { 
         "/auth/login", "/auth/register", 
         "/patient/login", "/patient/register", 
         "/doctor/login", "/admin/login",
         "/ruoyi-hospital-patient/patient/login", "/ruoyi-hospital-patient/patient/register",
-        "/ruoyi-hospital-doctor/doctor/login",
-        "/ruoyi-hospital-admin/admin/login"
+        "/ruoyi-hospital-doctor/doctor/login", "/ruoyi-hospital-doctor/doctor/register",
+        "/ruoyi-hospital-admin/admin/login", "/ruoyi-hospital-admin/admin/register"
     };
 
     @Autowired
@@ -45,17 +49,25 @@ public class ValidateCodeFilter extends AbstractGatewayFilterFactory<Object>
 
     private static final String UUID = "uuid";
 
+    public ValidateCodeFilter()
+    {
+        super(Object.class);
+    }
+
     @Override
     public GatewayFilter apply(Object config)
     {
         return (exchange, chain) -> {
             ServerHttpRequest request = exchange.getRequest();
+            String path = request.getURI().getPath();
 
             // 非登录/注册请求或验证码关闭，不处理
-            if (!StringUtils.equalsAnyIgnoreCase(request.getURI().getPath(), VALIDATE_URL) || !captchaProperties.getEnabled())
+            if (!StringUtils.equalsAnyIgnoreCase(path, VALIDATE_URL) || !captchaProperties.getEnabled())
             {
                 return chain.filter(exchange);
             }
+
+            log.info("验证码校验过滤器拦截到请求: {}", path);
 
             return DataBufferUtils.join(exchange.getRequest().getBody()).flatMap(dataBuffer -> {
                 byte[] bytes = new byte[dataBuffer.readableByteCount()];

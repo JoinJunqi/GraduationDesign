@@ -10,6 +10,8 @@ spring:
         locator:
           lowerCaseServiceId: true
           enabled: true
+      default-filters:
+        - name: ValidateCodeFilter
       routes:
         # 认证中心
         - id: ruoyi-auth
