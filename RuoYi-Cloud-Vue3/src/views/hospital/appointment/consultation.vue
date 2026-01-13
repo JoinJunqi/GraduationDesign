@@ -19,6 +19,7 @@
             </el-descriptions-item>
             <el-descriptions-item label="就诊医生">
               <span class="info-value">{{ appointment.doctorName }}</span>
+              <span v-if="appointment.title" class="doctor-title" style="margin-left: 10px; color: #999; font-size: 13px;">{{ appointment.title }}</span>
             </el-descriptions-item>
             <el-descriptions-item label="出诊日期">
               {{ appointment.workDate }}

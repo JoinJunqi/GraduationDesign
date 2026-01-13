@@ -1,7 +1,28 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="医生姓名" prop="doctorName" v-if="!isDoctor">
+    <el-row :gutter="20">
+      <!-- 左侧日历 -->
+      <el-col :span="6" v-if="!isDoctor">
+        <el-card shadow="never">
+          <template #header>
+            <div class="card-header">
+              <span>日期选择</span>
+            </div>
+          </template>
+          <el-calendar v-model="selectedDate" class="mini-calendar">
+            <template #date-cell="{ data }">
+              <div class="calendar-cell" @click="handleDateClick(data.day)">
+                {{ data.day.split('-').slice(2).join('') }}
+              </div>
+            </template>
+          </el-calendar>
+        </el-card>
+      </el-col>
+
+      <!-- 右侧列表 -->
+      <el-col :span="isDoctor ? 24 : 18">
+        <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
+          <el-form-item label="医生姓名" prop="doctorName" v-if="!isDoctor">
         <el-autocomplete
           v-model="queryParams.doctorName"
           :fetch-suggestions="querySearchDoctor"
@@ -118,9 +139,17 @@
       <el-table-column label="班次" align="center" prop="timeSlot" sortable="custom" />
       <el-table-column label="总号源" align="center" prop="totalCapacity" sortable="custom" />
       <el-table-column label="剩余号源" align="center" prop="availableSlots" sortable="custom" />
+      <el-table-column label="状态" align="center" prop="status">
+        <template #default="scope">
+          <el-tag v-if="scope.row.status === 0" type="success">正常</el-tag>
+          <el-tag v-else-if="scope.row.status === 1" type="warning">有调整</el-tag>
+          <el-tag v-else-if="scope.row.status === 2" type="danger">已取消</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:schedule:edit']">修改</el-button>
+          <el-button link type="primary" icon="CircleClose" @click="handleCancelSchedule(scope.row)" v-if="scope.row.status !== 2" v-hasPermi="['hospital:schedule:edit']">取消</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hospital:schedule:remove']">删除</el-button>
         </template>
       </el-table-column>
@@ -133,40 +162,54 @@
       v-model:limit="queryParams.pageSize"
       @pagination="getList"
     />
+    </el-col>
+    </el-row>
     
     <!-- 添加或修改排班对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
       <el-form ref="scheduleRef" :model="form" :rules="rules" label-width="80px">
-        <template v-if="isDoctor">
-          <el-form-item label="医生" prop="doctorName">
-            <el-input v-model="form.doctorName" placeholder="医生姓名" :disabled="true" />
-          </el-form-item>
-        </template>
-        <template v-else>
-          <el-form-item label="科室" prop="deptId">
-            <el-select v-model="form.deptId" placeholder="请选择科室" @change="handleDeptChange" filterable style="width: 100%">
-              <el-option
-                v-for="item in departmentList"
-                :key="item.id"
-                :label="item.name"
-                :value="item.id"
-              />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="医生" prop="doctorId">
-            <el-select v-model="form.doctorId" placeholder="请选择医生" :disabled="!form.deptId" filterable style="width: 100%">
-              <el-option
-                v-for="item in doctorOptions"
-                :key="item.id"
-                :label="item.name"
-                :value="item.id"
-              >
-                <span>{{ item.name }}</span>
-                <span style="float: right; color: #8492a6; font-size: 12px; margin-left: 10px;">{{ item.title }}</span>
-              </el-option>
-            </el-select>
-          </el-form-item>
-        </template>
+    <template v-if="isDoctor">
+      <el-form-item label="医生" prop="doctorName">
+        <el-input v-model="form.doctorName" placeholder="医生姓名" :disabled="true" />
+      </el-form-item>
+    </template>
+    <template v-else>
+      <!-- 修改模式：显示只读的科室和医生名称 -->
+      <template v-if="form.id">
+        <el-form-item label="科室">
+          <el-input v-model="form.deptName" disabled />
+        </el-form-item>
+        <el-form-item label="医生">
+          <el-input v-model="form.doctorName" disabled />
+        </el-form-item>
+      </template>
+      <!-- 新增模式：显示选择框 -->
+      <template v-else>
+        <el-form-item label="科室" prop="deptId">
+          <el-select v-model="form.deptId" placeholder="请选择科室" @change="handleDeptChange" filterable style="width: 100%">
+            <el-option
+              v-for="item in departmentList"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="医生" prop="doctorId">
+          <el-select v-model="form.doctorId" placeholder="请选择医生" :disabled="!form.deptId" filterable style="width: 100%">
+            <el-option
+              v-for="item in doctorOptions"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            >
+              <span>{{ item.name }}</span>
+              <span style="float: right; color: #8492a6; font-size: 12px; margin-left: 10px;">{{ item.title }}</span>
+            </el-option>
+          </el-select>
+        </el-form-item>
+      </template>
+    </template>
         <el-form-item label="出诊日期" prop="workDate">
           <el-date-picker
             v-model="form.workDate"
@@ -190,6 +233,13 @@
         </el-form-item>
         <el-form-item label="剩余号源" prop="availableSlots" v-if="form.id">
           <el-input-number v-model="form.availableSlots" :min="0" :disabled="true" />
+        </el-form-item>
+        <el-form-item label="状态" prop="status" v-if="form.id && !isDoctor">
+          <el-radio-group v-model="form.status">
+            <el-radio :label="0">正常</el-radio>
+            <el-radio :label="1">有调整</el-radio>
+            <el-radio :label="2">已取消</el-radio>
+          </el-radio-group>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -228,7 +278,9 @@ const single = ref(true);
 const multiple = ref(true);
 const title = ref("");
 const total = ref(0);
+const selectedDate = ref(new Date());
 const originalTotalCapacity = ref(0);
+const originalTimeSlot = ref("");
 const departmentList = ref([]);
 const doctorOptions = ref([]);
 const queryDoctorOptions = ref([]);
@@ -287,6 +339,9 @@ const rules = computed(() => {
 });
 
 onMounted(() => {
+  if (!isDoctor.value) {
+    queryParams.value.workDate = parseTime(new Date(), '{y}-{m}-{d}');
+  }
   getList();
   getDepartmentList();
 });
@@ -347,6 +402,22 @@ function getList() {
   });
 }
 
+/** 日历点击处理 */
+function handleDateClick(day) {
+  queryParams.value.workDate = day;
+  handleQuery();
+}
+
+/** 取消排班 */
+function handleCancelSchedule(row) {
+  proxy.$modal.confirm('取消排班将同时取消该排班下的所有预约，是否确认取消？').then(function() {
+    return updateSchedule({ id: row.id, status: 2 });
+  }).then(() => {
+    getList();
+    proxy.$modal.msgSuccess("排班已取消");
+  }).catch(() => {});
+}
+
 /** 取消按钮 */
 function cancel() {
   open.value = false;
@@ -358,15 +429,18 @@ function reset() {
   form.value = {
     id: null,
     deptId: null,
+    deptName: null,
     doctorId: isDoctor.value ? currentDoctorId.value : null,
     doctorName: isDoctor.value ? currentDoctorName.value : null,
     workDate: null,
     timeSlot: null,
     totalCapacity: 0,
     availableSlots: 0,
-    maxCapacity: 28
+    maxCapacity: 28,
+    status: 0
   };
   doctorOptions.value = [];
+  originalTimeSlot.value = "";
   proxy.resetForm("scheduleRef");
 }
 
@@ -428,9 +502,19 @@ function handleAdd() {
 function handleUpdate(row) {
   reset();
   const id = row.id || ids.value;
+  // 先把当前行的数据存下来，防止详情接口返回数据不全
+  const rowData = { ...row };
   getSchedule(id).then(response => {
     form.value = response.data;
+    // 如果详情接口没有返回名称，使用列表行中的名称
+    if (!form.value.deptName && rowData.deptName) {
+      form.value.deptName = rowData.deptName;
+    }
+    if (!form.value.doctorName && rowData.doctorName) {
+      form.value.doctorName = rowData.doctorName;
+    }
     originalTotalCapacity.value = form.value.totalCapacity;
+    originalTimeSlot.value = form.value.timeSlot;
     if (isDoctor.value && !form.value.doctorName) {
       form.value.doctorName = currentDoctorName.value;
     }
@@ -456,6 +540,12 @@ function submitForm() {
   proxy.$refs["scheduleRef"].validate(valid => {
     if (valid) {
       if (form.value.id != null) {
+        // 修改时，如果调整了总号源或班次，状态自动变更为“有调整”(1)
+        if (form.value.totalCapacity !== originalTotalCapacity.value || form.value.timeSlot !== originalTimeSlot.value) {
+          if (form.value.status !== 2) { // 除非原状态是已取消，否则变更为有调整
+            form.value.status = 1;
+          }
+        }
         // 修改时，如果调整了总号源，需要同步调整剩余号源
         const diff = form.value.totalCapacity - originalTotalCapacity.value;
         if (diff !== 0) {
@@ -500,3 +590,35 @@ function handleDelete(row) {
 }
 
 </script>
+
+<style scoped>
+.mini-calendar :deep(.el-calendar-table .el-calendar-day) {
+  height: 40px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-cell {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.mini-calendar :deep(.el-calendar__header) {
+  padding: 10px;
+}
+
+.mini-calendar :deep(.el-calendar__body) {
+  padding: 0;
+}
+
+.doctor-suggestion {
+  display: flex;
+  align-items: center;
+}
+</style>

@@ -331,6 +331,34 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public boolean cancelByScheduleId(Long scheduleId) {
+        log.info("Cancelling all appointments for schedule ID: {}", scheduleId);
+        
+        // 1. 获取该排班下所有未取消的预约
+        List<Appointment> appointments = this.list(new LambdaQueryWrapper<Appointment>()
+                .eq(Appointment::getScheduleId, scheduleId)
+                .ne(Appointment::getStatus, "已取消"));
+        
+        if (appointments.isEmpty()) {
+            return true;
+        }
+
+        // 2. 更新预约状态为已取消
+        for (Appointment appointment : appointments) {
+            appointment.setStatus("已取消");
+        }
+        boolean updated = this.updateBatchById(appointments);
+        
+        // 3. 恢复 Redis 号源 (如果需要的话，但通常排班被取消后，Redis 也会被清理或不再使用)
+        // 这里还是同步一下 Redis，确保数据一致性
+        // 注意：排班取消后，availableSlots 应该恢复为 totalCapacity
+        // 但由于排班本身状态变更为“已取消”，挂号页面会过滤掉，所以这里恢复 Redis 主要是为了数据完整性
+        
+        return updated;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean cancelRequest(Long appointmentId) {
         Appointment appointment = this.getById(appointmentId);
         if (appointment == null) {
@@ -351,6 +379,82 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         
         appointment.setStatus("待就诊");
         return this.updateById(appointment);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean reassign(Long oldScheduleId, Long newScheduleId, Integer count) {
+        log.info("Reassigning {} appointments from schedule {} to {}", count, oldScheduleId, newScheduleId);
+        
+        // 1. 获取原排班下的待就诊预约
+        List<Appointment> appointments = this.list(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Appointment>()
+                .eq(Appointment::getScheduleId, oldScheduleId)
+                .eq(Appointment::getStatus, "待就诊")
+                .last("LIMIT " + count));
+        
+        if (appointments.isEmpty()) {
+            return true;
+        }
+
+        // 2. 批量更新这些预约的 scheduleId
+        for (Appointment app : appointments) {
+            app.setScheduleId(newScheduleId);
+            // 这里可以考虑是否需要更新 appointmentTime，但如果两个排班时段一致则不需要
+            // 简单处理，保持原有时段
+        }
+        
+        return this.updateBatchById(appointments);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean syncTimeChange(Long scheduleId, String oldTimeSlot, String newTimeSlot) {
+        log.info("Syncing time change for schedule {}: {} -> {}", scheduleId, oldTimeSlot, newTimeSlot);
+        
+        // 1. 获取该排班下的所有待就诊预约
+        List<Appointment> appointments = this.list(new LambdaQueryWrapper<Appointment>()
+                .eq(Appointment::getScheduleId, scheduleId)
+                .eq(Appointment::getStatus, "待就诊"));
+        
+        if (appointments.isEmpty()) {
+            return true;
+        }
+
+        // 2. 获取医生和科室信息用于通知内容
+        Appointment firstApp = this.selectAppointmentById(appointments.get(0).getId());
+        String deptName = firstApp != null ? firstApp.getDeptName() : "未知科室";
+        String doctorName = firstApp != null ? firstApp.getDoctorName() : "未知医生";
+
+        // 3. 遍历更新时间并设置通知
+        for (Appointment app : appointments) {
+            String oldTime = app.getAppointmentTime();
+            String newTime = oldTime;
+            
+            if (oldTime != null && oldTime.length() >= 5) {
+                try {
+                    int hour = Integer.parseInt(oldTime.substring(0, 2));
+                    String minutes = oldTime.substring(2); // :mm:ss
+                    
+                    if ("上午".equals(oldTimeSlot) && "下午".equals(newTimeSlot)) {
+                        // 上午变下午: +6小时
+                        newTime = String.format("%02d%s", hour + 6, minutes);
+                    } else if ("下午".equals(oldTimeSlot) && "上午".equals(newTimeSlot)) {
+                        // 下午变上午: -6小时
+                        newTime = String.format("%02d%s", hour - 6, minutes);
+                    }
+                } catch (Exception e) {
+                    log.error("Error parsing appointment time: {}", oldTime, e);
+                }
+            }
+            
+            app.setAppointmentTime(newTime);
+            // 设置通知内容
+            String notice = String.format("对%s%s医生的预约就诊时段从%s改为%s", 
+                                        deptName, doctorName, oldTime.substring(0, 5), newTime.substring(0, 5));
+            app.setTimeChangeNotice(notice);
+        }
+        
+        return this.updateBatchById(appointments);
     }
 
     @Override

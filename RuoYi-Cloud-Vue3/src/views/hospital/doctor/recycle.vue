@@ -2,19 +2,30 @@
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="医生姓名" prop="name">
-        <el-input
+        <el-autocomplete
           v-model="queryParams.name"
-          placeholder="请输入医生姓名"
+          :fetch-suggestions="querySearchDoctor"
           clearable
+          placeholder="请输入医生姓名"
+          @select="handleQuery"
           @keyup.enter="handleQuery"
-        />
+        >
+          <template #default="{ item }">
+            <div class="doctor-suggestion">
+              <span class="name">{{ item.name }}</span>
+              <span class="dept" style="margin-left: 10px; color: #999; font-size: 12px;">{{ item.deptName }}</span>
+              <span class="title" style="margin-left: 10px; color: #999; font-size: 12px;">{{ item.title }}</span>
+            </div>
+          </template>
+        </el-autocomplete>
       </el-form-item>
-      <el-form-item label="所属科室" prop="deptId">
+      <el-form-item label="医生筛选" prop="deptId">
         <el-select
           v-model="queryParams.deptId"
-          placeholder="请选择科室"
+          placeholder="选择科室"
           clearable
-          @change="handleQuery"
+          @change="handleQueryDeptChange"
+          style="width: 130px; margin-right: 5px;"
         >
           <el-option
             v-for="item in departmentOptions"
@@ -22,6 +33,24 @@
             :label="item.name"
             :value="item.id"
           />
+        </el-select>
+        <el-select
+          v-model="queryParams.id"
+          placeholder="选择医生"
+          clearable
+          :disabled="!queryParams.deptId"
+          @change="handleQuery"
+          style="width: 130px;"
+        >
+          <el-option
+            v-for="item in queryDoctorOptions"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
+          >
+            <span>{{ item.name }}</span>
+            <span style="float: right; color: #8492a6; font-size: 12px; margin-left: 10px;">{{ item.title }}</span>
+          </el-option>
         </el-select>
       </el-form-item>
       <el-form-item>
@@ -89,12 +118,14 @@ const ids = ref([]);
 const multiple = ref(true);
 const total = ref(0);
 const departmentOptions = ref([]);
+const queryDoctorOptions = ref([]);
 
 const data = reactive({
   queryParams: {
     pageNum: 1,
     pageSize: 10,
     name: null,
+    id: null,
     deptId: null,
     orderByColumn: "deletedAt",
     isAsc: "descending",
@@ -114,7 +145,38 @@ function getDepartmentList() {
   });
 }
 
-/** 查询已删除医生列表 */
+/** 科室变动时更新医生列表 */
+function handleQueryDeptChange(deptId) {
+  queryParams.value.id = null;
+  queryDoctorOptions.value = [];
+  if (deptId) {
+    listDoctor({ deptId: deptId, params: { includeDeleted: 'true' } }).then(response => {
+      queryDoctorOptions.value = response.rows;
+    });
+  }
+  handleQuery();
+}
+
+/** 医生姓名输入建议 */
+function querySearchDoctor(queryString, cb) {
+  if (queryString) {
+    listDoctor({ name: queryString }).then(response => {
+      const results = response.rows.map(item => {
+        return {
+          value: item.name,
+          name: item.name,
+          deptName: item.deptName,
+          title: item.title
+        };
+      });
+      cb(results);
+    });
+  } else {
+    cb([]);
+  }
+}
+
+/** 查询医生列表 */
 function getList() {
   loading.value = true;
   listDoctor(queryParams.value).then(response => {
@@ -139,6 +201,7 @@ function handleQuery() {
 
 /** 重置按钮操作 */
 function resetQuery() {
+  queryDoctorOptions.value = [];
   proxy.resetForm("queryRef");
   handleQuery();
 }

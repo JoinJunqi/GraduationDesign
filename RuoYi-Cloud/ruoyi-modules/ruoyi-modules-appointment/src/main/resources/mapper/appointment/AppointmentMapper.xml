@@ -21,10 +21,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="deptName" column="dept_name" />
         <result property="deptId"   column="dept_id"   />
         <result property="title"    column="title"     />
+        <result property="timeChangeNotice" column="time_change_notice" />
     </resultMap>
 
     <sql id="selectAppointmentVo">
-        select a.id, a.patient_id, a.schedule_id, a.status, a.booked_at, a.appointment_time, a.is_deleted, a.deleted_at,
+        select a.id, a.patient_id, a.schedule_id, a.status, a.booked_at, a.appointment_time, a.is_deleted, a.deleted_at, a.time_change_notice,
                p.name as patient_name,
                d.name as doctor_name,
                d.title,

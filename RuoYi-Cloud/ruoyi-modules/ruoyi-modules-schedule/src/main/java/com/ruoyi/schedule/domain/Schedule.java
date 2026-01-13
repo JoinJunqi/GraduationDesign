@@ -55,6 +55,9 @@ public class Schedule implements Serializable {
     /** 删除时间 */
     private Date deletedAt;
 
+    /** 状态: 0正常, 1有调整, 2已取消 */
+    private Integer status;
+
     /** 医生姓名 (展示用) */
     @TableField(exist = false)
     private String doctorName;

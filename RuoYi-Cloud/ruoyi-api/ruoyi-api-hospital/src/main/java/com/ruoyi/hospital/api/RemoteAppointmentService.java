@@ -22,4 +22,26 @@ public interface RemoteAppointmentService {
 
     @GetMapping("/appointment/{id}")
     ResultVO<Appointment> getInfo(@PathVariable("id") Long id);
+
+    /**
+     * 根据排班ID取消所有预约
+     */
+    @PutMapping("/appointment/cancelByScheduleId")
+    ResultVO<Boolean> cancelByScheduleId(@RequestParam("scheduleId") Long scheduleId);
+
+    /**
+     * 将部分预约迁移到新排班
+     */
+    @PutMapping("/appointment/reassign")
+    ResultVO<Boolean> reassign(@RequestParam("oldScheduleId") Long oldScheduleId, 
+                             @RequestParam("newScheduleId") Long newScheduleId, 
+                             @RequestParam("count") Integer count);
+
+    /**
+     * 同步排班班次变更导致的预约时间调整
+     */
+    @PutMapping("/appointment/syncTimeChange")
+    ResultVO<Boolean> syncTimeChange(@RequestParam("scheduleId") Long scheduleId,
+                                   @RequestParam("oldTimeSlot") String oldTimeSlot,
+                                   @RequestParam("newTimeSlot") String newTimeSlot);
 }

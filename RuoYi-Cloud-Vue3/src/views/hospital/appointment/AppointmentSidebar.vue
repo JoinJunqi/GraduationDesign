@@ -24,6 +24,7 @@
             <div class="appointment-item status-expired">
               <div class="item-header">
                 <span class="doctor-name">{{ latestExpired.doctorName }}</span>
+                <span v-if="latestExpired.title" class="doctor-title">{{ latestExpired.title }}</span>
                 <el-tag size="small" type="danger">{{ latestExpired.status }}</el-tag>
               </div>
               <div class="item-info">
@@ -43,8 +44,19 @@
             </div>
             <template v-if="pendingList.length > 0">
               <div v-for="item in pendingList" :key="item.id" class="appointment-item status-pending">
+                <!-- 班次变更置顶通知 -->
+                <div v-if="item.timeChangeNotice" class="time-change-alert">
+                  <el-alert
+                    :title="item.timeChangeNotice"
+                    type="warning"
+                    :closable="false"
+                    show-icon
+                    class="mb10"
+                  />
+                </div>
                 <div class="item-header">
                   <span class="doctor-name">{{ item.doctorName }}</span>
+                  <span v-if="item.title" class="doctor-title">{{ item.title }}</span>
                   <el-tag size="small" type="warning">{{ item.status }}</el-tag>
                 </div>
                 <div class="item-info">
@@ -70,6 +82,7 @@
             <div v-for="item in otherExpiredList" :key="item.id" class="appointment-item status-expired">
               <div class="item-header">
                 <span class="doctor-name">{{ item.doctorName }}</span>
+                <span v-if="item.title" class="doctor-title">{{ item.title }}</span>
                 <el-tag size="small" type="danger">{{ item.status }}</el-tag>
               </div>
               <div class="item-info">
@@ -128,9 +141,15 @@ const latestExpired = computed(() => {
   return todayExpired.length > 0 ? todayExpired[0] : null;
 });
 
-/** 计算属性：待就诊预约 */
+/** 计算属性：待就诊预约 (优先显示有班次变更通知的) */
 const pendingList = computed(() => {
-  return appointments.value.filter(item => item.status === '待就诊');
+  return appointments.value
+    .filter(item => item.status === '待就诊')
+    .sort((a, b) => {
+      if (a.timeChangeNotice && !b.timeChangeNotice) return -1;
+      if (!a.timeChangeNotice && b.timeChangeNotice) return 1;
+      return new Date(a.workDate) - new Date(b.workDate);
+    });
 });
 
 /** 计算属性：其他已过期预约 (当日) */
@@ -397,6 +416,14 @@ onUnmounted(() => {
   background: #fff;
   transition: all 0.3s;
 
+  .time-change-alert {
+    margin-bottom: 10px;
+    :deep(.el-alert__title) {
+      font-size: 12px;
+      font-weight: bold;
+    }
+  }
+
   &:hover {
     box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
   }
@@ -419,6 +446,14 @@ onUnmounted(() => {
     .doctor-name {
       font-weight: bold;
       font-size: 15px;
+      color: #303133;
+    }
+
+    .doctor-title {
+      font-size: 12px;
+      color: #909399;
+      margin-left: 8px;
+      flex: 1;
     }
   }
 

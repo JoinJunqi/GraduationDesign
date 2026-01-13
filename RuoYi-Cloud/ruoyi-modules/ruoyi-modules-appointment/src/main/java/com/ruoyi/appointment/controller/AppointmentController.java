@@ -2,6 +2,7 @@ package com.ruoyi.appointment.controller;
 
 import java.util.List;
 import java.util.Arrays;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.ruoyi.common.core.web.controller.BaseController;
@@ -27,7 +28,7 @@ public class AppointmentController extends BaseController
     }
 
     @GetMapping("/stats")
-    public ResultVO<java.util.Map<String, Object>> stats()
+    public ResultVO<Map<String, Object>> stats()
     {
         return ResultVO.success(appointmentService.selectAppointmentStats());
     }
@@ -77,12 +78,48 @@ public class AppointmentController extends BaseController
         return ResultVO.success(appointmentService.updateById(appointment));
     }
 
+    /**
+     * 根据排班ID取消所有预约
+     */
+    @PutMapping("/cancelByScheduleId")
+    public ResultVO<Boolean> cancelByScheduleId(@RequestParam("scheduleId") Long scheduleId)
+    {
+        return ResultVO.success(appointmentService.cancelByScheduleId(scheduleId));
+    }
+
+    /**
+     * 将部分预约迁移到新排班
+     */
+    @PutMapping("/reassign")
+    public ResultVO<Boolean> reassign(@RequestParam("oldScheduleId") Long oldScheduleId, 
+                                    @RequestParam("newScheduleId") Long newScheduleId, 
+                                    @RequestParam("count") Integer count)
+    {
+        return ResultVO.success(appointmentService.reassign(oldScheduleId, newScheduleId, count));
+    }
+
+    /**
+     * 同步排班班次变更导致的预约时间调整
+     */
+    @PutMapping("/syncTimeChange")
+    public ResultVO<Boolean> syncTimeChange(@RequestParam("scheduleId") Long scheduleId,
+                                          @RequestParam("oldTimeSlot") String oldTimeSlot,
+                                          @RequestParam("newTimeSlot") String newTimeSlot) {
+        return ResultVO.success(appointmentService.syncTimeChange(scheduleId, oldTimeSlot, newTimeSlot));
+    }
+
+    /**
+     * 批量删除预约
+     */
     @DeleteMapping("/{ids}")
     public ResultVO<Boolean> remove(@PathVariable Long[] ids)
     {
         return ResultVO.success(appointmentService.deleteAppointmentByIds(ids));
     }
 
+    /**
+     * 批量恢复预约
+     */
     @PutMapping("/recover/{ids}")
     public ResultVO<Boolean> recover(@PathVariable Long[] ids)
     {

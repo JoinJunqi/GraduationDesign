@@ -92,4 +92,7 @@ public class Appointment implements Serializable {
     /** 职称 (展示/查询用) */
     @TableField(exist = false)
     private String title;
+
+    /** 班次变更通知 */
+    private String timeChangeNotice;
 }
