@@ -10,12 +10,45 @@
         />
       </el-form-item>
       <el-form-item label="医生姓名" prop="doctorName" v-if="!isDoctor">
-        <el-input
+        <el-autocomplete
           v-model="queryParams.doctorName"
-          placeholder="请输入医生姓名"
+          :fetch-suggestions="querySearchDoctor"
           clearable
+          placeholder="请输入医生姓名"
+          @select="handleQuery"
           @keyup.enter="handleQuery"
-        />
+        >
+          <template #default="{ item }">
+            <div class="doctor-suggestion">
+              <span class="name">{{ item.name }}</span>
+              <span class="dept" style="margin-left: 10px; color: #999; font-size: 12px;">{{ item.deptName }}</span>
+              <span class="title" style="margin-left: 10px; color: #999; font-size: 12px;">{{ item.title }}</span>
+            </div>
+          </template>
+        </el-autocomplete>
+      </el-form-item>
+      <el-form-item label="就诊科室" prop="deptId">
+        <el-select v-model="queryParams.deptId" placeholder="选择科室" clearable @change="handleQueryDeptChange" style="width: 130px;">
+          <el-option
+            v-for="item in departmentList"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="就诊医生" prop="doctorId" v-if="!isDoctor">
+        <el-select v-model="queryParams.doctorId" placeholder="选择医生" clearable :disabled="!queryParams.deptId" @change="handleQuery" style="width: 130px;">
+          <el-option
+            v-for="item in queryDoctorOptions"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
+          >
+            <span>{{ item.name }}</span>
+            <span style="float: right; color: #8492a6; font-size: 12px; margin-left: 10px;">{{ item.title }}</span>
+          </el-option>
+        </el-select>
       </el-form-item>
       <el-form-item label="诊断结果" prop="diagnosis">
         <el-input
@@ -81,6 +114,7 @@
         </template>
       </el-table-column>
       <el-table-column label="就诊医生" align="center" prop="doctorName" v-if="!isDoctor" sortable="custom" />
+      <el-table-column label="职称" align="center" prop="title" v-if="!isDoctor" />
       <el-table-column label="科室" align="center" prop="deptName" />
       <el-table-column label="诊断结果" align="center" prop="diagnosis" show-overflow-tooltip />
       <el-table-column label="删除时间" align="center" prop="deletedAt" width="180" v-if="queryParams.params.includeDeleted === 'true'">
@@ -174,7 +208,9 @@
 <script setup name="Record">
 import { getCurrentInstance, computed, ref, reactive, toRefs, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { listRecord, getRecord, delRecord, addRecord, updateRecord } from "@/api/hospital/record.js";
+import { listRecord, getRecord, delRecord, addRecord, updateRecord } from "@/api/hospital/record";
+import { listDepartment } from "@/api/hospital/department";
+import { listDoctorByDept, listDoctor } from "@/api/hospital/doctor";
 import { parseTime } from "@/utils/ruoyi";
 import useUserStore from "@/store/modules/user";
 
@@ -199,15 +235,18 @@ const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const title = ref("");
+const departmentList = ref([]);
+const queryDoctorOptions = ref([]);
 
 const data = reactive({
   form: {},
   queryParams: {
     pageNum: 1,
     pageSize: 10,
-    patientId: null,
     patientName: null,
     doctorName: null,
+    deptId: null,
+    doctorId: null,
     diagnosis: null,
     orderByColumn: "visitTime",
     isAsc: "descending",
@@ -218,6 +257,48 @@ const data = reactive({
 });
 
 const { queryParams, form } = toRefs(data);
+
+/** 查询科室列表 */
+function getDepartmentList() {
+  listDepartment().then(response => {
+    departmentList.value = response.rows;
+  });
+}
+
+/** 医生姓名输入建议 */
+function querySearchDoctor(queryString, cb) {
+  if (queryString) {
+    const query = { name: queryString };
+    if (queryParams.value.deptId) {
+      query.deptId = queryParams.value.deptId;
+    }
+    listDoctor(query).then(response => {
+      const results = response.rows.map(item => {
+        return {
+          value: item.name,
+          name: item.name,
+          deptName: item.deptName,
+          title: item.title
+        };
+      });
+      cb(results);
+    });
+  } else {
+    cb([]);
+  }
+}
+
+/** 搜索栏科室变更加载医生列表 */
+function handleQueryDeptChange(deptId) {
+  queryParams.value.doctorId = null;
+  queryDoctorOptions.value = [];
+  if (deptId) {
+    listDoctorByDept(deptId).then(response => {
+      queryDoctorOptions.value = response.data;
+    });
+  }
+  handleQuery();
+}
 
 /** 排序触发事件 */
 function handleSortChange(column) {
@@ -283,6 +364,7 @@ function handleQuery() {
 
 onMounted(() => {
   console.log('Record index component mounted');
+  getDepartmentList();
   getList();
   
   // 处理从预约列表跳转过来的“开始就诊”
@@ -316,6 +398,7 @@ function handleFinishConsultation() {
 
 /** 重置按钮操作 */
 function resetQuery() {
+  queryDoctorOptions.value = [];
   proxy.resetForm("queryRef");
   handleQuery();
 }

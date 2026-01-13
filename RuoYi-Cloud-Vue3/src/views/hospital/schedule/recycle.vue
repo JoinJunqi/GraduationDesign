@@ -2,12 +2,43 @@
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="医生姓名" prop="doctorName">
-        <el-input
+        <el-autocomplete
           v-model="queryParams.doctorName"
-          placeholder="请输入医生姓名"
+          :fetch-suggestions="querySearchDoctor"
           clearable
+          placeholder="请输入医生姓名"
+          @select="handleQuery"
           @keyup.enter="handleQuery"
-        />
+        >
+          <template #default="{ item }">
+            <div class="doctor-suggestion">
+              <span class="name">{{ item.name }}</span>
+              <span class="dept" style="margin-left: 10px; color: #999; font-size: 12px;">{{ item.deptName }}</span>
+              <span class="title" style="margin-left: 10px; color: #999; font-size: 12px;">{{ item.title }}</span>
+            </div>
+          </template>
+        </el-autocomplete>
+      </el-form-item>
+      <el-form-item label="医生筛选">
+        <el-select v-model="queryParams.deptId" placeholder="选择科室" clearable @change="handleQueryDeptChange" style="width: 130px; margin-right: 5px;">
+          <el-option
+            v-for="item in departmentList"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
+          />
+        </el-select>
+        <el-select v-model="queryParams.doctorId" placeholder="选择医生" clearable :disabled="!queryParams.deptId" @change="handleQuery" style="width: 130px;">
+          <el-option
+            v-for="item in queryDoctorOptions"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
+          >
+            <span>{{ item.name }}</span>
+            <span style="float: right; color: #8492a6; font-size: 12px; margin-left: 10px;">{{ item.title }}</span>
+          </el-option>
+        </el-select>
       </el-form-item>
       <el-form-item label="出诊日期" prop="workDate">
         <el-date-picker
@@ -42,6 +73,7 @@
     <el-table v-loading="loading" :data="scheduleList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="医生" align="center" prop="doctorName" />
+      <el-table-column label="职称" align="center" prop="title" />
       <el-table-column label="出诊日期" align="center" prop="workDate" width="120" sortable="custom">
         <template #default="scope">
           <span>{{ parseTime(scope.row.workDate, '{y}-{m}-{d}') }}</span>
@@ -72,6 +104,8 @@
 
 <script setup name="ScheduleRecycle">
 import { listSchedule, recoverSchedule } from "@/api/hospital/schedule";
+import { listDepartment } from "@/api/hospital/department";
+import { listDoctorByDept, listDoctor } from "@/api/hospital/doctor";
 import { getCurrentInstance, ref, reactive, toRefs, onMounted } from "vue";
 import { useRouter } from "vue-router";
 
@@ -84,12 +118,16 @@ const showSearch = ref(true);
 const ids = ref([]);
 const multiple = ref(true);
 const total = ref(0);
+const departmentList = ref([]);
+const queryDoctorOptions = ref([]);
 
 const data = reactive({
   queryParams: {
     pageNum: 1,
     pageSize: 10,
     doctorName: null,
+    deptId: null,
+    doctorId: null,
     workDate: null,
     orderByColumn: "deletedAt",
     isAsc: "descending",
@@ -102,7 +140,45 @@ const data = reactive({
 
 const { queryParams } = toRefs(data);
 
-/** 查询已删除排班列表 */
+/** 查询科室列表 */
+function getDepartmentList() {
+  listDepartment().then(response => {
+    departmentList.value = response.rows;
+  });
+}
+
+/** 医生姓名输入建议 */
+function querySearchDoctor(queryString, cb) {
+  if (queryString) {
+    listDoctor({ name: queryString }).then(response => {
+      const results = response.rows.map(item => {
+        return {
+          value: item.name,
+          name: item.name,
+          deptName: item.deptName,
+          title: item.title
+        };
+      });
+      cb(results);
+    });
+  } else {
+    cb([]);
+  }
+}
+
+/** 搜索栏科室变更加载医生列表 */
+function handleQueryDeptChange(deptId) {
+  queryParams.value.doctorId = null;
+  queryDoctorOptions.value = [];
+  if (deptId) {
+    listDoctorByDept(deptId).then(response => {
+      queryDoctorOptions.value = response.data;
+    });
+  }
+  handleQuery();
+}
+
+/** 查询排班列表 */
 function getList() {
   loading.value = true;
   listSchedule(queryParams.value).then(response => {
@@ -127,6 +203,7 @@ function handleQuery() {
 
 /** 重置按钮操作 */
 function resetQuery() {
+  queryDoctorOptions.value = [];
   proxy.resetForm("queryRef");
   handleQuery();
 }
@@ -154,6 +231,7 @@ function handleBack() {
 }
 
 onMounted(() => {
+  getDepartmentList();
   getList();
 });
 </script>

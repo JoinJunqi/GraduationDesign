@@ -2,9 +2,48 @@
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="医生姓名" prop="doctorName" v-if="!isDoctor">
-        <el-input
+        <el-autocomplete
           v-model="queryParams.doctorName"
+          :fetch-suggestions="querySearchDoctor"
+          clearable
           placeholder="请输入医生姓名"
+          @select="handleQuery"
+          @keyup.enter="handleQuery"
+        >
+          <template #default="{ item }">
+            <div class="doctor-suggestion">
+              <span class="name">{{ item.name }}</span>
+              <span class="dept" style="margin-left: 10px; color: #999; font-size: 12px;">{{ item.deptName }}</span>
+              <span class="title" style="margin-left: 10px; color: #999; font-size: 12px;">{{ item.title }}</span>
+            </div>
+          </template>
+        </el-autocomplete>
+      </el-form-item>
+      <el-form-item label="医生筛选" v-if="!isDoctor">
+        <el-select v-model="queryParams.deptId" placeholder="选择科室" clearable @change="handleQueryDeptChange" style="width: 130px; margin-right: 5px;">
+          <el-option
+            v-for="item in departmentList"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
+          />
+        </el-select>
+        <el-select v-model="queryParams.doctorId" placeholder="选择医生" clearable :disabled="!queryParams.deptId" @change="handleQuery" style="width: 130px;">
+          <el-option
+            v-for="item in queryDoctorOptions"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
+          >
+            <span>{{ item.name }}</span>
+            <span style="float: right; color: #8492a6; font-size: 12px; margin-left: 10px;">{{ item.title }}</span>
+          </el-option>
+        </el-select>
+      </el-form-item>
+      <el-form-item label="医生职称" prop="title" v-if="!isDoctor">
+        <el-input
+          v-model="queryParams.title"
+          placeholder="请输入职称"
           clearable
           @keyup.enter="handleQuery"
         />
@@ -75,6 +114,7 @@
       </el-table-column>
       <el-table-column label="科室" align="center" prop="deptName" />
       <el-table-column label="医生" align="center" prop="doctorName" sortable="custom" />
+      <el-table-column label="职称" align="center" prop="title" />
       <el-table-column label="班次" align="center" prop="timeSlot" sortable="custom" />
       <el-table-column label="总号源" align="center" prop="totalCapacity" sortable="custom" />
       <el-table-column label="剩余号源" align="center" prop="availableSlots" sortable="custom" />
@@ -97,10 +137,36 @@
     <!-- 添加或修改排班对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
       <el-form ref="scheduleRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="医生" prop="doctorName">
-          <el-input v-model="form.doctorName" placeholder="医生姓名" :disabled="true" v-if="isDoctor" />
-          <el-input v-model="form.doctorId" placeholder="请输入医生ID" v-else />
-        </el-form-item>
+        <template v-if="isDoctor">
+          <el-form-item label="医生" prop="doctorName">
+            <el-input v-model="form.doctorName" placeholder="医生姓名" :disabled="true" />
+          </el-form-item>
+        </template>
+        <template v-else>
+          <el-form-item label="科室" prop="deptId">
+            <el-select v-model="form.deptId" placeholder="请选择科室" @change="handleDeptChange" filterable style="width: 100%">
+              <el-option
+                v-for="item in departmentList"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="医生" prop="doctorId">
+            <el-select v-model="form.doctorId" placeholder="请选择医生" :disabled="!form.deptId" filterable style="width: 100%">
+              <el-option
+                v-for="item in doctorOptions"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              >
+                <span>{{ item.name }}</span>
+                <span style="float: right; color: #8492a6; font-size: 12px; margin-left: 10px;">{{ item.title }}</span>
+              </el-option>
+            </el-select>
+          </el-form-item>
+        </template>
         <el-form-item label="出诊日期" prop="workDate">
           <el-date-picker
             v-model="form.workDate"
@@ -139,6 +205,8 @@
 <script setup name="Schedule">
 import { ref, reactive, toRefs, computed, getCurrentInstance, onMounted } from 'vue';
 import { listSchedule, getSchedule, delSchedule, addSchedule, updateSchedule } from "@/api/hospital/schedule";
+import { listDepartment } from "@/api/hospital/department";
+import { listDoctorByDept, listDoctor } from "@/api/hospital/doctor";
 import useUserStore from "@/store/modules/user";
 import { useRouter } from 'vue-router';
 
@@ -161,6 +229,9 @@ const multiple = ref(true);
 const title = ref("");
 const total = ref(0);
 const originalTotalCapacity = ref(0);
+const departmentList = ref([]);
+const doctorOptions = ref([]);
+const queryDoctorOptions = ref([]);
 
 const data = reactive({
   form: {},
@@ -168,20 +239,22 @@ const data = reactive({
     pageNum: 1,
     pageSize: 10,
     doctorName: null,
+    deptId: null,
+    doctorId: null,
+    title: null,
     workDate: null,
     orderByColumn: "workDate",
     isAsc: "descending",
     params: {
       includeDeleted: "false"
     }
-  },
-  rules: {
-    doctorId: [
-      { required: true, message: "医生ID不能为空", trigger: "blur" }
-    ],
-    doctorName: [
-      { required: true, message: "医生姓名不能为空", trigger: "blur" }
-    ],
+  }
+});
+
+const { queryParams, form } = toRefs(data);
+
+const rules = computed(() => {
+  const baseRules = {
     workDate: [
       { required: true, message: "出诊日期不能为空", trigger: "blur" }
     ],
@@ -191,14 +264,58 @@ const data = reactive({
     totalCapacity: [
       { required: true, message: "总号源数不能为空", trigger: "blur" }
     ]
+  };
+
+  if (isDoctor.value) {
+    return {
+      ...baseRules,
+      doctorName: [
+        { required: true, message: "医生姓名不能为空", trigger: "blur" }
+      ]
+    };
+  } else {
+    return {
+      ...baseRules,
+      deptId: [
+        { required: true, message: "科室不能为空", trigger: "change" }
+      ],
+      doctorId: [
+        { required: true, message: "医生不能为空", trigger: "change" }
+      ]
+    };
   }
 });
 
-const { queryParams, form, rules } = toRefs(data);
-
 onMounted(() => {
   getList();
+  getDepartmentList();
 });
+
+/** 查询科室列表 */
+function getDepartmentList() {
+  listDepartment().then(response => {
+    departmentList.value = response.rows;
+  });
+}
+
+/** 医生姓名输入建议 */
+function querySearchDoctor(queryString, cb) {
+  if (queryString) {
+    listDoctor({ name: queryString }).then(response => {
+      const results = response.rows.map(item => {
+        return {
+          value: item.name,
+          name: item.name,
+          deptName: item.deptName,
+          title: item.title
+        };
+      });
+      cb(results);
+    });
+  } else {
+    cb([]);
+  }
+}
 
 /** 排序触发事件 */
 function handleSortChange(column) {
@@ -240,6 +357,7 @@ function cancel() {
 function reset() {
   form.value = {
     id: null,
+    deptId: null,
     doctorId: isDoctor.value ? currentDoctorId.value : null,
     doctorName: isDoctor.value ? currentDoctorName.value : null,
     workDate: null,
@@ -248,7 +366,31 @@ function reset() {
     availableSlots: 0,
     maxCapacity: 28
   };
+  doctorOptions.value = [];
   proxy.resetForm("scheduleRef");
+}
+
+/** 科室变更加载医生列表 */
+function handleDeptChange(deptId) {
+  form.value.doctorId = null;
+  doctorOptions.value = [];
+  if (deptId) {
+    listDoctorByDept(deptId).then(response => {
+      doctorOptions.value = response.data;
+    });
+  }
+}
+
+/** 搜索栏科室变更加载医生列表 */
+function handleQueryDeptChange(deptId) {
+  queryParams.value.doctorId = null;
+  queryDoctorOptions.value = [];
+  if (deptId) {
+    listDoctorByDept(deptId).then(response => {
+      queryDoctorOptions.value = response.data;
+    });
+  }
+  handleQuery();
 }
 
 /** 搜索按钮操作 */
@@ -263,6 +405,7 @@ function handleRecycle() {
 
 /** 重置按钮操作 */
 function resetQuery() {
+  queryDoctorOptions.value = [];
   proxy.resetForm("queryRef");
   handleQuery();
 }
@@ -290,6 +433,12 @@ function handleUpdate(row) {
     originalTotalCapacity.value = form.value.totalCapacity;
     if (isDoctor.value && !form.value.doctorName) {
       form.value.doctorName = currentDoctorName.value;
+    }
+    // 管理员模式下加载该科室的医生列表
+    if (!isDoctor.value && form.value.deptId) {
+      listDoctorByDept(form.value.deptId).then(res => {
+        doctorOptions.value = res.data;
+      });
     }
     // 设置号源上限
     if (form.value.timeSlot === '上午' || form.value.timeSlot === '下午') {

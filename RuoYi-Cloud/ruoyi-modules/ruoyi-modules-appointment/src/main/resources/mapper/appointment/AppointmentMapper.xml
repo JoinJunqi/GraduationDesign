@@ -19,14 +19,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="timeSlot" column="time_slot" />
         <result property="doctorId" column="doctor_id" />
         <result property="deptName" column="dept_name" />
+        <result property="deptId"   column="dept_id"   />
+        <result property="title"    column="title"     />
     </resultMap>
 
     <sql id="selectAppointmentVo">
         select a.id, a.patient_id, a.schedule_id, a.status, a.booked_at, a.appointment_time, a.is_deleted, a.deleted_at,
                p.name as patient_name,
                d.name as doctor_name,
+               d.title,
                s.work_date, s.time_slot, s.doctor_id,
-               dept.name as dept_name
+               dept.name as dept_name,
+               d.dept_id
         from appointment a
         left join patient p on a.patient_id = p.id
         left join schedule s on a.schedule_id = s.id
@@ -45,7 +49,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="scheduleId != null "> and a.schedule_id = #{scheduleId}</if>
             <if test="status != null  and status != ''"> and a.status = #{status}</if>
             <if test="doctorId != null "> and s.doctor_id = #{doctorId}</if>
+            <if test="deptId != null "> and d.dept_id = #{deptId}</if>
             <if test="patientName != null and patientName != ''"> and p.name like concat('%', #{patientName}, '%')</if>
+            <if test="doctorName != null and doctorName != ''"> and d.name like concat('%', #{doctorName}, '%')</if>
+            <if test="title != null and title != ''"> and d.title like concat('%', #{title}, '%')</if>
             <if test="workDate != null "> and s.work_date = #{workDate}</if>
         </where>
     </select>

@@ -31,6 +31,45 @@
                 @keyup.enter="handleQuery"
               />
             </el-form-item>
+            <el-form-item label="医生姓名" prop="doctorName" v-if="!isDoctor">
+              <el-autocomplete
+                v-model="queryParams.doctorName"
+                :fetch-suggestions="querySearchDoctor"
+                clearable
+                placeholder="请输入医生姓名"
+                @select="handleQuery"
+                @keyup.enter="handleQuery"
+              >
+                <template #default="{ item }">
+                  <div class="doctor-suggestion">
+                    <span class="name">{{ item.name }}</span>
+                    <span class="dept" style="margin-left: 10px; color: #999; font-size: 12px;">{{ item.deptName }}</span>
+                    <span class="title" style="margin-left: 10px; color: #999; font-size: 12px;">{{ item.title }}</span>
+                  </div>
+                </template>
+              </el-autocomplete>
+            </el-form-item>
+            <el-form-item label="医生筛选" v-if="!isDoctor">
+              <el-select v-model="queryParams.deptId" placeholder="选择科室" clearable @change="handleQueryDeptChange" style="width: 130px; margin-right: 5px;">
+                <el-option
+                  v-for="item in departmentList"
+                  :key="item.id"
+                  :label="item.name"
+                  :value="item.id"
+                />
+              </el-select>
+              <el-select v-model="queryParams.doctorId" placeholder="选择医生" clearable :disabled="!queryParams.deptId" @change="handleQuery" style="width: 130px;">
+                <el-option
+                  v-for="item in queryDoctorOptions"
+                  :key="item.id"
+                  :label="item.name"
+                  :value="item.id"
+                >
+                  <span>{{ item.name }}</span>
+                  <span style="float: right; color: #8492a6; font-size: 12px; margin-left: 10px;">{{ item.title }}</span>
+                </el-option>
+              </el-select>
+            </el-form-item>
             <el-form-item label="状态" prop="status">
               <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
                 <el-option label="待就诊" value="待就诊" />
@@ -104,6 +143,7 @@
             <el-table-column type="selection" width="55" align="center" />
             <el-table-column label="患者姓名" align="center" prop="patientName" sortable="custom" />
             <el-table-column label="医生" align="center" prop="doctorName" sortable="custom" />
+            <el-table-column label="职称" align="center" prop="title" />
             <el-table-column label="就诊日期" align="center" prop="workDate" sortable="custom">
               <template #default="scope">
                 <span>{{ parseTime(scope.row.workDate, '{y}-{m}-{d}') }}</span>
@@ -188,6 +228,8 @@
 import { ref, reactive, toRefs, getCurrentInstance, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { listAppointment, getAppointment, delAppointment, addAppointment, updateAppointment, cancelAppointment, requestCancel, cancelRequest } from "@/api/hospital/appointment.js";
+import { listDepartment } from "@/api/hospital/department";
+import { listDoctorByDept, listDoctor } from "@/api/hospital/doctor";
 import { parseTime } from "@/utils/ruoyi";
 import useUserStore from "@/store/modules/user";
 import { ElNotification } from 'element-plus';
@@ -212,6 +254,8 @@ const total = ref(0);
 const title = ref("");
 const newAppointmentId = ref(null);
 const calendarDate = ref(new Date());
+const departmentList = ref([]);
+const queryDoctorOptions = ref([]);
 
 /** 监听日历日期变化 */
 watch(calendarDate, (newDate) => {
@@ -243,6 +287,9 @@ const data = reactive({
     pageNum: 1,
     pageSize: 10,
     patientName: null,
+    doctorName: null,
+    deptId: null,
+    doctorId: null,
     status: null,
     workDate: null,
     orderByColumn: "bookedAt",
@@ -279,6 +326,44 @@ watch(() => route.query.newId, (newId) => {
   }
 }, { immediate: true });
 
+/** 查询科室列表 */
+function getDepartmentList() {
+  listDepartment().then(response => {
+    departmentList.value = response.rows;
+  });
+}
+
+/** 医生姓名输入建议 */
+function querySearchDoctor(queryString, cb) {
+  if (queryString) {
+    listDoctor({ name: queryString }).then(response => {
+      const results = response.rows.map(item => {
+        return {
+          value: item.name,
+          name: item.name,
+          deptName: item.deptName,
+          title: item.title
+        };
+      });
+      cb(results);
+    });
+  } else {
+    cb([]);
+  }
+}
+
+/** 搜索栏科室变更加载医生列表 */
+function handleQueryDeptChange(deptId) {
+  queryParams.value.doctorId = null;
+  queryDoctorOptions.value = [];
+  if (deptId) {
+    listDoctorByDept(deptId).then(response => {
+      queryDoctorOptions.value = response.data;
+    });
+  }
+  handleQuery();
+}
+
 /** 排序触发事件 */
 function handleSortChange(column) {
   queryParams.value.orderByColumn = column.prop;
@@ -307,6 +392,7 @@ function tableRowClassName({ row }) {
 }
 
 onMounted(() => {
+  getDepartmentList();
   // 如果是医生且没有特定ID查询，默认显示今天的预约
   if (isDoctor.value && !route.query.newId && !queryParams.value.workDate) {
     queryParams.value.workDate = parseTime(new Date(), '{y}-{m}-{d}');
@@ -338,6 +424,7 @@ function handleQuery() {
 
 /** 重置按钮操作 */
 function resetQuery() {
+  queryDoctorOptions.value = [];
   proxy.resetForm("queryRef");
   handleQuery();
 }

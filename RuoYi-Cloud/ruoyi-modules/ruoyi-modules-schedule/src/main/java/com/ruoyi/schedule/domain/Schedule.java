@@ -66,4 +66,8 @@ public class Schedule implements Serializable {
     /** 科室ID (查询用) */
     @TableField(exist = false)
     private Long deptId;
+
+    /** 职称 (展示/查询用) */
+    @TableField(exist = false)
+    private String title;
 }

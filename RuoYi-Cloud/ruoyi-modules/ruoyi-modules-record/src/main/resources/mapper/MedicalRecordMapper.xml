@@ -19,10 +19,12 @@
         <result property="doctorName" column="doctor_name"/>
         <result property="patientName" column="patient_name"/>
         <result property="deptName" column="dept_name"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="title" column="title"/>
     </resultMap>
 
     <select id="selectMedicalRecordList" parameterType="com.ruoyi.record.domain.MedicalRecord" resultMap="MedicalRecordResult">
-        SELECT mr.*, d.name as doctor_name, p.name as patient_name, dept.name as dept_name
+        SELECT mr.*, d.name as doctor_name, d.title, p.name as patient_name, dept.name as dept_name, d.dept_id
         FROM medical_record mr
         LEFT JOIN doctor d ON mr.doctor_id = d.id
         LEFT JOIN patient p ON mr.patient_id = p.id
@@ -33,14 +35,16 @@
             </if>
             <if test="patientId != null"> AND mr.patient_id = #{patientId}</if>
             <if test="doctorId != null"> AND mr.doctor_id = #{doctorId}</if>
+            <if test="deptId != null"> AND d.dept_id = #{deptId}</if>
             <if test="diagnosis != null and diagnosis != ''"> AND mr.diagnosis LIKE concat('%', #{diagnosis}, '%')</if>
             <if test="doctorName != null and doctorName != ''"> AND d.name LIKE concat('%', #{doctorName}, '%')</if>
+            <if test="title != null and title != ''"> AND d.title LIKE concat('%', #{title}, '%')</if>
             <if test="patientName != null and patientName != ''"> AND p.name LIKE concat('%', #{patientName}, '%')</if>
         </where>
     </select>
 
     <select id="selectMedicalRecordById" parameterType="Long" resultMap="MedicalRecordResult">
-        SELECT mr.*, d.name as doctor_name, p.name as patient_name, dept.name as dept_name
+        SELECT mr.*, d.name as doctor_name, d.title, p.name as patient_name, dept.name as dept_name, d.dept_id
         FROM medical_record mr
         LEFT JOIN doctor d ON mr.doctor_id = d.id
         LEFT JOIN patient p ON mr.patient_id = p.id

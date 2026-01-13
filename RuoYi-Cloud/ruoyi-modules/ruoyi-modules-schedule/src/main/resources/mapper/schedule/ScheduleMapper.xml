@@ -17,11 +17,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="doctorName"   column="doctor_name"   />
         <result property="deptName"     column="dept_name"     />
         <result property="deptId"       column="dept_id"       />
+        <result property="title"        column="title"         />
     </resultMap>
 
     <sql id="selectScheduleVo">
         select s.id, s.doctor_id, s.work_date, s.time_slot, s.total_capacity, s.available_slots, s.created_at, s.is_deleted, s.deleted_at,
                d.name as doctor_name,
+               d.title,
                dept.name as dept_name,
                d.dept_id
         from schedule s
@@ -39,6 +41,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="workDate != null "> and s.work_date = #{workDate}</if>
             <if test="timeSlot != null  and timeSlot != ''"> and s.time_slot = #{timeSlot}</if>
             <if test="deptId != null "> and d.dept_id = #{deptId}</if>
+            <if test="doctorName != null and doctorName != ''"> and d.name like concat('%', #{doctorName}, '%')</if>
+            <if test="title != null and title != ''"> and d.title like concat('%', #{title}, '%')</if>
         </where>
     </select>
     
