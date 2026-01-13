@@ -11,4 +11,9 @@ public interface IDepartmentIntroService extends IService<DepartmentIntro> {
      * 根据科室ID批量逻辑删除
      */
     boolean deleteByDeptIds(Long[] deptIds);
+
+    /**
+     * 根据科室ID批量恢复
+     */
+    boolean recoverByDeptIds(Long[] deptIds);
 }

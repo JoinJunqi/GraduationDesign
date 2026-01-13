@@ -52,6 +52,14 @@ export function delDepartment(id) {
   })
 }
 
+// 恢复科室
+export function recoverDepartment(id) {
+  return request({
+    url: '/ruoyi-hospital-department/department/recover/' + id,
+    method: 'put'
+  })
+}
+
 // 获取科室说明
 export function getDepartmentIntro(deptId) {
   return request({

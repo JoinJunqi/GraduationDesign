@@ -29,4 +29,9 @@ public interface IDepartmentService extends IService<Department> {
      * 批量删除科室
      */
     boolean deleteDepartmentByIds(Long[] ids);
+
+    /**
+     * 批量恢复科室
+     */
+    boolean recoverDepartmentByIds(Long[] ids);
 }

@@ -78,7 +78,12 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
             throw new ServiceException("用户名或密码错误");
         }
 
-        if (!SecurityUtils.matchesPassword(patient.getPasswordHash(), user.getPasswordHash())) {
+        String rawPassword = patient.getPassword();
+        if (rawPassword == null || rawPassword.isEmpty()) {
+            rawPassword = patient.getPasswordHash();
+        }
+
+        if (rawPassword == null || !SecurityUtils.matchesPassword(rawPassword, user.getPasswordHash())) {
             log.warn("患者登录失败: 密码不匹配, username={}", patient.getUsername());
             throw new ServiceException("用户名或密码错误");
         }
@@ -121,7 +126,17 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
         if (!checkIdCardUnique(patient)) {
             throw new ServiceException("注册失败，身份证号已存在");
         }
-        patient.setPasswordHash(SecurityUtils.encryptPassword(patient.getPasswordHash()));
+        
+        String password = patient.getPassword();
+        if (password == null || password.isEmpty()) {
+            password = patient.getPasswordHash();
+        }
+        
+        if (password == null || password.isEmpty()) {
+            throw new ServiceException("注册失败，密码不能为空");
+        }
+        
+        patient.setPasswordHash(SecurityUtils.encryptPassword(password));
         return save(patient);
     }
 
@@ -155,10 +170,18 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
 
     @Override
     public boolean deletePatientByIds(Long[] ids) {
-        Patient patient = new Patient();
-        patient.setIsDeleted(1);
-        patient.setDeletedAt(new Date());
-        return update(patient, new LambdaQueryWrapper<Patient>().in(Patient::getId, Arrays.asList(ids)));
+        return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Patient>()
+                .set("is_deleted", 1)
+                .set("deleted_at", new Date())
+                .in("id", Arrays.asList(ids)));
+    }
+
+    @Override
+    public boolean recoverPatientByIds(Long[] ids) {
+        return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Patient>()
+                .set("is_deleted", 0)
+                .set("deleted_at", null)
+                .in("id", Arrays.asList(ids)));
     }
 
     @Override

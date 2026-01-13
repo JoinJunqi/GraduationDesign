@@ -17,9 +17,17 @@ import java.util.Date;
 public class DepartmentIntroServiceImpl extends ServiceImpl<DepartmentIntroMapper, DepartmentIntro> implements IDepartmentIntroService {
     @Override
     public boolean deleteByDeptIds(Long[] deptIds) {
-        DepartmentIntro intro = new DepartmentIntro();
-        intro.setIsDeleted(1);
-        intro.setDeletedAt(new Date());
-        return update(intro, new LambdaQueryWrapper<DepartmentIntro>().in(DepartmentIntro::getDeptId, Arrays.asList(deptIds)));
+        return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<DepartmentIntro>()
+                .set("is_deleted", 1)
+                .set("deleted_at", new Date())
+                .in("dept_id", Arrays.asList(deptIds)));
+    }
+
+    @Override
+    public boolean recoverByDeptIds(Long[] deptIds) {
+        return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<DepartmentIntro>()
+                .set("is_deleted", 0)
+                .set("deleted_at", null)
+                .in("dept_id", Arrays.asList(deptIds)));
     }
 }

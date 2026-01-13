@@ -137,6 +137,43 @@ export const constantRoutes = [
       }
     ]
   },
+  {
+    path: '/hospital/recycle',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'doctor',
+        component: () => import('@/views/hospital/doctor/recycle.vue'),
+        name: 'DoctorRecycle',
+        meta: { title: '医生回收站', activeMenu: '/hospital/doctor' }
+      },
+      {
+        path: 'patient',
+        component: () => import('@/views/hospital/patient/recycle.vue'),
+        name: 'PatientRecycle',
+        meta: { title: '患者回收站', activeMenu: '/hospital/patient' }
+      },
+      {
+        path: 'department',
+        component: () => import('@/views/hospital/department/recycle.vue'),
+        name: 'DepartmentRecycle',
+        meta: { title: '科室回收站', activeMenu: '/hospital/department' }
+      },
+      {
+        path: 'schedule',
+        component: () => import('@/views/hospital/schedule/recycle.vue'),
+        name: 'ScheduleRecycle',
+        meta: { title: '排班回收站', activeMenu: '/hospital/schedule' }
+      },
+      {
+        path: 'appointment',
+        component: () => import('@/views/hospital/appointment/recycle.vue'),
+        name: 'AppointmentRecycle',
+        meta: { title: '预约回收站', activeMenu: '/hospital/appointment' }
+      }
+    ]
+  },
 ]
 
 // 动态路由，基于用户权限动态去加载

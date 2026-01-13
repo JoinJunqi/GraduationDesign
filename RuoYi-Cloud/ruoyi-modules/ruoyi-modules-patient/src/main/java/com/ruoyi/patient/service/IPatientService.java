@@ -42,9 +42,14 @@ public interface IPatientService extends IService<Patient> {
     boolean updatePatient(Patient patient);
 
     /**
-     * 删除患者
+     * 批量删除患者
      */
     boolean deletePatientByIds(Long[] ids);
+
+    /**
+     * 批量恢复患者
+     */
+    boolean recoverPatientByIds(Long[] ids);
 
     /**
      * 修改患者个人信息

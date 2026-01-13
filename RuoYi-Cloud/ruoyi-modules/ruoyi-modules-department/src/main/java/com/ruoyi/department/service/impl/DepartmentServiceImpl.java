@@ -60,9 +60,21 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
         // 先逻辑删除关联的科室说明
         departmentIntroService.deleteByDeptIds(ids);
         
-        Department department = new Department();
-        department.setIsDeleted(1);
-        department.setDeletedAt(new Date());
-        return update(department, new LambdaQueryWrapper<Department>().in(Department::getId, Arrays.asList(ids)));
+        return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Department>()
+                .set("is_deleted", 1)
+                .set("deleted_at", new Date())
+                .in("id", Arrays.asList(ids)));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean recoverDepartmentByIds(Long[] ids) {
+        // 恢复关联的科室说明
+        departmentIntroService.recoverByDeptIds(ids);
+
+        return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Department>()
+                .set("is_deleted", 0)
+                .set("deleted_at", null)
+                .in("id", Arrays.asList(ids)));
     }
 }

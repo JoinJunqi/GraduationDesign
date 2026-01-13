@@ -18,14 +18,6 @@
           clearable
         />
       </el-form-item>
-      <el-form-item label="显示已删除" prop="includeDeleted">
-        <el-switch
-          v-model="queryParams.params.includeDeleted"
-          active-value="true"
-          inactive-value="false"
-          @change="handleQuery"
-        />
-      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -62,6 +54,15 @@
           v-hasPermi="['hospital:schedule:remove']"
         >删除</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="warning"
+          plain
+          icon="DeleteFilled"
+          @click="handleRecycle"
+          v-hasPermi="['hospital:schedule:remove']"
+        >回收站</el-button>
+      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -74,27 +75,13 @@
       </el-table-column>
       <el-table-column label="科室" align="center" prop="deptName" />
       <el-table-column label="医生" align="center" prop="doctorName" sortable="custom" />
-      <el-table-column label="班次" align="center" prop="timeSlot" sortable="custom">
-        <template #default="scope">
-          <span>{{ scope.row.timeSlot }}</span>
-          <el-tag v-if="scope.row.isDeleted === 1" type="danger" style="margin-left: 5px">已删除</el-tag>
-        </template>
-      </el-table-column>
+      <el-table-column label="班次" align="center" prop="timeSlot" sortable="custom" />
       <el-table-column label="总号源" align="center" prop="totalCapacity" sortable="custom" />
       <el-table-column label="剩余号源" align="center" prop="availableSlots" sortable="custom" />
-      <el-table-column label="删除时间" align="center" prop="deletedAt" width="180" v-if="queryParams.params.includeDeleted === 'true'">
-        <template #default="scope">
-          <span v-if="scope.row.isDeleted === 1">{{ parseTime(scope.row.deletedAt) }}</span>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <template v-if="scope.row.isDeleted !== 1">
-            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:schedule:edit']">修改</el-button>
-            <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hospital:schedule:remove']">删除</el-button>
-          </template>
-          <el-tag v-else type="info">无可用操作</el-tag>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:schedule:edit']">修改</el-button>
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hospital:schedule:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -153,10 +140,12 @@
 import { ref, reactive, toRefs, computed, getCurrentInstance, onMounted } from 'vue';
 import { listSchedule, getSchedule, delSchedule, addSchedule, updateSchedule } from "@/api/hospital/schedule";
 import useUserStore from "@/store/modules/user";
+import { useRouter } from 'vue-router';
 
 const userStore = useUserStore();
 const { proxy } = getCurrentInstance();
 const { parseTime } = proxy;
+const router = useRouter();
 
 const isDoctor = computed(() => userStore.roles.includes('doctor'));
 const currentDoctorName = computed(() => userStore.nickName);
@@ -265,6 +254,11 @@ function reset() {
 /** 搜索按钮操作 */
 function handleQuery() {
   getList();
+}
+
+/** 回收站按钮操作 */
+function handleRecycle() {
+  router.push("/hospital/recycle/schedule");
 }
 
 /** 重置按钮操作 */

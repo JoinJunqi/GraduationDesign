@@ -24,4 +24,9 @@ public interface IScheduleService extends IService<Schedule> {
      * 批量删除排班
      */
     boolean deleteScheduleByIds(Long[] ids);
+
+    /**
+     * 批量恢复排班
+     */
+    boolean recoverScheduleByIds(Long[] ids);
 }

@@ -43,6 +43,14 @@ export function delPatient(id) {
   })
 }
 
+// 恢复患者
+export function recoverPatient(id) {
+  return request({
+    url: '/ruoyi-hospital-patient/patient/recover/' + id,
+    method: 'put'
+  })
+}
+
 // 重置患者密码
 export function resetPatientPwd(id, password) {
   const data = {

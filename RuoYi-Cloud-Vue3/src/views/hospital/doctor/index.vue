@@ -44,14 +44,6 @@
           <el-option label="离职" :value="0" />
         </el-select>
       </el-form-item>
-      <el-form-item label="显示已删除" prop="includeDeleted">
-        <el-switch
-          v-model="queryParams.params.includeDeleted"
-          active-value="true"
-          inactive-value="false"
-          @change="handleQuery"
-        />
-      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -88,6 +80,15 @@
           v-hasPermi="['hospital:doctor:remove']"
         >删除</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="warning"
+          plain
+          icon="DeleteFilled"
+          @click="handleRecycle"
+          v-hasPermi="['hospital:doctor:remove']"
+        >回收站</el-button>
+      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -101,29 +102,18 @@
       <el-table-column label="状态" align="center" prop="isActive" sortable="custom">
         <template #default="scope">
           <el-switch
-            v-if="scope.row.isDeleted !== 1"
             v-model="scope.row.isActive"
             :active-value="true"
             :inactive-value="false"
             @change="handleStatusChange(scope.row)"
           ></el-switch>
-          <el-tag v-else type="danger">已删除</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="删除时间" align="center" prop="deletedAt" width="180" v-if="queryParams.params.includeDeleted === 'true'">
-        <template #default="scope">
-          <span v-if="scope.row.isDeleted === 1">{{ parseTime(scope.row.deletedAt) }}</span>
-          <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <template v-if="scope.row.isDeleted !== 1">
-            <el-button link type="primary" icon="Key" @click="handleResetPwd(scope.row)" v-hasPermi="['hospital:doctor:edit']">重置密码</el-button>
-            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:doctor:edit']">修改</el-button>
-            <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hospital:doctor:remove']">删除</el-button>
-          </template>
-          <el-tag v-else type="info">无可用操作</el-tag>
+          <el-button link type="primary" icon="Key" @click="handleResetPwd(scope.row)" v-hasPermi="['hospital:doctor:edit']">重置密码</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:doctor:edit']">修改</el-button>
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hospital:doctor:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -248,7 +238,12 @@ function handleDelete(row) {
   }).then(() => {
     getList();
     proxy.$modal.msgSuccess("删除成功");
-  }).catch(() => { });
+  }).catch(() => {});
+}
+
+/** 回收站按钮操作 */
+function handleRecycle() {
+  router.push("/hospital/recycle/doctor");
 }
 
 /** 重置密码按钮操作 */

@@ -55,7 +55,12 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
             throw new ServiceException("用户名或密码错误");
         }
 
-        if (!SecurityUtils.matchesPassword(doctor.getPasswordHash(), user.getPasswordHash())) {
+        String rawPassword = doctor.getPassword();
+        if (rawPassword == null || rawPassword.isEmpty()) {
+            rawPassword = doctor.getPasswordHash();
+        }
+
+        if (rawPassword == null || !SecurityUtils.matchesPassword(rawPassword, user.getPasswordHash())) {
             log.warn("医生登录失败: 密码不匹配, username={}", doctor.getUsername());
             throw new ServiceException("用户名或密码错误");
         }
@@ -118,10 +123,18 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
 
     @Override
     public boolean deleteDoctorByIds(Long[] ids) {
-        Doctor doctor = new Doctor();
-        doctor.setIsDeleted(1);
-        doctor.setDeletedAt(new Date());
-        return update(doctor, new LambdaQueryWrapper<Doctor>().in(Doctor::getId, Arrays.asList(ids)));
+        return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Doctor>()
+                .set("is_deleted", 1)
+                .set("deleted_at", new Date())
+                .in("id", Arrays.asList(ids)));
+    }
+
+    @Override
+    public boolean recoverDoctorByIds(Long[] ids) {
+        return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Doctor>()
+                .set("is_deleted", 0)
+                .set("deleted_at", null)
+                .in("id", Arrays.asList(ids)));
     }
 
     @Override

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.appointment.mapper.SysOperationAuditMapper">
+    
+    <resultMap type="com.ruoyi.appointment.domain.SysOperationAudit" id="SysOperationAuditResult">
+        <result property="id"    column="id"    />
+        <result property="auditType"    column="audit_type"    />
+        <result property="targetId"    column="target_id"    />
+        <result property="requesterId"    column="requester_id"    />
+        <result property="requesterRole"    column="requester_role"    />
+        <result property="requestReason"    column="request_reason"    />
+        <result property="auditStatus"    column="audit_status"    />
+        <result property="adminId"    column="admin_id"    />
+        <result property="auditTime"    column="audit_time"    />
+        <result property="auditRemark"    column="audit_remark"    />
+        <result property="createdAt"    column="created_at"    />
+        <result property="isDeleted"    column="is_deleted"    />
+        <result property="deletedAt"    column="deleted_at"    />
+        <result property="requesterName" column="requester_name" />
+        <result property="appointmentInfo" column="appointment_info" />
+    </resultMap>
+
+    <sql id="selectSysOperationAuditVo">
+        select a.id, a.audit_type, a.target_id, a.requester_id, a.requester_role, a.request_reason, a.audit_status, 
+               a.admin_id, a.audit_time, a.audit_remark, a.created_at, a.is_deleted, a.deleted_at,
+               case 
+                   when a.requester_role = 'doctor' then d.name 
+                   when a.requester_role = 'patient' then p.name 
+               end as requester_name,
+               concat(s.work_date, ' ', s.time_slot, ' (', doc.name, ')') as appointment_info
+        from sys_operation_audit a
+        left join patient p on a.requester_id = p.id and a.requester_role = 'patient'
+        left join doctor d on a.requester_id = d.id and a.requester_role = 'doctor'
+        left join appointment app on a.target_id = app.id
+        left join schedule s on app.schedule_id = s.id
+        left join doctor doc on s.doctor_id = doc.id
+    </sql>
+
+    <select id="selectAuditList" parameterType="com.ruoyi.appointment.domain.SysOperationAudit" resultMap="SysOperationAuditResult">
+        <include refid="selectSysOperationAuditVo"/>
+        <where>  
+            <if test="params.includeDeleted == null or params.includeDeleted == '' or params.includeDeleted == 'false'">
+                and a.is_deleted = 0
+            </if>
+            <if test="auditType != null  and auditType != ''"> and a.audit_type = #{auditType}</if>
+            <if test="targetId != null "> and a.target_id = #{targetId}</if>
+            <if test="auditStatus != null "> and a.audit_status = #{auditStatus}</if>
+            <if test="requesterRole != null and requesterRole != ''"> and a.requester_role = #{requesterRole}</if>
+        </where>
+        order by a.created_at desc
+    </select>
+    
+</mapper>

@@ -43,6 +43,14 @@ export function delDoctor(id) {
   })
 }
 
+// 恢复医生
+export function recoverDoctor(id) {
+  return request({
+    url: '/ruoyi-hospital-doctor/doctor/recover/' + id,
+    method: 'put'
+  })
+}
+
 // 根据科室查询医生列表
 export function listDoctorByDept(deptId) {
   return request({

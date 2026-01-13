@@ -56,4 +56,10 @@ public class DepartmentController extends BaseController
     {
         return ResultVO.success(departmentService.deleteDepartmentByIds(ids));
     }
+
+    @PutMapping("/recover/{ids}")
+    public ResultVO<Boolean> recover(@PathVariable Long[] ids)
+    {
+        return ResultVO.success(departmentService.recoverDepartmentByIds(ids));
+    }
 }

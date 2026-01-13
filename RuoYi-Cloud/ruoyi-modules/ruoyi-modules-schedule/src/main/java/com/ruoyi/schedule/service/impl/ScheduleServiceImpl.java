@@ -153,9 +153,22 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         for (Long id : ids) {
             redisService.deleteObject(getRedisKey(id));
         }
-        Schedule schedule = new Schedule();
-        schedule.setIsDeleted(1);
-        schedule.setDeletedAt(new Date());
-        return update(schedule, new LambdaQueryWrapper<Schedule>().in(Schedule::getId, Arrays.asList(ids)));
+        return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Schedule>()
+                .set("is_deleted", 1)
+                .set("deleted_at", new Date())
+                .in("id", Arrays.asList(ids)));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean recoverScheduleByIds(Long[] ids) {
+        List<Schedule> list = listByIds(Arrays.asList(ids));
+        for (Schedule schedule : list) {
+            redisService.setCacheObject(getRedisKey(schedule.getId()), schedule.getAvailableSlots(), 24L, TimeUnit.HOURS);
+        }
+        return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Schedule>()
+                .set("is_deleted", 0)
+                .set("deleted_at", null)
+                .in("id", Arrays.asList(ids)));
     }
 }

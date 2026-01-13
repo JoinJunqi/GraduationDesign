@@ -17,4 +17,9 @@ public interface IAppointmentService extends IService<Appointment> {
      * 批量删除预约
      */
     boolean deleteAppointmentByIds(Long[] ids);
+
+    /**
+     * 批量恢复预约
+     */
+    boolean recoverAppointmentByIds(Long[] ids);
 }

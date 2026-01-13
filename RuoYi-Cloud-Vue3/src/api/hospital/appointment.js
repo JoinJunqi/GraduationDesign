@@ -67,6 +67,14 @@ export function delAppointment(id) {
   })
 }
 
+// 恢复预约
+export function recoverAppointment(id) {
+  return request({
+    url: '/ruoyi-hospital-appointment/appointment/recover/' + id,
+    method: 'put'
+  })
+}
+
 // 更新预约状态
 export function updateAppointmentStatus(id, status) {
   return request({

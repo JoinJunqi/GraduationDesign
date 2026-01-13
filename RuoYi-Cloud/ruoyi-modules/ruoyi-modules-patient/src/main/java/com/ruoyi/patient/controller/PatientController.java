@@ -64,6 +64,12 @@ public class PatientController extends BaseController
         return ResultVO.success(patientService.deletePatientByIds(ids));
     }
 
+    @PutMapping("/recover/{ids}")
+    public ResultVO<Boolean> recover(@PathVariable Long[] ids)
+    {
+        return ResultVO.success(patientService.recoverPatientByIds(ids));
+    }
+
     @GetMapping("/profile")
     public ResultVO<Map<String, Object>> profile()
     {

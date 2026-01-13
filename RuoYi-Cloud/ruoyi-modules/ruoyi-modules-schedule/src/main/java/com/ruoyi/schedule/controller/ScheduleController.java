@@ -49,4 +49,10 @@ public class ScheduleController extends BaseController
     {
         return ResultVO.success(scheduleService.deleteScheduleByIds(ids));
     }
+
+    @PutMapping("/recover/{ids}")
+    public ResultVO<Boolean> recover(@PathVariable Long[] ids)
+    {
+        return ResultVO.success(scheduleService.recoverScheduleByIds(ids));
+    }
 }

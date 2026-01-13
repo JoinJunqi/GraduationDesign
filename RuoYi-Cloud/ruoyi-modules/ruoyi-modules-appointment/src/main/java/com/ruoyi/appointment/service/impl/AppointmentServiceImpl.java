@@ -36,6 +36,9 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     @Autowired
     private RedisService redisService;
 
+    @Autowired
+    private com.ruoyi.appointment.service.ISysOperationAuditService auditService;
+
     private static final String SCHEDULE_SLOTS_KEY = "hospital:schedule:slots:";
 
     private String getScheduleRedisKey(Long scheduleId) {
@@ -297,6 +300,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean requestCancel(Long appointmentId) {
         Appointment appointment = this.getById(appointmentId);
         if (appointment == null) {
@@ -305,19 +309,46 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         if (!"待就诊".equals(appointment.getStatus())) {
             throw new ServiceException("只有待就诊状态可以发起取消申请");
         }
-        appointment.setStatus("取消申请中");
-        return this.updateById(appointment);
+        
+        // 创建审核记录
+        com.ruoyi.appointment.domain.SysOperationAudit audit = new com.ruoyi.appointment.domain.SysOperationAudit();
+        audit.setAuditType("APPOINTMENT_CANCEL");
+        audit.setTargetId(appointmentId);
+        audit.setRequesterId(SecurityUtils.getUserId());
+        
+        // 判断申请人角色
+        if (hasRole("doctor")) {
+            audit.setRequesterRole("doctor");
+        } else {
+            audit.setRequesterRole("patient");
+        }
+        
+        audit.setRequestReason("用户申请取消预约"); // 默认理由，前端可传入具体理由
+        auditService.submitAudit(audit);
+        
+        return true;
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean cancelRequest(Long appointmentId) {
         Appointment appointment = this.getById(appointmentId);
         if (appointment == null) {
             throw new ServiceException("预约记录不存在");
         }
-        if (!"取消申请中".equals(appointment.getStatus())) {
+        if (!"取消审核中".equals(appointment.getStatus())) {
             throw new ServiceException("当前状态不可撤回申请");
         }
+        
+        // 撤回申请：逻辑删除对应的待审核记录，并将预约状态改回“待就诊”
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.ruoyi.appointment.domain.SysOperationAudit> wrapper = 
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+        wrapper.eq(com.ruoyi.appointment.domain.SysOperationAudit::getTargetId, appointmentId)
+               .eq(com.ruoyi.appointment.domain.SysOperationAudit::getAuditStatus, 0)
+               .eq(com.ruoyi.appointment.domain.SysOperationAudit::getAuditType, "APPOINTMENT_CANCEL");
+        
+        auditService.remove(wrapper);
+        
         appointment.setStatus("待就诊");
         return this.updateById(appointment);
     }
@@ -332,10 +363,18 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
 
     @Override
     public boolean deleteAppointmentByIds(Long[] ids) {
-        Appointment appointment = new Appointment();
-        appointment.setIsDeleted(1);
-        appointment.setDeletedAt(new Date());
-        return update(appointment, new LambdaQueryWrapper<Appointment>().in(Appointment::getId, Arrays.asList(ids)));
+        return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Appointment>()
+                .set("is_deleted", 1)
+                .set("deleted_at", new Date())
+                .in("id", Arrays.asList(ids)));
+    }
+
+    @Override
+    public boolean recoverAppointmentByIds(Long[] ids) {
+        return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Appointment>()
+                .set("is_deleted", 0)
+                .set("deleted_at", null)
+                .in("id", Arrays.asList(ids)));
     }
 
 

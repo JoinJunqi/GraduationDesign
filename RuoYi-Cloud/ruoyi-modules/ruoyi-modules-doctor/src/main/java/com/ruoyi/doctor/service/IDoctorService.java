@@ -43,6 +43,11 @@ public interface IDoctorService extends IService<Doctor> {
     boolean deleteDoctorByIds(Long[] ids);
 
     /**
+     * 批量恢复医生
+     */
+    boolean recoverDoctorByIds(Long[] ids);
+
+    /**
      * 校验用户名是否唯一
      */
     boolean checkUsernameUnique(String username);

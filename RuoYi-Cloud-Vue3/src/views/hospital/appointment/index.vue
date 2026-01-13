@@ -36,7 +36,7 @@
                 <el-option label="待就诊" value="待就诊" />
                 <el-option label="已取消" value="已取消" />
                 <el-option label="已完成" value="已完成" />
-                <el-option label="取消申请中" value="取消申请中" />
+                <el-option label="取消审核中" value="取消审核中" />
               </el-select>
             </el-form-item>
             <el-form-item label="就诊日期" prop="workDate">
@@ -46,14 +46,6 @@
                 value-format="YYYY-MM-DD"
                 placeholder="选择日期"
                 clearable
-                @change="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item label="显示已删除" prop="includeDeleted">
-              <el-switch
-                v-model="queryParams.params.includeDeleted"
-                active-value="true"
-                inactive-value="false"
                 @change="handleQuery"
               />
             </el-form-item>
@@ -95,17 +87,22 @@
                 v-hasPermi="['hospital:appointment:remove']"
               >删除</el-button>
             </el-col>
+            <el-col :span="1.5">
+              <el-button
+                type="warning"
+                plain
+                icon="DeleteFilled"
+                @click="handleRecycle"
+                v-if="isAdmin"
+                v-hasPermi="['hospital:appointment:remove']"
+              >回收站</el-button>
+            </el-col>
             <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
           </el-row>
 
           <el-table v-loading="loading" :data="appointmentList" @selection-change="handleSelectionChange" @sort-change="handleSortChange" :row-class-name="tableRowClassName">
             <el-table-column type="selection" width="55" align="center" />
-            <el-table-column label="患者姓名" align="center" prop="patientName" sortable="custom">
-              <template #default="scope">
-                <span>{{ scope.row.patientName }}</span>
-                <el-tag v-if="scope.row.isDeleted === 1" type="danger" style="margin-left: 5px">已删除</el-tag>
-              </template>
-            </el-table-column>
+            <el-table-column label="患者姓名" align="center" prop="patientName" sortable="custom" />
             <el-table-column label="医生" align="center" prop="doctorName" sortable="custom" />
             <el-table-column label="就诊日期" align="center" prop="workDate" sortable="custom">
               <template #default="scope">
@@ -115,15 +112,9 @@
             <el-table-column label="班次" align="center" prop="timeSlot" />
             <el-table-column label="状态" align="center" prop="status" sortable="custom">
               <template #default="scope">
-                <el-tag :type="scope.row.status === '已完成' ? 'success' : (scope.row.status === '已取消' ? 'info' : (scope.row.status === '取消申请中' ? 'danger' : 'warning'))">
+                <el-tag :type="scope.row.status === '已完成' ? 'success' : (scope.row.status === '已取消' ? 'info' : (scope.row.status === '取消审核中' ? 'danger' : 'warning'))">
                   {{ scope.row.status }}
                 </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="删除时间" align="center" prop="deletedAt" width="180" v-if="queryParams.params.includeDeleted === 'true'">
-              <template #default="scope">
-                <span v-if="scope.row.isDeleted === 1">{{ parseTime(scope.row.deletedAt) }}</span>
-                <span v-else>-</span>
               </template>
             </el-table-column>
             <el-table-column label="预约时间" align="center" prop="bookedAt" width="160" sortable="custom">
@@ -134,34 +125,26 @@
             <el-table-column label="预约时段" align="center" prop="appointmentTime" width="100" />
             <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200">
               <template #default="scope">
-                <template v-if="scope.row.isDeleted !== 1">
-                  <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="isAdmin" v-hasPermi="['hospital:appointment:edit']">修改</el-button>
-                  
-                  <!-- 患者端操作 -->
-                  <el-button link type="danger" icon="CircleClose" @click="handleCancel(scope.row)" v-if="isPatient && scope.row.status === '待就诊'">取消预约</el-button>
-                  
-                  <!-- 医生端操作 -->
-                  <template v-if="isDoctor">
-                    <el-button link type="success" icon="VideoPlay" @click="handleStartConsultation(scope.row)" v-if="scope.row.status === '待就诊'">开始就诊</el-button>
-                    <el-button link type="danger" icon="MessageBox" @click="handleRequestCancel(scope.row)" v-if="scope.row.status === '待就诊'">申请取消</el-button>
-                    <div v-if="scope.row.status === '取消申请中'" style="display: inline-block;">
-                      <span style="color: #F56C6C; font-size: 12px; margin-right: 5px;">已申请取消</span>
-                      <el-button link type="primary" @click="handleRevokeRequest(scope.row)">撤销</el-button>
-                    </div>
-                  </template>
-
-                  <!-- 管理员端操作 (审批) -->
-                  <template v-if="isAdmin && scope.row.status === '取消申请中'">
-                    <el-button link type="success" icon="Check" @click="handleApproveCancel(scope.row)">通过</el-button>
-                    <el-button link type="danger" icon="Close" @click="handleRejectCancel(scope.row)">驳回</el-button>
-                  </template>
-
-                  <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="isAdmin" v-hasPermi="['hospital:appointment:remove']">删除</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="isAdmin" v-hasPermi="['hospital:appointment:edit']">修改</el-button>
+                
+                <!-- 患者端操作 -->
+                <el-button link type="danger" icon="CircleClose" @click="handleRequestCancel(scope.row)" v-if="isPatient && scope.row.status === '待就诊'">取消预约</el-button>
+                
+                <!-- 医生端操作 -->
+                <template v-if="isDoctor">
+                  <el-button link type="success" icon="VideoPlay" @click="handleStartConsultation(scope.row)" v-if="scope.row.status === '待就诊'">开始就诊</el-button>
+                  <el-button link type="danger" icon="MessageBox" @click="handleRequestCancel(scope.row)" v-if="scope.row.status === '待就诊'">申请取消</el-button>
                 </template>
-                <el-tag v-else type="info">无可用操作</el-tag>
+
+                <!-- 审核中状态的操作 (撤销申请) -->
+                <template v-if="scope.row.status === '取消审核中'">
+                  <el-button link type="primary" icon="RefreshLeft" @click="handleRevokeRequest(scope.row)">撤回申请</el-button>
+                </template>
+
+                <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="isAdmin" v-hasPermi="['hospital:appointment:remove']">删除</el-button>
               </template>
             </el-table-column>
-          </el-table>
+          </el-table>"}]}
           
           <pagination
             v-show="total > 0"
@@ -264,9 +247,7 @@ const data = reactive({
     workDate: null,
     orderByColumn: "bookedAt",
     isAsc: "descending",
-    params: {
-      includeDeleted: "false"
-    }
+    params: {}
   },
   rules: {
     patientId: [
@@ -407,30 +388,35 @@ function submitForm() {
   });
 }
 
-/** 取消预约操作 (患者直接取消) */
-function handleCancel(row) {
-  const id = row.id;
-  proxy.$modal.confirm('是否确认取消预约编号为"' + id + '"的预约？').then(function() {
-    return cancelAppointment(id);
-  }).then(() => {
-    getList();
-    proxy.$modal.msgSuccess("取消成功");
-  }).catch(() => {});
-}
-
-/** 医生发起取消申请 */
+/** 发起取消申请 (患者/医生均需审核) */
 function handleRequestCancel(row) {
-  proxy.$modal.confirm('确认发起取消就诊申请吗？').then(function() {
-    return requestCancel(row.id);
-  }).then(() => {
-    getList();
-    proxy.$modal.msgSuccess("申请已发送");
+  const id = row.id;
+  proxy.$prompt('请输入取消原因', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    inputPattern: /\S+/,
+    inputErrorMessage: '原因不能为空'
+  }).then(({ value }) => {
+    // 构造审核申请数据
+    const auditData = {
+      auditType: 'APPOINTMENT_CANCEL',
+      targetId: id,
+      requestReason: value
+    };
+    // 这里我们可以直接调用我们新写的 audit.js 中的接口，或者通过 appointment.js 转发
+    // 为了简单起见，我直接在这里导入并使用 submitAudit
+    import("@/api/hospital/audit").then(module => {
+      module.submitAudit(auditData).then(response => {
+        getList();
+        proxy.$modal.msgSuccess("取消申请已提交，请等待管理员审核");
+      });
+    });
   }).catch(() => {});
 }
 
-/** 医生撤销取消申请 */
+/** 撤销取消申请 */
 function handleRevokeRequest(row) {
-  proxy.$modal.confirm('确认撤销取消就诊申请吗？').then(function() {
+  proxy.$modal.confirm('确认撤销取消预约申请吗？').then(function() {
     return cancelRequest(row.id);
   }).then(() => {
     getList();
@@ -438,35 +424,20 @@ function handleRevokeRequest(row) {
   }).catch(() => {});
 }
 
-/** 管理员审批通过取消 */
-function handleApproveCancel(row) {
-  proxy.$modal.confirm('确认批准该取消就诊申请吗？').then(function() {
-    return cancelAppointment(row.id);
-  }).then(() => {
-    getList();
-    proxy.$modal.msgSuccess("已批准取消");
-  }).catch(() => {});
-}
-
-/** 管理员驳回取消申请 */
-function handleRejectCancel(row) {
-  proxy.$modal.confirm('确认驳回该取消就诊申请吗？').then(function() {
-    return cancelRequest(row.id); // 驳回即恢复待就诊状态
-  }).then(() => {
-    getList();
-    proxy.$modal.msgSuccess("已驳回申请");
-  }).catch(() => {});
-}
-
 /** 删除按钮操作 */
 function handleDelete(row) {
-  const appointmentIds = row.id || ids.value;
-  proxy.$modal.confirm('是否确认删除预约编号为"' + appointmentIds + '"的数据项？').then(function() {
-    return delAppointment(appointmentIds);
+  const _ids = row.id || ids.value;
+  proxy.$modal.confirm('是否确认删除预约编号为"' + _ids + '"的数据项？').then(function() {
+    return delAppointment(_ids);
   }).then(() => {
     getList();
     proxy.$modal.msgSuccess("删除成功");
   }).catch(() => {});
+}
+
+/** 跳转到回收站 */
+function handleRecycle() {
+  router.push("/hospital/recycle/appointment");
 }
 </script>
 

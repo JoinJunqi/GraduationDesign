@@ -82,4 +82,10 @@ public class AppointmentController extends BaseController
     {
         return ResultVO.success(appointmentService.deleteAppointmentByIds(ids));
     }
+
+    @PutMapping("/recover/{ids}")
+    public ResultVO<Boolean> recover(@PathVariable Long[] ids)
+    {
+        return ResultVO.success(appointmentService.recoverAppointmentByIds(ids));
+    }
 }
