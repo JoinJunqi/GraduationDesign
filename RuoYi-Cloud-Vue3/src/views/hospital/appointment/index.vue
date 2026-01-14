@@ -184,7 +184,7 @@
                 <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="isAdmin && hasAdminPermi(AdminPermi.BOOKING)" v-hasPermi="['hospital:appointment:remove']">删除</el-button>
               </template>
             </el-table-column>
-          </el-table>"}]}
+          </el-table>
           
           <pagination
             v-show="total > 0"

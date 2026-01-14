@@ -26,9 +26,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectPatientList" parameterType="com.ruoyi.patient.domain.Patient" resultMap="PatientResult">
         <include refid="selectPatientVo"/>
         <where>  
-            <if test="params.includeDeleted == null or params.includeDeleted == '' or params.includeDeleted == 'false'">
-                and is_deleted = 0
-            </if>
+            <choose>
+                <when test="params.includeDeleted != null and params.includeDeleted == 'true'">
+                    and is_deleted = 1
+                </when>
+                <otherwise>
+                    and is_deleted = 0
+                </otherwise>
+            </choose>
             <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
             <if test="username != null  and username != ''"> and username like concat('%', #{username}, '%')</if>
             <if test="phone != null  and phone != ''"> and phone like concat('%', #{phone}, '%')</if>

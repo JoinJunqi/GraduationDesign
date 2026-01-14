@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Department> implements IDepartmentService {
@@ -23,8 +24,7 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
 
     @Override
     public List<Department> selectDepartmentList(Department department) {
-        return list(new LambdaQueryWrapper<Department>()
-                .like(department.getName() != null, Department::getName, department.getName()));
+        return baseMapper.selectDepartmentList(department);
     }
 
     @Override

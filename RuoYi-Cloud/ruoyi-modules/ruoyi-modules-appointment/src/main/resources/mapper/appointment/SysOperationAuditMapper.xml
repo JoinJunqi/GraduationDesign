@@ -41,9 +41,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectAuditList" parameterType="com.ruoyi.appointment.domain.SysOperationAudit" resultMap="SysOperationAuditResult">
         <include refid="selectSysOperationAuditVo"/>
         <where>  
-            <if test="params.includeDeleted == null or params.includeDeleted == '' or params.includeDeleted == 'false'">
-                and a.is_deleted = 0
-            </if>
+            <choose>
+                <when test="params.includeDeleted != null and params.includeDeleted == 'true'">
+                    and a.is_deleted = 1
+                </when>
+                <otherwise>
+                    and a.is_deleted = 0
+                </otherwise>
+            </choose>
             <if test="auditType != null  and auditType != ''"> and a.audit_type = #{auditType}</if>
             <if test="targetId != null "> and a.target_id = #{targetId}</if>
             <if test="auditStatus != null "> and a.audit_status = #{auditStatus}</if>

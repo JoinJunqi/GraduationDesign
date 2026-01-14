@@ -11,6 +11,11 @@ import java.util.List;
 @Mapper
 public interface DepartmentMapper extends BaseMapper<Department> {
     /**
+     * 查询科室列表
+     */
+    List<Department> selectDepartmentList(Department department);
+
+    /**
      * 查询包含说明的科室列表
      */
     List<Department> selectDepartmentWithIntroList(Department department);

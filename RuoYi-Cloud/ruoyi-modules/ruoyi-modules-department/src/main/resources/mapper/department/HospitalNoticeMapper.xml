@@ -31,9 +31,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectNoticeList" parameterType="com.ruoyi.department.domain.HospitalNotice" resultMap="HospitalNoticeResult">
         <include refid="selectHospitalNoticeVo"/>
         <where>  
-            <if test="params.includeDeleted == null or params.includeDeleted == '' or params.includeDeleted == 'false'">
-                and is_deleted = 0
-            </if>
+            <choose>
+                <when test="params.includeDeleted != null and params.includeDeleted == 'true'">
+                    and is_deleted = 1
+                </when>
+                <otherwise>
+                    and is_deleted = 0
+                </otherwise>
+            </choose>
             <if test="title != null  and title != ''"> and title like concat('%', #{title}, '%')</if>
             <if test="noticeType != null  and noticeType != ''"> and notice_type = #{noticeType}</if>
             <if test="isActive != null "> and is_active = #{isActive}</if>

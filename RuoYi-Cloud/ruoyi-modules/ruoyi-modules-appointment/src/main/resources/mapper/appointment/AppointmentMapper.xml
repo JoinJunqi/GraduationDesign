@@ -42,9 +42,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectAppointmentList" parameterType="com.ruoyi.appointment.domain.Appointment" resultMap="AppointmentResult">
         <include refid="selectAppointmentVo"/>
         <where>  
-            <if test="params.includeDeleted == null or params.includeDeleted == '' or params.includeDeleted == 'false'">
-                and a.is_deleted = 0
-            </if>
+            <choose>
+                <when test="params.includeDeleted != null and params.includeDeleted == 'true'">
+                    and a.is_deleted = 1
+                </when>
+                <otherwise>
+                    and a.is_deleted = 0
+                </otherwise>
+            </choose>
             <if test="id != null "> and a.id = #{id}</if>
             <if test="patientId != null "> and a.patient_id = #{patientId}</if>
             <if test="scheduleId != null "> and a.schedule_id = #{scheduleId}</if>

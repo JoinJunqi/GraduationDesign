@@ -35,9 +35,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectScheduleList" parameterType="com.ruoyi.schedule.domain.Schedule" resultMap="ScheduleResult">
         <include refid="selectScheduleVo"/>
         <where>
-            <if test="params.includeDeleted == null or params.includeDeleted == '' or params.includeDeleted == 'false'">
-                and s.is_deleted = 0
-            </if>
+            <choose>
+                <when test="params.includeDeleted != null and params.includeDeleted == 'true'">
+                    and s.is_deleted = 1
+                </when>
+                <otherwise>
+                    and s.is_deleted = 0
+                </otherwise>
+            </choose>
             <if test="id != null"> and s.id = #{id}</if>
             <if test="doctorId != null"> and s.doctor_id = #{doctorId}</if>
             <if test="workDate != null "> and s.work_date = #{workDate}</if>
