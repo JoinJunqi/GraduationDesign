@@ -3,6 +3,7 @@ package com.ruoyi.system.controller;
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
@@ -153,16 +154,36 @@ public class SysUserController extends BaseController
     public AjaxResult getInfo()
     {
         LoginUser loginUser = SecurityUtils.getLoginUser();
-        SysUser user = loginUser.getSysUser();
+        SysUser user = userService.selectUserByUserName(loginUser.getUsername());
+        
+        if (user == null)
+        {
+            return error("获取用户信息失败");
+        }
+
+        // 如果数据库中的权限与缓存中的不一致，更新缓存
+        boolean changed = false;
+        if (loginUser.getSysUser() != null && 
+            !Objects.equals(user.getPermissions(), loginUser.getSysUser().getPermissions())) {
+            loginUser.setSysUser(user);
+            changed = true;
+        }
+        
         // 角色集合
         Set<String> roles = permissionService.getRolePermission(user);
         // 权限集合
         Set<String> permissions = permissionService.getMenuPermission(user);
-        if (!loginUser.getPermissions().equals(permissions))
+        
+        if (!Objects.equals(loginUser.getPermissions(), permissions))
         {
             loginUser.setPermissions(permissions);
+            changed = true;
+        }
+
+        if (changed) {
             tokenService.refreshToken(loginUser);
         }
+
         AjaxResult ajax = AjaxResult.success();
         ajax.put("user", user);
         ajax.put("roles", roles);

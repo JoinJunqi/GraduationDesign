@@ -48,6 +48,9 @@ public class SysUser extends BaseEntity
     /** 管理员等级 (0普通管理员, 1超级管理员) */
     private Integer adminLevel;
 
+    /** 操作权限 (bitmask) */
+    private Integer permissions;
+
     /** 用户性别 */
     @Excel(name = "用户性别", readConverterExp = "0=男,1=女,2=未知")
     private String sex;
@@ -198,6 +201,16 @@ public class SysUser extends BaseEntity
     public void setAdminLevel(Integer adminLevel)
     {
         this.adminLevel = adminLevel;
+    }
+
+    public Integer getPermissions()
+    {
+        return permissions;
+    }
+
+    public void setPermissions(Integer permissions)
+    {
+        this.permissions = permissions;
     }
 
     public String getSex()
@@ -359,6 +372,8 @@ public class SysUser extends BaseEntity
             .append("nickName", getNickName())
             .append("email", getEmail())
             .append("phonenumber", getPhonenumber())
+            .append("adminLevel", getAdminLevel())
+            .append("permissions", getPermissions())
             .append("sex", getSex())
             .append("avatar", getAvatar())
             .append("password", getPassword())

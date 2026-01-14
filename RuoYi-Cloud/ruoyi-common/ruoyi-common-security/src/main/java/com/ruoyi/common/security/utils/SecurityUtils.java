@@ -4,7 +4,9 @@ import javax.servlet.http.HttpServletRequest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import com.ruoyi.common.core.constant.SecurityConstants;
 import com.ruoyi.common.core.constant.TokenConstants;
+import com.ruoyi.common.core.constant.UserConstants;
 import com.ruoyi.common.core.context.SecurityContextHolder;
+import com.ruoyi.common.core.exception.ServiceException;
 import com.ruoyi.common.core.utils.ServletUtils;
 import com.ruoyi.common.core.utils.StringUtils;
 import com.ruoyi.system.api.model.LoginUser;
@@ -113,5 +115,45 @@ public class SecurityUtils
     {
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         return passwordEncoder.matches(rawPassword, encodedPassword);
+    }
+
+    /**
+     * 校验管理员权限
+     * 
+     * @param permission 权限位
+     * @throws ServiceException 无权限异常
+     */
+    public static void checkAdminPermission(int permission)
+    {
+        LoginUser loginUser = getLoginUser();
+        if (loginUser == null || loginUser.getSysUser() == null)
+        {
+            throw new ServiceException("获取用户信息失败，请重新登录");
+        }
+        
+        // 超级管理员拥有所有权限
+        if (UserConstants.ADMIN_LEVEL_SUPER == loginUser.getSysUser().getAdminLevel())
+        {
+            return;
+        }
+        
+        // 普通管理员根据权限位判断
+        Integer permissions = loginUser.getSysUser().getPermissions();
+        if (permissions == null || (permissions & permission) != permission)
+        {
+            throw new ServiceException("操作失败，您没有该项操作的权限，请联系超级管理员分配");
+        }
+    }
+
+    /**
+     * 是否为超级管理员
+     * 
+     * @return 结果
+     */
+    public static boolean isSuperAdmin()
+    {
+        LoginUser loginUser = getLoginUser();
+        return loginUser != null && loginUser.getSysUser() != null && 
+               UserConstants.ADMIN_LEVEL_SUPER == loginUser.getSysUser().getAdminLevel();
     }
 }

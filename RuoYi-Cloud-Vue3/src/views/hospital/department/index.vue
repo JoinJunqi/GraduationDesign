@@ -15,7 +15,7 @@
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
+    <el-row :gutter="10" class="mb8" v-if="hasAdminPermi(AdminPermi.DEPT)">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -65,9 +65,9 @@
           <span>{{ parseTime(scope.row.createdAt) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" v-if="hasAdminPermi(AdminPermi.DEPT)">
         <template #default="scope">
-          <el-button link type="primary" icon="InfoFilled" @click="handleIntro(scope.row)" v-hasPermi="['hospital:department:edit']">介绍</el-button>
+          <el-button link type="primary" icon="InfoFilled" @click="handleIntro(scope.row)" v-hasPermi="['hospital:department:edit']">修改介绍</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:department:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hospital:department:remove']">删除</el-button>
         </template>
@@ -100,6 +100,12 @@
     <!-- 科室介绍对话框 -->
     <el-dialog :title="introTitle" v-model="introOpen" width="700px" append-to-body>
       <el-form ref="introRef" :model="introForm" label-width="80px">
+        <el-form-item label="科室名称" prop="deptName">
+          <el-input v-model="introForm.deptName" placeholder="请输入科室名称" />
+        </el-form-item>
+        <el-form-item label="创建时间">
+          <el-input :value="parseTime(introForm.createdAt)" disabled />
+        </el-form-item>
         <el-form-item label="科室概述" prop="overview">
           <el-input v-model="introForm.overview" type="textarea" placeholder="请输入科室概述" />
         </el-form-item>
@@ -136,6 +142,7 @@
 import { listDepartment, getDepartment, delDepartment, addDepartment, updateDepartment, getDepartmentIntro, saveDepartmentIntro } from "@/api/hospital/department";
 import { getCurrentInstance, ref, reactive, toRefs, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { hasAdminPermi, AdminPermi } from "@/utils/adminPermi";
 
 const { proxy } = getCurrentInstance();
 const { parseTime } = proxy;
@@ -214,16 +221,30 @@ function handleIntro(row) {
         isActive: 1
       };
     }
+    // 添加科室基础信息以便显示和修改
+    introForm.value.deptName = row.name;
+    introForm.value.createdAt = row.createdAt;
+    
     introOpen.value = true;
-    introTitle.value = `科室介绍 - ${row.name}`;
+    introTitle.value = "修改科室信息";
   });
 }
 
 /** 提交介绍表单 */
 function submitIntroForm() {
-  saveDepartmentIntro(introForm.value).then(response => {
+  // 1. 先保存科室基础信息（如果名称有变）
+  const deptData = {
+    id: introForm.value.deptId,
+    name: introForm.value.deptName
+  };
+  
+  updateDepartment(deptData).then(() => {
+    // 2. 再保存科室介绍详情
+    return saveDepartmentIntro(introForm.value);
+  }).then(response => {
     proxy.$modal.msgSuccess("保存成功");
     introOpen.value = false;
+    getList(); // 刷新列表以显示最新的科室名称
   });
 }
 

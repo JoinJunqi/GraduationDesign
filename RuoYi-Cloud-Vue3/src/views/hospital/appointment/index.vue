@@ -104,7 +104,7 @@
                 v-if="isPatient"
               >预约挂号</el-button>
             </el-col>
-            <el-col :span="1.5">
+            <el-col :span="1.5" v-if="hasAdminPermi(AdminPermi.BOOKING)">
               <el-button
                 type="success"
                 plain
@@ -115,7 +115,7 @@
                 v-hasPermi="['hospital:appointment:edit']"
               >修改</el-button>
             </el-col>
-            <el-col :span="1.5">
+            <el-col :span="1.5" v-if="hasAdminPermi(AdminPermi.BOOKING)">
               <el-button
                 type="danger"
                 plain
@@ -126,7 +126,7 @@
                 v-hasPermi="['hospital:appointment:remove']"
               >删除</el-button>
             </el-col>
-            <el-col :span="1.5">
+            <el-col :span="1.5" v-if="hasAdminPermi(AdminPermi.BOOKING)">
               <el-button
                 type="warning"
                 plain
@@ -165,7 +165,7 @@
             <el-table-column label="预约时段" align="center" prop="appointmentTime" width="100" />
             <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200">
               <template #default="scope">
-                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="isAdmin" v-hasPermi="['hospital:appointment:edit']">修改</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="isAdmin && hasAdminPermi(AdminPermi.BOOKING)" v-hasPermi="['hospital:appointment:edit']">修改</el-button>
                 
                 <!-- 患者端操作 -->
                 <el-button link type="danger" icon="CircleClose" @click="handleRequestCancel(scope.row)" v-if="isPatient && scope.row.status === '待就诊'">取消预约</el-button>
@@ -181,7 +181,7 @@
                   <el-button link type="primary" icon="RefreshLeft" @click="handleRevokeRequest(scope.row)">撤回申请</el-button>
                 </template>
 
-                <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="isAdmin" v-hasPermi="['hospital:appointment:remove']">删除</el-button>
+                <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="isAdmin && hasAdminPermi(AdminPermi.BOOKING)" v-hasPermi="['hospital:appointment:remove']">删除</el-button>
               </template>
             </el-table-column>
           </el-table>"}]}
@@ -232,6 +232,7 @@ import { listDepartment } from "@/api/hospital/department";
 import { listDoctorByDept, listDoctor } from "@/api/hospital/doctor";
 import { parseTime } from "@/utils/ruoyi";
 import useUserStore from "@/store/modules/user";
+import { hasAdminPermi, AdminPermi } from "@/utils/adminPermi";
 import { ElNotification } from 'element-plus';
 
 const { proxy } = getCurrentInstance();

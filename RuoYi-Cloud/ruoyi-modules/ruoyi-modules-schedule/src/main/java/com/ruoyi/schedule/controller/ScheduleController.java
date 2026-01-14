@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import com.ruoyi.common.core.constant.UserConstants;
+import com.ruoyi.common.security.utils.SecurityUtils;
 import com.ruoyi.common.core.web.controller.BaseController;
 import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.common.core.web.page.TableDataInfo;
@@ -35,24 +37,28 @@ public class ScheduleController extends BaseController
     @PostMapping
     public ResultVO<Boolean> add(@RequestBody Schedule schedule)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_SCHEDULE);
         return ResultVO.success(scheduleService.insertSchedule(schedule));
     }
 
     @PutMapping
     public ResultVO<Boolean> edit(@RequestBody Schedule schedule)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_SCHEDULE);
         return ResultVO.success(scheduleService.updateSchedule(schedule));
     }
 
     @DeleteMapping("/{ids}")
     public ResultVO<Boolean> remove(@PathVariable Long[] ids)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_SCHEDULE);
         return ResultVO.success(scheduleService.deleteScheduleByIds(ids));
     }
 
     @PutMapping("/recover/{ids}")
     public ResultVO<Boolean> recover(@PathVariable Long[] ids)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_SCHEDULE);
         return ResultVO.success(scheduleService.recoverScheduleByIds(ids));
     }
 }

@@ -2,10 +2,12 @@ package com.ruoyi.appointment.controller;
 
 import com.ruoyi.appointment.domain.SysOperationAudit;
 import com.ruoyi.appointment.service.ISysOperationAuditService;
+import com.ruoyi.common.core.constant.UserConstants;
 import com.ruoyi.common.core.web.controller.BaseController;
 import com.ruoyi.common.core.web.domain.AjaxResult;
 import com.ruoyi.common.core.web.page.TableDataInfo;
 import com.ruoyi.common.security.annotation.RequiresPermissions;
+import com.ruoyi.common.security.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -55,6 +57,7 @@ public class SysOperationAuditController extends BaseController {
     @RequiresPermissions("appointment:audit:process")
     @PutMapping("/process")
     public AjaxResult process(@RequestBody SysOperationAudit audit) {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_AUDIT);
         return toAjax(auditService.processAudit(audit));
     }
 }

@@ -12,6 +12,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="password"      column="password_hash"   />
         <result property="phonenumber"   column="phone"           />
         <result property="adminLevel"    column="admin_level"     />
+        <result property="permissions"   column="permissions"     />
         <result property="status"        column="status"          />
         <result property="createTime"    column="created_at"      />
         <!-- 其他字段给默认值或空值，以兼容 SysUser 对象 -->
@@ -27,6 +28,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             name, 
             phone,
             admin_level,
+            permissions,
             password_hash, 
             CASE WHEN is_active = 1 THEN '0' ELSE '1' END as status,
             created_at,
@@ -55,6 +57,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 name, 
                 phone,
                 admin_level,
+                permissions,
                 CASE WHEN is_active = 1 THEN '0' ELSE '1' END as status,
             created_at,
             '0' as del_flag,
@@ -94,7 +97,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   			<if test="userName != null and userName != ''">username,</if>
   			<if test="nickName != null and nickName != ''">name,</if>
              <if test="phonenumber != null and phonenumber != ''">phone,</if>
-             <if test="adminLevel != null">admin_level,</if>
+  			<if test="adminLevel != null">admin_level,</if>
+  			<if test="permissions != null">permissions,</if>
   			<if test="password != null and password != ''">password_hash,</if>
   			<if test="status != null and status == '0'">is_active,</if>
              <if test="status != null and status == '1'">is_active,</if>
@@ -104,6 +108,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   			<if test="nickName != null and nickName != ''">#{nickName},</if>
              <if test="phonenumber != null and phonenumber != ''">#{phonenumber},</if>
              <if test="adminLevel != null">#{adminLevel},</if>
+             <if test="permissions != null">#{permissions},</if>
   			<if test="password != null and password != ''">#{password},</if>
   			<if test="status != null and status == '0'">1,</if>
              <if test="status != null and status == '1'">0,</if>
@@ -118,6 +123,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   			<if test="nickName != null and nickName != ''">name = #{nickName},</if>
              <if test="phonenumber != null and phonenumber != ''">phone = #{phonenumber},</if>
              <if test="adminLevel != null">admin_level = #{adminLevel},</if>
+             <if test="permissions != null">permissions = #{permissions},</if>
   			<if test="password != null and password != ''">password_hash = #{password},</if>
  			<if test="status != null and status == '0'">is_active = 1,</if>
             <if test="status != null and status == '1'">is_active = 0,</if>

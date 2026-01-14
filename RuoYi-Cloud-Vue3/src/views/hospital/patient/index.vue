@@ -43,7 +43,7 @@
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
+    <el-row :gutter="10" class="mb8" v-if="hasAdminPermi(AdminPermi.PATIENT)">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -97,6 +97,7 @@
             v-model="scope.row.isActive"
             :active-value="1"
             :inactive-value="0"
+            :disabled="!hasAdminPermi(AdminPermi.PATIENT)"
             @change="handleStatusChange(scope.row)"
           ></el-switch>
         </template>
@@ -106,7 +107,7 @@
           <span>{{ parseTime(scope.row.createdAt) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" v-if="hasAdminPermi(AdminPermi.PATIENT)">
         <template #default="scope">
           <el-button link type="primary" icon="Key" @click="handleResetPwd(scope.row)" v-hasPermi="['hospital:patient:edit']">重置密码</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:patient:edit']">修改</el-button>
@@ -129,6 +130,7 @@
 import { listPatient, getPatient, delPatient, addPatient, updatePatient, resetPatientPwd } from "@/api/hospital/patient";
 import { getCurrentInstance, ref, reactive, toRefs, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { hasAdminPermi, AdminPermi } from "@/utils/adminPermi";
 
 const { proxy } = getCurrentInstance();
 const { parseTime } = proxy;

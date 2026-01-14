@@ -16,7 +16,9 @@ const useUserStore = defineStore(
       nickName: '',
       avatar: '',
       roles: [],
-      permissions: []
+      permissions: [],
+      adminLevel: 0,
+      adminPermissions: 0
     }),
     actions: {
       setLoginType(type) {
@@ -82,7 +84,7 @@ const useUserStore = defineStore(
         return new Promise((resolve, reject) => {
           getInfo().then(res => {
             const data = res.data || res;
-            let user = data.user || data;
+            let user = data.user || data.sysUser || data;
             
             // 针对患者和医生的特殊处理
             if (this.loginType === 'patient' && data.patient) {
@@ -110,6 +112,10 @@ const useUserStore = defineStore(
                 this.id = user.userId || user.id
                 this.name = user.userName || user.username
                 this.nickName = user.nickName || user.name
+                
+                // 统一从 user 对象中获取管理员相关字段
+                this.adminLevel = parseInt(user.adminLevel || 0)
+                this.adminPermissions = parseInt(user.permissions || 0)
             }
             
             this.avatar = avatar

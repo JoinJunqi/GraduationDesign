@@ -48,7 +48,7 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button
-            v-if="scope.row.auditStatus === 0"
+            v-if="scope.row.auditStatus === 0 && hasAdminPermi(AdminPermi.AUDIT)"
             link
             type="primary"
             icon="Check"
@@ -107,6 +107,7 @@
 
 <script setup name="Audit">
 import { listAudit, processAudit, getAudit } from "@/api/hospital/audit";
+import { hasAdminPermi, AdminPermi } from "@/utils/adminPermi";
 
 const { proxy } = getCurrentInstance();
 

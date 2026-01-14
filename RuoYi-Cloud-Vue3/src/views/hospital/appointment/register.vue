@@ -64,6 +64,13 @@
             <el-tag :type="scope.row.timeSlot === '上午' ? 'primary' : 'warning'">{{ scope.row.timeSlot }}</el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="状态" align="center" prop="status">
+          <template #default="scope">
+            <el-tag v-if="scope.row.status === 0" type="success">正常</el-tag>
+            <el-tag v-else-if="scope.row.status === 1" type="warning">有调整</el-tag>
+            <el-tag v-else-if="scope.row.status === 2" type="danger">已取消</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="剩余号源" align="center" prop="availableSlots">
           <template #default="scope">
             <el-tag :type="scope.row.availableSlots > 0 ? 'success' : 'danger'">
@@ -95,13 +102,22 @@
         <template #header>请选择具体就诊时间 (15分钟/号)</template>
         <el-row :gutter="10">
           <el-col v-for="time in availableTimeSlots" :key="time" :span="4" class="mb10">
-            <el-button 
-              :type="selectedTime === time ? 'primary' : 'default'" 
-              class="time-slot-btn"
-              @click="handleSelectTime(time)"
+            <el-tooltip
+              class="box-item"
+              effect="dark"
+              :content="bookedTimeSlots.includes(time) ? '该时段已被预约' : '该时段已不可预约'"
+              placement="top"
+              :disabled="!bookedTimeSlots.includes(time) && selectedSchedule.availableSlots > 0 && selectedSchedule.status !== 2"
             >
-              {{ time }}
-            </el-button>
+              <el-button 
+                :type="selectedTime === time ? 'primary' : 'default'" 
+                class="time-slot-btn"
+                :disabled="bookedTimeSlots.includes(time) || selectedSchedule.availableSlots <= 0 || selectedSchedule.status === 2"
+                @click="handleSelectTime(time)"
+              >
+                {{ time }}
+              </el-button>
+            </el-tooltip>
           </el-col>
         </el-row>
         <div class="mt20 text-center">
@@ -144,7 +160,7 @@ import { useRouter } from 'vue-router';
 import { listDepartment } from "@/api/hospital/department.js";
 import { listDoctorByDept } from "@/api/hospital/doctor.js";
 import { listSchedule } from "@/api/hospital/schedule.js";
-import { addAppointment } from "@/api/hospital/appointment.js";
+import { addAppointment, listAppointment } from "@/api/hospital/appointment.js";
 import { parseTime } from "@/utils/ruoyi";
 import { ElMessage } from 'element-plus';
 
@@ -163,16 +179,18 @@ const selectedDoctor = ref({});
 const selectedSchedule = ref({});
 const selectedTime = ref("");
 const availableTimeSlots = ref([]);
+const bookedTimeSlots = ref([]);
 
 /** 生成时间段 */
-function generateTimeSlots(slotType) {
+function generateTimeSlots(slotType, totalCapacity) {
   const slots = [];
+  const baseSlots = [];
   if (slotType === '上午' || slotType === '全天') {
     // 8:00 - 11:30
     for (let h = 8; h <= 11; h++) {
       for (let m = 0; m < 60; m += 15) {
         if (h === 11 && m > 15) break; 
-        slots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:00`);
+        baseSlots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:00`);
       }
     }
   }
@@ -181,11 +199,13 @@ function generateTimeSlots(slotType) {
     for (let h = 14; h <= 17; h++) {
       for (let m = 0; m < 60; m += 15) {
         if (h === 17 && m > 15) break;
-        slots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:00`);
+        baseSlots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:00`);
       }
     }
   }
-  return slots;
+  
+  // 根据总号源数限制时段数量
+  return baseSlots.slice(0, totalCapacity);
 }
 
 /** 加载科室列表 */
@@ -243,7 +263,8 @@ function getScheduleList(doctorId) {
     console.log('Schedule list response:', response);
     const rawList = response.rows || response.data || (Array.isArray(response) ? response : []);
     const today = new Date().toISOString().split('T')[0];
-    scheduleList.value = rawList.filter(s => s.workDate >= today);
+    // 过滤掉已取消的排班 (或者保留但显示已取消)
+    scheduleList.value = rawList.filter(s => s.workDate >= today && s.status !== 2);
     loading.value = false;
   }).catch(err => {
     console.error('Failed to fetch schedules:', err);
@@ -254,9 +275,19 @@ function getScheduleList(doctorId) {
 /** 选择排班 */
 function handleSelectSchedule(schedule) {
   selectedSchedule.value = schedule;
-  availableTimeSlots.value = generateTimeSlots(schedule.timeSlot);
+  availableTimeSlots.value = generateTimeSlots(schedule.timeSlot, schedule.totalCapacity);
   selectedTime.value = "";
-  activeStep.value = 3;
+  
+  // 获取已预约的时段
+  loading.value = true;
+  listAppointment({ scheduleId: schedule.id }).then(response => {
+    bookedTimeSlots.value = (response.rows || []).map(item => item.appointmentTime);
+    activeStep.value = 3;
+    loading.value = false;
+  }).catch(() => {
+    loading.value = false;
+    activeStep.value = 3;
+  });
 }
 
 /** 选择时间 */

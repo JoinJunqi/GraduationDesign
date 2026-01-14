@@ -3,6 +3,8 @@ package com.ruoyi.department.controller;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import com.ruoyi.common.core.constant.UserConstants;
+import com.ruoyi.common.security.utils.SecurityUtils;
 import com.ruoyi.common.core.web.controller.BaseController;
 import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.department.domain.DepartmentIntro;
@@ -33,6 +35,7 @@ public class DepartmentIntroController extends BaseController {
      */
     @PostMapping
     public ResultVO<Boolean> save(@RequestBody DepartmentIntro departmentIntro) {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_DEPT);
         if (departmentIntro.getId() != null) {
             return ResultVO.success(departmentIntroService.updateById(departmentIntro));
         } else {

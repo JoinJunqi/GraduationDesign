@@ -27,6 +27,9 @@ public class Admin extends BaseEntity {
     private Integer adminLevel;
     private Integer isActive;
 
+    /** 操作权限(bitmask) */
+    private Integer permissions;
+
     /** 是否删除(1是,0否) */
     @TableLogic
     private Integer isDeleted;

@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import com.ruoyi.common.core.constant.UserConstants;
+import com.ruoyi.common.security.utils.SecurityUtils;
 import com.ruoyi.common.core.web.controller.BaseController;
 import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.common.core.web.page.TableDataInfo;
@@ -42,36 +44,42 @@ public class AppointmentController extends BaseController
     @PostMapping("/create")
     public ResultVO<Boolean> create(@RequestBody Appointment appointment)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
         return ResultVO.success(appointmentService.createAppointment(appointment));
     }
 
     @PutMapping
     public ResultVO<Boolean> edit(@RequestBody Appointment appointment)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
         return ResultVO.success(appointmentService.updateById(appointment));
     }
 
     @PostMapping("/cancel/{id}")
     public ResultVO<Boolean> cancel(@PathVariable Long id)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
         return ResultVO.success(appointmentService.cancelAppointment(id));
     }
 
     @PostMapping("/request-cancel/{id}")
     public ResultVO<Boolean> requestCancel(@PathVariable Long id)
     {
+        // 申请取消通常由患者或医生发起，不需要管理员权限
         return ResultVO.success(appointmentService.requestCancel(id));
     }
 
     @PostMapping("/cancel-request/{id}")
     public ResultVO<Boolean> cancelRequest(@PathVariable Long id)
     {
+        // 取消申请通常由患者或医生发起，不需要管理员权限
         return ResultVO.success(appointmentService.cancelRequest(id));
     }
 
     @PutMapping("/status")
     public ResultVO<Boolean> updateStatus(@RequestParam("id") Long id, @RequestParam("status") String status)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
         Appointment appointment = new Appointment();
         appointment.setId(id);
         appointment.setStatus(status);
@@ -84,6 +92,7 @@ public class AppointmentController extends BaseController
     @PutMapping("/cancelByScheduleId")
     public ResultVO<Boolean> cancelByScheduleId(@RequestParam("scheduleId") Long scheduleId)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
         return ResultVO.success(appointmentService.cancelByScheduleId(scheduleId));
     }
 
@@ -95,6 +104,7 @@ public class AppointmentController extends BaseController
                                     @RequestParam("newScheduleId") Long newScheduleId, 
                                     @RequestParam("count") Integer count)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
         return ResultVO.success(appointmentService.reassign(oldScheduleId, newScheduleId, count));
     }
 
@@ -105,6 +115,7 @@ public class AppointmentController extends BaseController
     public ResultVO<Boolean> syncTimeChange(@RequestParam("scheduleId") Long scheduleId,
                                           @RequestParam("oldTimeSlot") String oldTimeSlot,
                                           @RequestParam("newTimeSlot") String newTimeSlot) {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
         return ResultVO.success(appointmentService.syncTimeChange(scheduleId, oldTimeSlot, newTimeSlot));
     }
 
@@ -114,6 +125,7 @@ public class AppointmentController extends BaseController
     @DeleteMapping("/{ids}")
     public ResultVO<Boolean> remove(@PathVariable Long[] ids)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
         return ResultVO.success(appointmentService.deleteAppointmentByIds(ids));
     }
 
@@ -123,6 +135,7 @@ public class AppointmentController extends BaseController
     @PutMapping("/recover/{ids}")
     public ResultVO<Boolean> recover(@PathVariable Long[] ids)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
         return ResultVO.success(appointmentService.recoverAppointmentByIds(ids));
     }
 }

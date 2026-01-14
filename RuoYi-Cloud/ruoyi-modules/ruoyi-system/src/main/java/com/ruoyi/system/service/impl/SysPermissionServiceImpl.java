@@ -51,15 +51,15 @@ public class SysPermissionServiceImpl implements ISysPermissionService
     public Set<String> getMenuPermission(SysUser user)
     {
         Set<String> perms = new HashSet<String>();
-        // 管理员拥有所有权限
-        if (user.isAdmin())
+        // 管理员（包括超级管理员和普通管理员）都赋予全部权限字符串
+        // 这样可以绕过前端 v-hasPermi 的通用校验，具体的业务权限由 bitmask (permissions 字段) 控制
+        if (user.getAdminLevel() != null)
         {
             perms.add("*:*:*");
         }
         else
         {
-            // 由于数据库中不存在 sys_role_menu 等 RBAC 表，普通管理员暂时赋予基础权限或留空
-            // 避免调用 menuService.selectMenuPermsByUserId 触发 SQL 异常
+            // 非管理员用户（如以后扩展的患者、医生通过该接口查询时）赋予基础权限
             perms.add("common"); 
         }
         return perms;

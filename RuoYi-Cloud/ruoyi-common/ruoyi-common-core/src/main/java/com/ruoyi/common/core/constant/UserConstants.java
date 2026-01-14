@@ -81,6 +81,29 @@ public class UserConstants
 
     public static final int PASSWORD_MAX_LENGTH = 20;
 
+    /** 管理员等级: 超级管理员 */
+    public static final int ADMIN_LEVEL_SUPER = 1;
+
+    /** 管理员等级: 普通管理员 */
+    public static final int ADMIN_LEVEL_NORMAL = 0;
+
+    /** 权限位: 科室管理 */
+    public static final int PERM_DEPT = 1;
+    /** 权限位: 医生管理 */
+    public static final int PERM_DOCTOR = 2;
+    /** 权限位: 患者管理 */
+    public static final int PERM_PATIENT = 4;
+    /** 权限位: 排班管理 */
+    public static final int PERM_SCHEDULE = 8;
+    /** 权限位: 预约管理 */
+    public static final int PERM_BOOKING = 16;
+    /** 权限位: 病历管理 */
+    public static final int PERM_RECORD = 32;
+    /** 权限位: 医院信息管理 */
+    public static final int PERM_HOSPITAL = 64;
+    /** 权限位: 操作审核 */
+    public static final int PERM_AUDIT = 128;
+
     public static boolean isAdmin(Long userId)
     {
         return userId != null && 1L == userId;

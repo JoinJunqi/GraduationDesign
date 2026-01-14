@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import com.ruoyi.common.core.constant.UserConstants;
+import com.ruoyi.common.security.utils.SecurityUtils;
 import com.ruoyi.common.core.web.controller.BaseController;
 import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.common.core.web.page.TableDataInfo;
@@ -42,24 +44,28 @@ public class DepartmentController extends BaseController
     @PostMapping
     public ResultVO<Boolean> add(@RequestBody Department department)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_DEPT);
         return ResultVO.success(departmentService.insertDepartment(department));
     }
 
     @PutMapping
     public ResultVO<Boolean> edit(@RequestBody Department department)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_DEPT);
         return ResultVO.success(departmentService.updateDepartment(department));
     }
 
     @DeleteMapping("/{ids}")
     public ResultVO<Boolean> remove(@PathVariable Long[] ids)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_DEPT);
         return ResultVO.success(departmentService.deleteDepartmentByIds(ids));
     }
 
     @PutMapping("/recover/{ids}")
     public ResultVO<Boolean> recover(@PathVariable Long[] ids)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_DEPT);
         return ResultVO.success(departmentService.recoverDepartmentByIds(ids));
     }
 }

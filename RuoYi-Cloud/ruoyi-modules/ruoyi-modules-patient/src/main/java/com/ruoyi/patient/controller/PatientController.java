@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import com.ruoyi.common.core.constant.UserConstants;
 import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.common.core.web.controller.BaseController;
 import com.ruoyi.common.core.web.page.TableDataInfo;
@@ -49,24 +50,28 @@ public class PatientController extends BaseController
     @PostMapping
     public ResultVO<Boolean> add(@RequestBody Patient patient)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_PATIENT);
         return ResultVO.success(patientService.insertPatient(patient));
     }
 
     @PutMapping
     public ResultVO<Boolean> edit(@RequestBody Patient patient)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_PATIENT);
         return ResultVO.success(patientService.updatePatient(patient));
     }
 
     @DeleteMapping("/{ids}")
     public ResultVO<Boolean> remove(@PathVariable Long[] ids)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_PATIENT);
         return ResultVO.success(patientService.deletePatientByIds(ids));
     }
 
     @PutMapping("/recover/{ids}")
     public ResultVO<Boolean> recover(@PathVariable Long[] ids)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_PATIENT);
         return ResultVO.success(patientService.recoverPatientByIds(ids));
     }
 
@@ -98,6 +103,7 @@ public class PatientController extends BaseController
     @PutMapping("/resetPwd")
     public ResultVO<Boolean> resetPwd(@RequestBody Patient patient)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_PATIENT);
         return ResultVO.success(patientService.resetPatientPwd(patient.getId(), patient.getPassword()) > 0);
     }
 }

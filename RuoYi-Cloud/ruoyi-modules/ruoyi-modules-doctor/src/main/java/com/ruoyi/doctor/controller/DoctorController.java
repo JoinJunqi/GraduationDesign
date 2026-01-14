@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import com.ruoyi.common.core.constant.UserConstants;
 import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.common.core.utils.JwtUtils;
 import com.ruoyi.common.security.utils.SecurityUtils;
@@ -59,24 +60,28 @@ public class DoctorController extends BaseController
     @PostMapping
     public ResultVO<Boolean> add(@RequestBody Doctor doctor)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_DOCTOR);
         return ResultVO.success(doctorService.insertDoctor(doctor));
     }
 
     @PutMapping
     public ResultVO<Boolean> edit(@RequestBody Doctor doctor)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_DOCTOR);
         return ResultVO.success(doctorService.updateDoctor(doctor));
     }
 
     @DeleteMapping("/{ids}")
     public ResultVO<Boolean> remove(@PathVariable Long[] ids)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_DOCTOR);
         return ResultVO.success(doctorService.deleteDoctorByIds(ids));
     }
 
     @PutMapping("/recover/{ids}")
     public ResultVO<Boolean> recover(@PathVariable Long[] ids)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_DOCTOR);
         return ResultVO.success(doctorService.recoverDoctorByIds(ids));
     }
 
@@ -114,6 +119,7 @@ public class DoctorController extends BaseController
     @PutMapping("/resetPwd")
     public ResultVO<Boolean> resetPwd(@RequestBody Doctor doctor)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_DOCTOR);
         return ResultVO.success(doctorService.resetPassword(doctor.getId(), doctor.getPassword()));
     }
 }

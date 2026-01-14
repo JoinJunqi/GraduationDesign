@@ -32,7 +32,7 @@
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
+    <el-row :gutter="10" class="mb8" v-if="hasAdminPermi(AdminPermi.HOSPITAL)">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -110,7 +110,7 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" v-if="hasAdminPermi(AdminPermi.HOSPITAL)">
         <template #default="scope">
           <template v-if="scope.row.isDeleted !== 1">
             <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:notice:edit']">修改</el-button>
@@ -227,6 +227,7 @@
 import { listNotice, getNotice, delNotice, addNotice, updateNotice } from "@/api/hospital/notice";
 import useUserStore from "@/store/modules/user";
 import { getCurrentInstance, ref, reactive, toRefs, onMounted } from "vue";
+import { hasAdminPermi, AdminPermi } from "@/utils/adminPermi";
 
 const { proxy } = getCurrentInstance();
 const { parseTime } = proxy;

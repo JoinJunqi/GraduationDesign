@@ -3,6 +3,8 @@ package com.ruoyi.department.controller;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import com.ruoyi.common.core.constant.UserConstants;
+import com.ruoyi.common.security.utils.SecurityUtils;
 import com.ruoyi.common.core.web.controller.BaseController;
 import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.common.core.web.page.TableDataInfo;
@@ -56,6 +58,7 @@ public class HospitalNoticeController extends BaseController {
      */
     @PostMapping
     public ResultVO<Boolean> add(@RequestBody HospitalNotice notice) {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_HOSPITAL);
         return ResultVO.success(hospitalNoticeService.save(notice));
     }
 
@@ -64,6 +67,7 @@ public class HospitalNoticeController extends BaseController {
      */
     @PutMapping
     public ResultVO<Boolean> edit(@RequestBody HospitalNotice notice) {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_HOSPITAL);
         return ResultVO.success(hospitalNoticeService.updateById(notice));
     }
 
@@ -72,6 +76,7 @@ public class HospitalNoticeController extends BaseController {
      */
     @DeleteMapping("/{ids}")
     public ResultVO<Boolean> remove(@PathVariable Long[] ids) {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_HOSPITAL);
         return ResultVO.success(hospitalNoticeService.deleteNoticeByIds(ids));
     }
 }

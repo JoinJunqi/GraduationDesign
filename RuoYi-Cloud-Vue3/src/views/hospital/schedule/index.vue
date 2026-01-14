@@ -84,7 +84,7 @@
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
+    <el-row :gutter="10" class="mb8" v-if="(isAdmin && hasAdminPermi(AdminPermi.SCHEDULE)) || isDoctor">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -146,7 +146,7 @@
           <el-tag v-else-if="scope.row.status === 2" type="danger">已取消</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" v-if="(isAdmin && hasAdminPermi(AdminPermi.SCHEDULE)) || isDoctor">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:schedule:edit']">修改</el-button>
           <el-button link type="primary" icon="CircleClose" @click="handleCancelSchedule(scope.row)" v-if="scope.row.status !== 2" v-hasPermi="['hospital:schedule:edit']">取消</el-button>
@@ -259,6 +259,7 @@ import { listDepartment } from "@/api/hospital/department";
 import { listDoctorByDept, listDoctor } from "@/api/hospital/doctor";
 import useUserStore from "@/store/modules/user";
 import { useRouter } from 'vue-router';
+import { hasAdminPermi, AdminPermi } from "@/utils/adminPermi";
 
 const userStore = useUserStore();
 const { proxy } = getCurrentInstance();
@@ -266,6 +267,8 @@ const { parseTime } = proxy;
 const router = useRouter();
 
 const isDoctor = computed(() => userStore.roles.includes('doctor'));
+const isAdmin = computed(() => userStore.loginType === 'admin');
+const isPatient = computed(() => userStore.roles.includes('patient'));
 const currentDoctorName = computed(() => userStore.nickName);
 const currentDoctorId = computed(() => userStore.id);
 

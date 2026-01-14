@@ -3,6 +3,8 @@ package com.ruoyi.record.controller;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import com.ruoyi.common.core.constant.UserConstants;
+import com.ruoyi.common.security.utils.SecurityUtils;
 import com.ruoyi.common.core.web.controller.BaseController;
 import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.record.domain.MedicalRecord;
@@ -52,6 +54,7 @@ public class MedicalRecordController extends BaseController
     @PostMapping("/record")
     public ResultVO<Boolean> add(@RequestBody MedicalRecord medicalRecord)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_RECORD);
         return ResultVO.success(medicalRecordService.insertMedicalRecord(medicalRecord));
     }
 
@@ -61,6 +64,7 @@ public class MedicalRecordController extends BaseController
     @PutMapping("/record")
     public ResultVO<Boolean> edit(@RequestBody MedicalRecord medicalRecord)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_RECORD);
         return ResultVO.success(medicalRecordService.updateMedicalRecord(medicalRecord));
     }
 
@@ -70,6 +74,7 @@ public class MedicalRecordController extends BaseController
     @DeleteMapping("/record/{ids}")
     public ResultVO<Boolean> remove(@PathVariable Long[] ids)
     {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_RECORD);
         return ResultVO.success(medicalRecordService.deleteMedicalRecordByIds(ids));
     }
 }

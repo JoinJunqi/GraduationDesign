@@ -79,7 +79,7 @@
           plain
           icon="Plus"
           @click="handleAdd"
-          v-if="isAdmin || isDoctor"
+          v-if="(isAdmin && hasAdminPermi(AdminPermi.RECORD)) || isDoctor"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -89,7 +89,7 @@
           icon="Edit"
           :disabled="single"
           @click="handleUpdate"
-          v-if="isAdmin || isDoctor"
+          v-if="(isAdmin && hasAdminPermi(AdminPermi.RECORD)) || isDoctor"
         >修改</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -99,7 +99,7 @@
           icon="Delete"
           :disabled="multiple"
           @click="handleDelete"
-          v-if="isAdmin"
+          v-if="isAdmin && hasAdminPermi(AdminPermi.RECORD)"
         >删除</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
@@ -132,8 +132,8 @@
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
           <template v-if="scope.row.isDeleted !== 1">
-            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="isAdmin || isDoctor">修改</el-button>
-            <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="isAdmin">删除</el-button>
+            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="(isAdmin && hasAdminPermi(AdminPermi.RECORD)) || isDoctor">修改</el-button>
+            <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="isAdmin && hasAdminPermi(AdminPermi.RECORD)">删除</el-button>
           </template>
           <el-tag v-else type="info" style="margin-left: 5px">无更多操作</el-tag>
         </template>
@@ -213,6 +213,7 @@ import { listDepartment } from "@/api/hospital/department";
 import { listDoctorByDept, listDoctor } from "@/api/hospital/doctor";
 import { parseTime } from "@/utils/ruoyi";
 import useUserStore from "@/store/modules/user";
+import { hasAdminPermi, AdminPermi } from "@/utils/adminPermi";
 
 console.log('Record index component setup started');
 

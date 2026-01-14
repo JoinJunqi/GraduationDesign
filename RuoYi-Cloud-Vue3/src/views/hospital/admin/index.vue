@@ -151,6 +151,13 @@
             <el-radio label="1">禁用</el-radio>
           </el-radio-group>
         </el-form-item>
+        <el-form-item label="操作权限分配" v-if="form.adminLevel === 0">
+          <el-checkbox-group v-model="form.selectedPermissions">
+            <el-checkbox v-for="dict in permissionOptions" :key="dict.value" :label="dict.value">
+              {{ dict.label }}
+            </el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -181,6 +188,17 @@ const single = ref(true);
 const multiple = ref(true);
 const title = ref("");
 const total = ref(0);
+
+const permissionOptions = [
+  { label: "科室信息管理", value: 1 },
+  { label: "医生管理", value: 2 },
+  { label: "患者管理", value: 4 },
+  { label: "排班管理", value: 8 },
+  { label: "预约管理", value: 16 },
+  { label: "病历管理", value: 32 },
+  { label: "医院信息管理", value: 64 },
+  { label: "操作审核", value: 128 }
+];
 
 const data = reactive({
   form: {},
@@ -240,7 +258,9 @@ function reset() {
     password: null,
     nickName: null,
     adminLevel: 0,
-    status: "0"
+    status: "0",
+    permissions: 0,
+    selectedPermissions: []
   };
   proxy.resetForm("adminRef");
 }
@@ -297,6 +317,11 @@ function handleUpdate(row) {
   const userId = row.userId || ids.value;
   getAdmin(userId).then(response => {
     form.value = response.data;
+    // 将 bitmask 转换为数组
+    const permissions = form.value.permissions || 0;
+    form.value.selectedPermissions = permissionOptions
+      .filter(opt => (permissions & opt.value) === opt.value)
+      .map(opt => opt.value);
     open.value = true;
     title.value = "修改管理员";
   });
@@ -306,6 +331,13 @@ function handleUpdate(row) {
 function submitForm() {
   proxy.$refs["adminRef"].validate(valid => {
     if (valid) {
+      // 将数组转换为 bitmask
+      if (form.value.adminLevel === 0) {
+        form.value.permissions = form.value.selectedPermissions.reduce((acc, val) => acc + val, 0);
+      } else {
+        form.value.permissions = 0; // 超级管理员不需要特定权限位，他们拥有所有权限
+      }
+      
       if (form.value.userId != null) {
         updateAdmin(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功");
