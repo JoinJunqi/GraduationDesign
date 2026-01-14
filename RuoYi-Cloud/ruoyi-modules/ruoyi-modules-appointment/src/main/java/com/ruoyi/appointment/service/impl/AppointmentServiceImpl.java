@@ -134,6 +134,32 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     }
 
     @Override
+    public Map<String, Object> selectDashboardStats() {
+        Map<String, Object> stats = new HashMap<>();
+        
+        // 1. 基础指标
+        stats.put("totalAppointments", this.count(new LambdaQueryWrapper<Appointment>().eq(Appointment::getIsDeleted, 0)));
+        stats.put("todayAppointments", this.count(new LambdaQueryWrapper<Appointment>()
+                .eq(Appointment::getIsDeleted, 0)
+                .apply("DATE(booked_at) = CURDATE()")));
+        
+        // 2. 基础数据统计 (跨表)
+        stats.put("totalPatients", appointmentMapper.selectPatientCount());
+        stats.put("totalDoctors", appointmentMapper.selectDoctorCount());
+        
+        // 3. 趋势数据
+        stats.put("trend", appointmentMapper.selectAppointmentTrend());
+        
+        // 4. 科室分布
+        stats.put("deptDistribution", appointmentMapper.selectDeptAppointmentDistribution());
+        
+        // 5. 状态分布
+        stats.put("statusDistribution", appointmentMapper.selectStatusDistribution());
+        
+        return stats;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean createAppointment(Appointment appointment) {
         log.info("Starting createAppointment for patient: {}, schedule: {}", 

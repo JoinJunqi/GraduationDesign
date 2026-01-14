@@ -11,7 +11,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="name"    column="name"    />
         <result property="phone"    column="phone"    />
         <result property="idCard"    column="id_card"    />
-        <result property="avatar"    column="avatar"    />
         <result property="isActive"    column="is_active"    />
         <result property="createdAt"    column="created_at"    />
         <result property="isDeleted"    column="is_deleted"    />
@@ -19,7 +18,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectPatientVo">
-        select id, username, password_hash, name, phone, id_card, avatar, is_active, created_at, is_deleted, deleted_at
+        select id, username, password_hash, name, phone, id_card, is_active, created_at, is_deleted, deleted_at
         from patient
     </sql>
 

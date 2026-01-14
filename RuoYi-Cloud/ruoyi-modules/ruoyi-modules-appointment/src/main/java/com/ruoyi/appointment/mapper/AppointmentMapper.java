@@ -11,4 +11,29 @@ public interface AppointmentMapper extends BaseMapper<Appointment> {
      * 查询预约列表
      */
     List<Appointment> selectAppointmentList(Appointment appointment);
+
+    /**
+     * 查询近7天预约趋势
+     */
+    List<java.util.Map<String, Object>> selectAppointmentTrend();
+
+    /**
+     * 查询科室预约分布
+     */
+    List<java.util.Map<String, Object>> selectDeptAppointmentDistribution();
+
+    /**
+     * 查询预约状态分布
+     */
+    List<java.util.Map<String, Object>> selectStatusDistribution();
+
+    /**
+     * 查询患者总数
+     */
+    int selectPatientCount();
+
+    /**
+     * 查询医生总数
+     */
+    int selectDoctorCount();
 }

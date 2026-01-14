@@ -42,9 +42,6 @@ public class Patient implements Serializable {
     /** 身份证号 */
     private String idCard;
 
-    /** 头像 */
-    private String avatar;
-
     /** 是否有效(1是,0否) */
     private Integer isActive;
 

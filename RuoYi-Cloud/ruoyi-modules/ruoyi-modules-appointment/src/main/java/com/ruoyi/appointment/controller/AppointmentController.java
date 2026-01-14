@@ -29,13 +29,19 @@ public class AppointmentController extends BaseController
         return getDataTable(list);
     }
 
-    @GetMapping("/stats")
+    @GetMapping("/dashboard-stats")
+    public ResultVO<Map<String, Object>> dashboard()
+    {
+        return ResultVO.success(appointmentService.selectDashboardStats());
+    }
+
+    @GetMapping("/summary-stats")
     public ResultVO<Map<String, Object>> stats()
     {
         return ResultVO.success(appointmentService.selectAppointmentStats());
     }
 
-    @GetMapping(value = "/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResultVO<Appointment> getInfo(@PathVariable("id") Long id)
     {
         return ResultVO.success(appointmentService.selectAppointmentById(id));

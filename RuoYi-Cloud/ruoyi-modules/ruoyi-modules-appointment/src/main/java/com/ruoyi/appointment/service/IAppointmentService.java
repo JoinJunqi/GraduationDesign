@@ -12,6 +12,7 @@ public interface IAppointmentService extends IService<Appointment> {
     boolean cancelRequest(Long appointmentId);
     List<Appointment> selectAppointmentList(Appointment appointment);
     Map<String, Object> selectAppointmentStats();
+    Map<String, Object> selectDashboardStats();
     Appointment selectAppointmentById(Long id);
 
     /**

@@ -62,5 +62,46 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="workDate != null "> and s.work_date = #{workDate}</if>
         </where>
     </select>
-    
+
+    <select id="selectAppointmentTrend" resultType="map">
+        SELECT 
+            DATE_FORMAT(booked_at, '%Y-%m-%d') as date,
+            COUNT(*) as count
+        FROM appointment
+        WHERE is_deleted = 0
+          AND booked_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+        GROUP BY date
+        ORDER BY date ASC
+    </select>
+
+    <select id="selectDeptAppointmentDistribution" resultType="map">
+        SELECT 
+            dept.name as name,
+            COUNT(a.id) as value
+        FROM appointment a
+        LEFT JOIN schedule s ON a.schedule_id = s.id
+        LEFT JOIN doctor d ON s.doctor_id = d.id
+        LEFT JOIN department dept ON d.dept_id = dept.id
+        WHERE a.is_deleted = 0
+          AND dept.name IS NOT NULL
+        GROUP BY dept.name
+    </select>
+
+    <select id="selectStatusDistribution" resultType="map">
+        SELECT 
+            status as name,
+            COUNT(*) as value
+        FROM appointment
+        WHERE is_deleted = 0
+        GROUP BY status
+    </select>
+
+    <select id="selectPatientCount" resultType="int">
+        SELECT COUNT(*) FROM patient WHERE is_deleted = 0
+    </select>
+
+    <select id="selectDoctorCount" resultType="int">
+        SELECT COUNT(*) FROM doctor WHERE is_deleted = 0
+    </select>
+
 </mapper>

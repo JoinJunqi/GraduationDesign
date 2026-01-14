@@ -89,6 +89,7 @@ const useUserStore = defineStore(
             // 针对患者和医生的特殊处理
             if (this.loginType === 'patient' && data.patient) {
                 user = data.patient;
+                user.avatar = ""; // 强制清空患者头像字段，使用默认图
             } else if (this.loginType === 'doctor' && data.doctor) {
                 user = data.doctor;
             }
