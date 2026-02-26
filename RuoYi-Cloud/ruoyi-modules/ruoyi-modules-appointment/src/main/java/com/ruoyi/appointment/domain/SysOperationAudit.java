@@ -73,4 +73,7 @@ public class SysOperationAudit implements Serializable {
     
     @TableField(exist = false)
     private String appointmentInfo;
+
+    @TableField(exist = false)
+    private String adminName;
 }

@@ -1,6 +1,6 @@
 <template>
   <div class="app-container home">
-    <!-- 顶部欢迎和日期 -->
+    <!-- 顶部欢迎和日期 (所有人可见) -->
     <el-row :gutter="20" class="welcome-section">
       <el-col :span="24">
         <el-card shadow="hover" class="welcome-card">
@@ -134,7 +134,7 @@
         </el-card>
       </el-col>
     </el-row>
-
+    
     <!-- 通知详情对话框 -->
     <el-dialog v-model="noticeVisible" :title="currentNotice.title" width="600px">
       <div class="notice-detail">
@@ -155,9 +155,12 @@ import useUserStore from '@/store/modules/user'
 import { parseTime } from '@/utils/ruoyi'
 import { listDepartmentWithIntro } from '@/api/hospital/department'
 import { listActiveNotice, getNotice } from '@/api/hospital/notice'
+import AdminDashboard from './hospital/dashboard/index.vue'
 
 const userStore = useUserStore()
 const router = useRouter()
+
+const isAdmin = computed(() => userStore.loginType === 'admin' || userStore.roles.includes('admin'))
 
 const currentDate = ref(parseTime(new Date(), '{y}年{m}月{d}日 星期{a}'))
 const deptList = ref([])

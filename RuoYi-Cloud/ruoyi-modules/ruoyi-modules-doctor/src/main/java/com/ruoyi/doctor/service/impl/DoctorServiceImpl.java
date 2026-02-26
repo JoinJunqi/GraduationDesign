@@ -42,6 +42,11 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
     }
 
     @Override
+    public Doctor selectDoctorById(Long id) {
+        return doctorMapper.selectDoctorById(id);
+    }
+
+    @Override
     public List<Doctor> selectDoctorsByDeptId(Long deptId) {
         return doctorMapper.selectList(new LambdaQueryWrapper<Doctor>().eq(Doctor::getDeptId, deptId));
     }

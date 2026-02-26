@@ -132,7 +132,8 @@ public class SecurityUtils
         }
         
         // 超级管理员拥有所有权限
-        if (UserConstants.ADMIN_LEVEL_SUPER == loginUser.getSysUser().getAdminLevel())
+        Integer adminLevel = loginUser.getSysUser().getAdminLevel();
+        if (adminLevel != null && UserConstants.ADMIN_LEVEL_SUPER == adminLevel)
         {
             return;
         }
@@ -153,7 +154,11 @@ public class SecurityUtils
     public static boolean isSuperAdmin()
     {
         LoginUser loginUser = getLoginUser();
-        return loginUser != null && loginUser.getSysUser() != null && 
-               UserConstants.ADMIN_LEVEL_SUPER == loginUser.getSysUser().getAdminLevel();
+        if (loginUser == null || loginUser.getSysUser() == null)
+        {
+            return false;
+        }
+        Integer adminLevel = loginUser.getSysUser().getAdminLevel();
+        return adminLevel != null && UserConstants.ADMIN_LEVEL_SUPER == adminLevel;
     }
 }

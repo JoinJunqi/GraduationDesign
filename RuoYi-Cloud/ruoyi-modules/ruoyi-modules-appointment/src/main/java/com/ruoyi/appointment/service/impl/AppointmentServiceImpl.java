@@ -134,27 +134,40 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     }
 
     @Override
-    public Map<String, Object> selectDashboardStats() {
+    public Map<String, Object> selectDashboardStats(String date) {
         Map<String, Object> stats = new HashMap<>();
         
         // 1. 基础指标
-        stats.put("totalAppointments", this.count(new LambdaQueryWrapper<Appointment>().eq(Appointment::getIsDeleted, 0)));
-        stats.put("todayAppointments", this.count(new LambdaQueryWrapper<Appointment>()
-                .eq(Appointment::getIsDeleted, 0)
-                .apply("DATE(booked_at) = CURDATE()")));
+        LambdaQueryWrapper<Appointment> totalQuery = new LambdaQueryWrapper<Appointment>().eq(Appointment::getIsDeleted, 0);
+        LambdaQueryWrapper<Appointment> dateQuery = new LambdaQueryWrapper<Appointment>().eq(Appointment::getIsDeleted, 0);
         
-        // 2. 基础数据统计 (跨表)
+        if (date != null && !date.isEmpty()) {
+            totalQuery.apply("DATE(booked_at) = {0}", date);
+            dateQuery.apply("DATE(booked_at) = {0}", date);
+        }
+        
+        stats.put("totalAppointments", this.count(totalQuery));
+        
+        if (date != null && !date.isEmpty()) {
+            stats.put("todayAppointments", this.count(dateQuery));
+        } else {
+            stats.put("todayAppointments", this.count(new LambdaQueryWrapper<Appointment>()
+                    .eq(Appointment::getIsDeleted, 0)
+                    .apply("DATE(booked_at) = CURDATE()")));
+        }
+        
+        // 2. 基础数据统计 (跨表) - 这些通常是总数，不随日期变化，或者根据需求决定
         stats.put("totalPatients", appointmentMapper.selectPatientCount());
         stats.put("totalDoctors", appointmentMapper.selectDoctorCount());
         
         // 3. 趋势数据
-        stats.put("trend", appointmentMapper.selectAppointmentTrend());
+        stats.put("trend", appointmentMapper.selectAppointmentTrend(date));
         
         // 4. 科室分布
-        stats.put("deptDistribution", appointmentMapper.selectDeptAppointmentDistribution());
+        stats.put("deptDistribution", appointmentMapper.selectDeptAppointmentDistribution(date));
         
         // 5. 状态分布
-        stats.put("statusDistribution", appointmentMapper.selectStatusDistribution());
+        stats.put("statusDistribution", appointmentMapper.selectStatusDistribution(date));
         
         return stats;
     }
@@ -276,8 +289,8 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
             log.info("Updating remote schedule {} with remaining slots: {}", scheduleId, remaining);
             
             ResultVO<Boolean> updateResult = remoteScheduleService.update(updateSchedule);
-            if (updateResult == null || !updateResult.getData()) {
-                throw new ServiceException("同步排班信息失败");
+            if (updateResult == null || updateResult.getCode() != ResultVO.SUCCESS || !Boolean.TRUE.equals(updateResult.getData())) {
+                throw new ServiceException("同步排班信息失败: " + (updateResult != null ? updateResult.getMsg() : "未知错误"));
             }
 
             // 4. 创建预约
@@ -318,7 +331,12 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         Schedule updateSchedule = new Schedule();
         updateSchedule.setId(scheduleId);
         updateSchedule.setAvailableSlots(remaining != null ? remaining.intValue() : 0);
-        remoteScheduleService.update(updateSchedule);
+        ResultVO<Boolean> updateResult = remoteScheduleService.update(updateSchedule);
+        if (updateResult == null || updateResult.getCode() != ResultVO.SUCCESS || !Boolean.TRUE.equals(updateResult.getData())) {
+            log.error("Failed to update remote schedule slots during cancellation: {}", updateResult != null ? updateResult.getMsg() : "null");
+            // 这里我们选择抛出异常，让事务回滚，保证 Redis 和数据库一致
+            throw new ServiceException("取消预约失败：同步号源信息失败");
+        }
 
         // 3. 更新预约状态
         appointment.setStatus("已取消");

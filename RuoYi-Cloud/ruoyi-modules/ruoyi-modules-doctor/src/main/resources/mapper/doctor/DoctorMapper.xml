@@ -43,5 +43,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isActive != null "> and d.is_active = #{isActive}</if>
         </where>
     </select>
+
+    <select id="selectDoctorById" parameterType="Long" resultMap="DoctorResult">
+        <include refid="selectDoctorVo"/>
+        where d.id = #{id} and d.is_deleted = 0
+    </select>
     
 </mapper>

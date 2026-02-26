@@ -94,7 +94,7 @@ public class DoctorController extends BaseController
         ajax.put("roles", loginUser.getRoles());
         ajax.put("permissions", loginUser.getPermissions());
         // 额外提供完整的医生信息
-        ajax.put("doctor", doctorService.getById(loginUser.getUserid()));
+        ajax.put("doctor", doctorService.selectDoctorById(loginUser.getUserid()));
         return ResultVO.success(ajax);
     }
 

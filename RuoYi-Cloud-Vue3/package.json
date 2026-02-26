@@ -1,7 +1,7 @@
 {
   "name": "ruoyi",
   "version": "3.6.6",
-  "description": "若依管理系统",
+  "description": "预约挂号系统",
   "author": "若依",
   "license": "MIT",
   "type": "module",

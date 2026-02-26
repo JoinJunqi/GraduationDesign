@@ -121,8 +121,26 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="doctorList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
-      <el-table-column type="selection" width="55" align="center" />
+    <el-table v-loading="loading" :data="doctorList" @selection-change="handleSelectionChange" @sort-change="handleSortChange" ref="tableRef">
+      <el-table-column type="selection" width="120" align="center">
+        <template #header>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+            <el-checkbox 
+              :model-value="isAllSelected" 
+              :indeterminate="isIndeterminate"
+              @change="handleSelectAllChange"
+            />
+            <span style="font-weight: normal; font-size: 12px; color: #606266; white-space: nowrap;">
+              {{ ids.length > 0 ? (ids.length === doctorList.length ? `全选 ${total}` : `已选 ${ids.length}`) : '全选' }}
+            </span>
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column label="序号" type="index" width="50" align="center">
+        <template #default="scope">
+          <span>{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="姓名" align="center" prop="name" sortable="custom" />
       <el-table-column label="科室" align="center" prop="deptName" />
       <el-table-column label="职称" align="center" prop="title" />
@@ -160,7 +178,7 @@
 <script setup name="Doctor">
 import { listDoctor, delDoctor, resetDoctorPwd, updateDoctor } from "@/api/hospital/doctor.js";
 import { listDepartment } from "@/api/hospital/department";
-import { getCurrentInstance, ref, reactive, toRefs, onMounted } from "vue";
+import { getCurrentInstance, ref, reactive, toRefs, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { hasAdminPermi, AdminPermi } from "@/utils/adminPermi";
 
@@ -281,6 +299,18 @@ function handleSelectionChange(selection) {
   ids.value = selection.map(item => item.id);
   single.value = selection.length != 1;
   multiple.value = !selection.length;
+}
+
+const isAllSelected = computed(() => {
+  return ids.value.length > 0 && ids.value.length === doctorList.value.length;
+});
+
+const isIndeterminate = computed(() => {
+  return ids.value.length > 0 && ids.value.length < doctorList.value.length;
+});
+
+function handleSelectAllChange(val) {
+  proxy.$refs["tableRef"].toggleAllSelection();
 }
 
 /** 新增按钮操作 */

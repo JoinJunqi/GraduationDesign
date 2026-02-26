@@ -69,7 +69,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             COUNT(*) as count
         FROM appointment
         WHERE is_deleted = 0
-          AND booked_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+          <if test="date != null and date != ''">
+            AND DATE(booked_at) = #{date}
+          </if>
+          <if test="date == null or date == ''">
+            AND booked_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+          </if>
         GROUP BY date
         ORDER BY date ASC
     </select>
@@ -84,6 +89,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         LEFT JOIN department dept ON d.dept_id = dept.id
         WHERE a.is_deleted = 0
           AND dept.name IS NOT NULL
+          <if test="date != null and date != ''">
+            AND DATE(a.booked_at) = #{date}
+          </if>
         GROUP BY dept.name
     </select>
 
@@ -93,6 +101,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             COUNT(*) as value
         FROM appointment
         WHERE is_deleted = 0
+          <if test="date != null and date != ''">
+            AND DATE(booked_at) = #{date}
+          </if>
         GROUP BY status
     </select>
 

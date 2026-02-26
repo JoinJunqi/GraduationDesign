@@ -9,8 +9,11 @@
                  </div>
                </template>
                <div>
-                  <div class="text-center">
+                  <div class="text-center" v-if="loginType !== 'patient'">
                      <userAvatar />
+                  </div>
+                  <div class="text-center" v-else>
+                     <img :src="userStore.avatar" class="img-circle img-lg" />
                   </div>
                   <ul class="list-group list-group-striped">
                      <li class="list-group-item">
@@ -28,6 +31,14 @@
                      <li class="list-group-item" v-if="state.user.idCard">
                         <svg-icon icon-class="post" />身份证号
                         <div class="pull-right">{{ state.user.idCard }}</div>
+                     </li>
+                     <li class="list-group-item" v-if="state.user.deptName">
+                        <svg-icon icon-class="tree" />所属科室
+                        <div class="pull-right">{{ state.user.deptName }}</div>
+                     </li>
+                     <li class="list-group-item" v-if="state.user.title">
+                        <svg-icon icon-class="education" />职称
+                        <div class="pull-right">{{ state.user.title }}</div>
                      </li>
                      <li class="list-group-item" v-if="state.user.dept">
                         <svg-icon icon-class="tree" />所属部门
@@ -104,3 +115,14 @@ onMounted(() => {
   getUser();
 });
 </script>
+
+<style lang="scss" scoped>
+.img-circle {
+  border-radius: 50%;
+}
+
+.img-lg {
+  width: 120px;
+  height: 120px;
+}
+</style>

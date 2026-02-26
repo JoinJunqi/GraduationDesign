@@ -83,3 +83,12 @@ export function updateAppointmentStatus(id, status) {
     params: { id, status }
   })
 }
+
+// 获取看板数据
+export function getDashboardStats(query) {
+  return request({
+    url: '/ruoyi-hospital-appointment/appointment/dashboard-stats',
+    method: 'get',
+    params: query
+  })
+}

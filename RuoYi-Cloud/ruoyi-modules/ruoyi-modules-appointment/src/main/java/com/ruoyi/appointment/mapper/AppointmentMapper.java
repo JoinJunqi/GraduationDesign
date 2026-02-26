@@ -15,17 +15,17 @@ public interface AppointmentMapper extends BaseMapper<Appointment> {
     /**
      * 查询近7天预约趋势
      */
-    List<java.util.Map<String, Object>> selectAppointmentTrend();
+    List<java.util.Map<String, Object>> selectAppointmentTrend(@org.apache.ibatis.annotations.Param("date") String date);
 
     /**
      * 查询科室预约分布
      */
-    List<java.util.Map<String, Object>> selectDeptAppointmentDistribution();
+    List<java.util.Map<String, Object>> selectDeptAppointmentDistribution(@org.apache.ibatis.annotations.Param("date") String date);
 
     /**
      * 查询预约状态分布
      */
-    List<java.util.Map<String, Object>> selectStatusDistribution();
+    List<java.util.Map<String, Object>> selectStatusDistribution(@org.apache.ibatis.annotations.Param("date") String date);
 
     /**
      * 查询患者总数

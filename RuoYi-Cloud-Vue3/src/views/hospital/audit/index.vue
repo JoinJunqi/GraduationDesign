@@ -38,6 +38,11 @@
       </el-table-column>
       <el-table-column label="申请原因" align="center" prop="requestReason" :show-overflow-tooltip="true" />
       <el-table-column label="提交时间" align="center" prop="createdAt" width="160" />
+      <el-table-column label="审核处理人" align="center" prop="adminName">
+        <template #default="scope">
+          <span>{{ scope.row.adminName || '-' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="审核状态" align="center" prop="auditStatus">
         <template #default="scope">
           <el-tag :type="getStatusType(scope.row.auditStatus)">

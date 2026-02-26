@@ -20,6 +20,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="deletedAt"    column="deleted_at"    />
         <result property="requesterName" column="requester_name" />
         <result property="appointmentInfo" column="appointment_info" />
+        <result property="adminName" column="admin_name" />
     </resultMap>
 
     <sql id="selectSysOperationAuditVo">
@@ -29,13 +30,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                    when a.requester_role = 'doctor' then d.name 
                    when a.requester_role = 'patient' then p.name 
                end as requester_name,
-               concat(s.work_date, ' ', s.time_slot, ' (', doc.name, ')') as appointment_info
+               concat(s.work_date, ' ', s.time_slot, ' (', doc.name, ')') as appointment_info,
+               adm.name as admin_name
         from sys_operation_audit a
         left join patient p on a.requester_id = p.id and a.requester_role = 'patient'
         left join doctor d on a.requester_id = d.id and a.requester_role = 'doctor'
         left join appointment app on a.target_id = app.id
         left join schedule s on app.schedule_id = s.id
         left join doctor doc on s.doctor_id = doc.id
+        left join admin adm on a.admin_id = adm.id
     </sql>
 
     <select id="selectAuditList" parameterType="com.ruoyi.appointment.domain.SysOperationAudit" resultMap="SysOperationAuditResult">

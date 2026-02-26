@@ -10,6 +10,11 @@ public interface IDoctorService extends IService<Doctor> {
     Doctor selectDoctorByUsername(String username);
 
     /**
+     * 根据ID查询医生信息
+     */
+    public Doctor selectDoctorById(Long id);
+
+    /**
      * 查询医生列表
      */
     public List<Doctor> selectDoctorList(Doctor doctor);

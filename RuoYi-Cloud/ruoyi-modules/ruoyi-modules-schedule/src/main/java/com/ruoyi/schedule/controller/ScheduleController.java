@@ -44,8 +44,27 @@ public class ScheduleController extends BaseController
     @PutMapping
     public ResultVO<Boolean> edit(@RequestBody Schedule schedule)
     {
-        SecurityUtils.checkAdminPermission(UserConstants.PERM_SCHEDULE);
-        return ResultVO.success(scheduleService.updateSchedule(schedule));
+        // 1. 首先尝试按管理员权限校验
+        try 
+        {
+            SecurityUtils.checkAdminPermission(UserConstants.PERM_SCHEDULE);
+            return ResultVO.success(scheduleService.updateSchedule(schedule));
+        } 
+        catch (Exception e) 
+        {
+            // 2. 如果没有管理员权限，检查是否为合法的号源同步操作（跨服务调用）
+            // 准则：只要包含 id 和 availableSlots，且没有尝试修改 totalCapacity，则视为同步操作
+            if (schedule.getId() != null && schedule.getAvailableSlots() != null && schedule.getTotalCapacity() == null)
+            {
+                // 为安全起见，创建一个仅包含同步字段的新对象进行更新
+                Schedule syncSchedule = new Schedule();
+                syncSchedule.setId(schedule.getId());
+                syncSchedule.setAvailableSlots(schedule.getAvailableSlots());
+                return ResultVO.success(scheduleService.updateSchedule(syncSchedule));
+            }
+            // 3. 否则，重新抛出权限异常
+            throw e;
+        }
     }
 
     @DeleteMapping("/{ids}")

@@ -1,12 +1,18 @@
 <template>
    <el-form ref="userRef" :model="form" :rules="rules" label-width="80px">
-      <el-form-item :label="loginType === 'patient' ? '姓名' : '用户昵称'" :prop="loginType === 'patient' ? 'name' : 'nickName'">
-         <el-input v-if="loginType === 'patient'" v-model="form.name" maxlength="30" />
+      <el-form-item :label="loginType === 'patient' || loginType === 'doctor' ? '姓名' : '用户昵称'" :prop="loginType === 'patient' || loginType === 'doctor' ? 'name' : 'nickName'">
+         <el-input v-if="loginType === 'patient' || loginType === 'doctor'" v-model="form.name" maxlength="30" />
          <el-input v-else v-model="form.nickName" maxlength="30" />
       </el-form-item>
-      <el-form-item label="手机号码" :prop="loginType === 'patient' ? 'phone' : 'phonenumber'">
+      <el-form-item v-if="loginType !== 'doctor'" label="手机号码" :prop="loginType === 'patient' ? 'phone' : 'phonenumber'">
          <el-input v-if="loginType === 'patient'" v-model="form.phone" maxlength="11" />
          <el-input v-else v-model="form.phonenumber" maxlength="11" />
+      </el-form-item>
+      <el-form-item v-if="loginType === 'doctor'" label="职称" prop="title">
+         <el-input v-model="form.title" maxlength="50" />
+      </el-form-item>
+      <el-form-item v-if="loginType === 'doctor'" label="所属科室">
+         <el-input v-model="form.deptName" disabled />
       </el-form-item>
       <el-form-item v-if="loginType === 'patient'" label="身份证号" prop="idCard">
          <el-input v-model="form.idCard" maxlength="18" />

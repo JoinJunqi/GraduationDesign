@@ -3,6 +3,8 @@ package com.ruoyi.appointment.controller;
 import java.util.List;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.ruoyi.common.core.constant.UserConstants;
@@ -30,9 +32,9 @@ public class AppointmentController extends BaseController
     }
 
     @GetMapping("/dashboard-stats")
-    public ResultVO<Map<String, Object>> dashboard()
+    public ResultVO<Map<String, Object>> dashboard(@RequestParam(value = "date", required = false) String date)
     {
-        return ResultVO.success(appointmentService.selectDashboardStats());
+        return ResultVO.success(appointmentService.selectDashboardStats(date));
     }
 
     @GetMapping("/summary-stats")
@@ -50,7 +52,12 @@ public class AppointmentController extends BaseController
     @PostMapping("/create")
     public ResultVO<Boolean> create(@RequestBody Appointment appointment)
     {
-        SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
+        // 允许患者和医生创建预约
+        Set<String> roles = SecurityUtils.getLoginUser().getRoles();
+        if (roles == null || (!roles.contains("patient") && !roles.contains("doctor")))
+        {
+            SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
+        }
         return ResultVO.success(appointmentService.createAppointment(appointment));
     }
 
@@ -85,7 +92,11 @@ public class AppointmentController extends BaseController
     @PutMapping("/status")
     public ResultVO<Boolean> updateStatus(@RequestParam("id") Long id, @RequestParam("status") String status)
     {
-        SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
+        // 允许医生更新预约状态（如就诊完成后自动设置为已完成）
+        if (!SecurityUtils.getLoginUser().getRoles().contains("doctor"))
+        {
+            SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
+        }
         Appointment appointment = new Appointment();
         appointment.setId(id);
         appointment.setStatus(status);
@@ -98,7 +109,11 @@ public class AppointmentController extends BaseController
     @PutMapping("/cancelByScheduleId")
     public ResultVO<Boolean> cancelByScheduleId(@RequestParam("scheduleId") Long scheduleId)
     {
-        SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
+        // 允许医生在取消排班时级联取消预约
+        if (!SecurityUtils.getLoginUser().getRoles().contains("doctor"))
+        {
+            SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
+        }
         return ResultVO.success(appointmentService.cancelByScheduleId(scheduleId));
     }
 

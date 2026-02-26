@@ -159,8 +159,8 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         if (medicalRecord.getAppointmentId() != null) {
             log.info("Updating appointment status to '已完成' for appointmentId={}", medicalRecord.getAppointmentId());
             ResultVO<Boolean> result = remoteAppointmentService.updateStatus(medicalRecord.getAppointmentId(), "已完成");
-            if (result == null || !result.getData()) {
-                log.error("Failed to update appointment status");
+            if (result == null || result.getCode() != ResultVO.SUCCESS || !Boolean.TRUE.equals(result.getData())) {
+                log.error("Failed to update appointment status: {}", result != null ? result.getMsg() : "null");
                 throw new ServiceException("更新预约状态失败");
             }
         }

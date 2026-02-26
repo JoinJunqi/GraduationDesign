@@ -14,4 +14,12 @@ public interface DoctorMapper extends BaseMapper<Doctor> {
      * @return 医生列表
      */
     public List<Doctor> selectDoctorList(Doctor doctor);
+
+    /**
+     * 根据ID查询医生信息
+     * 
+     * @param id 医生ID
+     * @return 医生信息
+     */
+    public Doctor selectDoctorById(Long id);
 }
