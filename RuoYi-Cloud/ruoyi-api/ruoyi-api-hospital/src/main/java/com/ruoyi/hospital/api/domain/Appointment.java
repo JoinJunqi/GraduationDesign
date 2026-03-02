@@ -21,7 +21,7 @@ public class Appointment implements Serializable {
     /** 排班ID */
     private Long scheduleId;
 
-    /** 状态(待就诊,已取消,已完成,取消申请中) */
+    /** 状态(待就诊,已取消,已完成,已过期,取消审核中) */
     private String status;
 
     /** 预约时间 */

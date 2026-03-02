@@ -50,12 +50,25 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         return roles != null && roles.contains("doctor");
     }
 
+    private boolean isPatient() {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (loginUser == null) return false;
+        Set<String> roles = loginUser.getRoles();
+        return roles != null && roles.contains("patient");
+    }
+
     @Override
     public List<Schedule> selectScheduleList(Schedule schedule) {
         if (isDoctor()) {
             Long userId = SecurityUtils.getUserId();
             log.info("Doctor role detected, filtering schedule by doctorId: {}", userId);
             schedule.setDoctorId(userId);
+        } else if (isPatient()) {
+            if (schedule.getParams() == null) {
+                schedule.setParams(new java.util.HashMap<>());
+            }
+            schedule.getParams().put("forPatient", "true");
+            schedule.getParams().put("daysFromToday", 7);
         }
         return scheduleMapper.selectScheduleList(schedule);
     }

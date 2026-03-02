@@ -83,6 +83,32 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         return loginUser.getRoles().contains(role);
     }
 
+    private boolean isExpired(Appointment appointment) {
+        if (appointment == null || appointment.getWorkDate() == null || appointment.getAppointmentTime() == null) {
+            return false;
+        }
+        java.time.LocalDate date = appointment.getWorkDate().toInstant()
+                .atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        java.time.LocalTime time;
+        try {
+            time = java.time.LocalTime.parse(appointment.getAppointmentTime());
+        } catch (Exception e) {
+            return false;
+        }
+        java.time.LocalDateTime apptDateTime = java.time.LocalDateTime.of(date, time);
+        return java.time.LocalDateTime.now().isAfter(apptDateTime);
+    }
+
+    private void refreshExpireStatus(Appointment appointment) {
+        if (appointment == null) {
+            return;
+        }
+        if ("待就诊".equals(appointment.getStatus()) && isExpired(appointment)) {
+            appointment.setStatus("已过期");
+            this.updateById(appointment);
+        }
+    }
+
     @Override
     public List<Appointment> selectAppointmentList(Appointment appointment) {
         Long userId = SecurityUtils.getUserId();
@@ -110,6 +136,11 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
                  appointment.getPatientId(), appointment.getDoctorId(), appointment.getPatientName(), appointment.getStatus());
                  
         List<Appointment> list = appointmentMapper.selectAppointmentList(appointment);
+        if (list != null) {
+            for (Appointment appt : list) {
+                refreshExpireStatus(appt);
+            }
+        }
         log.info("selectAppointmentList result size: {}", list != null ? list.size() : 0);
         return list;
     }
@@ -317,6 +348,11 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
             throw new ServiceException("预约记录不存在");
         }
 
+        refreshExpireStatus(appointment);
+        if ("已过期".equals(appointment.getStatus())) {
+            throw new ServiceException("预约已过期，不能取消");
+        }
+
         if ("已取消".equals(appointment.getStatus())) {
             throw new ServiceException("预约已取消，请勿重复操作");
         }
@@ -350,6 +386,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         if (appointment == null) {
             throw new ServiceException("预约记录不存在");
         }
+        refreshExpireStatus(appointment);
         if (!"待就诊".equals(appointment.getStatus())) {
             throw new ServiceException("只有待就诊状态可以发起取消申请");
         }
@@ -408,6 +445,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         if (appointment == null) {
             throw new ServiceException("预约记录不存在");
         }
+        refreshExpireStatus(appointment);
         if (!"取消审核中".equals(appointment.getStatus())) {
             throw new ServiceException("当前状态不可撤回申请");
         }

@@ -51,6 +51,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="status != null "> and s.status = #{status}</if>
             <if test="doctorName != null and doctorName != ''"> and d.name like concat('%', #{doctorName}, '%')</if>
             <if test="title != null and title != ''"> and d.title like concat('%', #{title}, '%')</if>
+            <if test="params.forPatient != null and params.forPatient == 'true'">
+                and s.status in (0,1)
+                and s.work_date &gt;= CURRENT_DATE()
+                and s.work_date &lt;= DATE_ADD(CURRENT_DATE(), INTERVAL #{params.daysFromToday} DAY)
+            </if>
         </where>
     </select>
     
