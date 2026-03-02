@@ -144,6 +144,9 @@
           <el-tag v-if="scope.row.status === 0" type="success">正常</el-tag>
           <el-tag v-else-if="scope.row.status === 1" type="warning">有调整</el-tag>
           <el-tag v-else-if="scope.row.status === 2" type="danger">已取消</el-tag>
+          <el-tag v-else-if="scope.row.status === 3" type="warning">待审核</el-tag>
+          <el-tag v-else-if="scope.row.status === 4" type="danger">已驳回</el-tag>
+          <el-tag v-else type="info">未知</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" v-if="(isAdmin && hasAdminPermi(AdminPermi.SCHEDULE)) || isDoctor">
@@ -440,7 +443,7 @@ function reset() {
     totalCapacity: 0,
     availableSlots: 0,
     maxCapacity: 28,
-    status: 0
+    status: isDoctor.value ? 3 : 0
   };
   doctorOptions.value = [];
   originalTimeSlot.value = "";
@@ -543,10 +546,9 @@ function submitForm() {
   proxy.$refs["scheduleRef"].validate(valid => {
     if (valid) {
       if (form.value.id != null) {
-        // 修改时，如果调整了总号源或班次，状态自动变更为“有调整”(1)
         if (form.value.totalCapacity !== originalTotalCapacity.value || form.value.timeSlot !== originalTimeSlot.value) {
-          if (form.value.status !== 2) { // 除非原状态是已取消，否则变更为有调整
-            form.value.status = 1;
+          if (form.value.status !== 2) {
+            form.value.status = isDoctor.value ? 3 : 1;
           }
         }
         // 修改时，如果调整了总号源，需要同步调整剩余号源
@@ -555,12 +557,26 @@ function submitForm() {
           form.value.availableSlots = Math.max(0, form.value.availableSlots + diff);
         }
         updateSchedule(form.value).then(response => {
-          proxy.$modal.msgSuccess("修改成功");
-          open.value = false;
-          getList();
+          if (isDoctor.value) {
+            import("@/api/hospital/audit").then(module => {
+              const auditData = {
+                auditType: 'SCHEDULE_CHANGE',
+                targetId: form.value.id,
+                requestReason: '医生调整排班'
+              };
+              module.submitAudit(auditData).then(() => {
+                proxy.$modal.msgSuccess("已提交管理员审核");
+                open.value = false;
+                getList();
+              });
+            });
+          } else {
+            proxy.$modal.msgSuccess("修改成功");
+            open.value = false;
+            getList();
+          }
         });
       } else {
-        // 新增时检查重复日期
         const checkQuery = {
           doctorId: form.value.doctorId,
           workDate: form.value.workDate
@@ -571,9 +587,38 @@ function submitForm() {
             return;
           }
           addSchedule(form.value).then(response => {
-            proxy.$modal.msgSuccess("新增成功");
-            open.value = false;
-            getList();
+            if (isDoctor.value) {
+              const query = {
+                doctorId: currentDoctorId.value,
+                workDate: form.value.workDate,
+                timeSlot: form.value.timeSlot
+              };
+              listSchedule(query).then(res2 => {
+                if (res2.rows && res2.rows.length > 0) {
+                  const scheduleId = res2.rows[0].id;
+                  import("@/api/hospital/audit").then(module => {
+                    const auditData = {
+                      auditType: 'SCHEDULE_CHANGE',
+                      targetId: scheduleId,
+                      requestReason: '医生新增排班'
+                    };
+                    module.submitAudit(auditData).then(() => {
+                      proxy.$modal.msgSuccess("已提交管理员审核");
+                      open.value = false;
+                      getList();
+                    });
+                  });
+                } else {
+                  proxy.$modal.msgSuccess("已提交管理员审核");
+                  open.value = false;
+                  getList();
+                }
+              });
+            } else {
+              proxy.$modal.msgSuccess("新增成功");
+              open.value = false;
+              getList();
+            }
           });
         });
       }

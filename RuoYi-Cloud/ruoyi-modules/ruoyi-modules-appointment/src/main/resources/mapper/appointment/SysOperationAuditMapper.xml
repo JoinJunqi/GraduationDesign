@@ -30,7 +30,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                    when a.requester_role = 'doctor' then d.name 
                    when a.requester_role = 'patient' then p.name 
                end as requester_name,
-               concat(s.work_date, ' ', s.time_slot, ' (', doc.name, ')') as appointment_info,
+               case
+                   when a.audit_type = 'APPOINTMENT_CANCEL' then concat(s.work_date, ' ', s.time_slot, ' (', doc.name, ')')
+                   when a.audit_type = 'SCHEDULE_CHANGE' then concat(sch.work_date, ' ', sch.time_slot, ' (', doc2.name, ')')
+                   else null
+               end as appointment_info,
                adm.name as admin_name
         from sys_operation_audit a
         left join patient p on a.requester_id = p.id and a.requester_role = 'patient'
@@ -38,6 +42,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join appointment app on a.target_id = app.id
         left join schedule s on app.schedule_id = s.id
         left join doctor doc on s.doctor_id = doc.id
+        left join schedule sch on a.audit_type = 'SCHEDULE_CHANGE' and a.target_id = sch.id
+        left join doctor doc2 on sch.doctor_id = doc2.id
         left join admin adm on a.admin_id = adm.id
     </sql>
 

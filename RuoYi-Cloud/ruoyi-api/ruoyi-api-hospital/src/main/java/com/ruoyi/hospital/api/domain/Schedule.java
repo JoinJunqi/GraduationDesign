@@ -39,4 +39,7 @@ public class Schedule implements Serializable {
     /** 创建时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createdAt;
+
+    /** 状态: 0正常, 1有调整, 2已取消 ,3待审核 ,4已驳回 */
+    private Integer status;
 }

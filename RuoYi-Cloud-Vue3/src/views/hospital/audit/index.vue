@@ -24,6 +24,7 @@
       <el-table-column label="审核类型" align="center" prop="auditType">
         <template #default="scope">
           <el-tag v-if="scope.row.auditType === 'APPOINTMENT_CANCEL'" type="warning">预约取消</el-tag>
+          <el-tag v-else-if="scope.row.auditType === 'SCHEDULE_CHANGE'" type="info">排班调整</el-tag>
           <el-tag v-else type="info">{{ scope.row.auditType }}</el-tag>
         </template>
       </el-table-column>

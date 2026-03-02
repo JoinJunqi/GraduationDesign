@@ -101,9 +101,13 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         if (count > 0) {
             throw new ServiceException("该医生在 " + schedule.getWorkDate() + " 已有排班，请勿重复操作");
         }
-        
+
         schedule.setAvailableSlots(schedule.getTotalCapacity());
-        schedule.setStatus(0); // 初始状态为正常
+        if (isDoctor()) {
+            schedule.setStatus(3);
+        } else {
+            schedule.setStatus(0);
+        }
         boolean saved = this.save(schedule);
         if (saved) {
             // 写入 Redis 缓存
@@ -123,21 +127,18 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         // 医生端特定逻辑：自动匹配状态
         if (isDoctor()) {
             boolean isChanged = false;
-            // 检查号源数量是否变更
             if (schedule.getTotalCapacity() != null && !schedule.getTotalCapacity().equals(current.getTotalCapacity())) {
                 isChanged = true;
             }
-            // 检查班次是否变更
             if (schedule.getTimeSlot() != null && !schedule.getTimeSlot().equals(current.getTimeSlot())) {
                 isChanged = true;
-                // 同步预约时间调整
                 remoteAppointmentService.syncTimeChange(current.getId(), current.getTimeSlot(), schedule.getTimeSlot());
             }
 
             if (isChanged) {
-                schedule.setStatus(1); // 有调整
+                schedule.setStatus(3);
             } else {
-                schedule.setStatus(current.getStatus()); // 保持不变
+                schedule.setStatus(current.getStatus());
             }
         }
 
@@ -148,9 +149,10 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             currentAvailable = current.getAvailableSlots();
         }
         
-        // 如果号源已满，且尝试修改关键信息（如总号源、日期、状态等），则拦截
         boolean isFull = currentAvailable <= 0;
-        if (isFull && (schedule.getTotalCapacity() != null || schedule.getWorkDate() != null || schedule.getStatus() != null)) {
+        boolean changeCapacityOrDate = schedule.getTotalCapacity() != null || schedule.getWorkDate() != null;
+        boolean changeToCancel = schedule.getStatus() != null && schedule.getStatus() == 2;
+        if (isFull && (changeCapacityOrDate || changeToCancel)) {
             // 注意：如果是取消预约导致的 availableSlots 增加，不应该拦截。但这里的 updateSchedule 是管理端/医生端发起的修改
             // 如果是预约模块调用的 (schedule.getAvailableSlots() != null && schedule.getTotalCapacity() == null)，不拦截
             if (!(schedule.getAvailableSlots() != null && schedule.getTotalCapacity() == null)) {

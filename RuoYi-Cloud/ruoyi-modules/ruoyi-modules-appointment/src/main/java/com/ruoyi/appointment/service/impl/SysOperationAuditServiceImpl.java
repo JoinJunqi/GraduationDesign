@@ -7,6 +7,8 @@ import com.ruoyi.appointment.mapper.AppointmentMapper;
 import com.ruoyi.appointment.mapper.SysOperationAuditMapper;
 import com.ruoyi.appointment.service.ISysOperationAuditService;
 import com.ruoyi.common.core.utils.DateUtils;
+import com.ruoyi.common.core.utils.StringUtils;
+import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.common.security.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -48,6 +50,18 @@ public class SysOperationAuditServiceImpl extends ServiceImpl<SysOperationAuditM
     public int submitAudit(SysOperationAudit audit) {
         audit.setCreatedAt(DateUtils.getNowDate());
         audit.setAuditStatus(0); // 待审核
+
+        if (audit.getRequesterId() == null) {
+            audit.setRequesterId(SecurityUtils.getUserId());
+        }
+        if (StringUtils.isEmpty(audit.getRequesterRole())) {
+            if (SecurityUtils.getLoginUser() != null && SecurityUtils.getLoginUser().getRoles() != null
+                    && SecurityUtils.getLoginUser().getRoles().contains("doctor")) {
+                audit.setRequesterRole("doctor");
+            } else {
+                audit.setRequesterRole("patient");
+            }
+        }
         
         // 如果是预约取消申请，同步更新预约状态为“取消审核中”
         if ("APPOINTMENT_CANCEL".equals(audit.getAuditType())) {
@@ -93,6 +107,23 @@ public class SysOperationAuditServiceImpl extends ServiceImpl<SysOperationAuditM
                     appointment.setStatus("待就诊");
                 }
                 appointmentMapper.updateById(appointment);
+            }
+        } else if ("SCHEDULE_CHANGE".equals(dbAudit.getAuditType())) {
+            ResultVO<com.ruoyi.hospital.api.domain.Schedule> result = remoteScheduleService.getById(dbAudit.getTargetId());
+            if (result != null && result.getData() != null) {
+                com.ruoyi.hospital.api.domain.Schedule schedule = new com.ruoyi.hospital.api.domain.Schedule();
+                schedule.setId(dbAudit.getTargetId());
+                if (audit.getAuditStatus() == 1) {
+                    String reason = dbAudit.getRequestReason();
+                    if (reason != null && reason.contains("新增排班")) {
+                        schedule.setStatus(0);
+                    } else {
+                        schedule.setStatus(1);
+                    }
+                } else if (audit.getAuditStatus() == 2) {
+                    schedule.setStatus(4);
+                }
+                remoteScheduleService.update(schedule);
             }
         }
 

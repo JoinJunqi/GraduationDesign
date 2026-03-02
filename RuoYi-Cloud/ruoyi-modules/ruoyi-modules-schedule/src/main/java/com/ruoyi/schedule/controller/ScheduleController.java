@@ -5,6 +5,7 @@ import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.ruoyi.common.core.constant.UserConstants;
+import com.ruoyi.system.api.model.LoginUser;
 import com.ruoyi.common.security.utils.SecurityUtils;
 import com.ruoyi.common.core.web.controller.BaseController;
 import com.ruoyi.common.core.domain.ResultVO;
@@ -18,6 +19,16 @@ public class ScheduleController extends BaseController
 {
     @Autowired
     private IScheduleService scheduleService;
+
+    private boolean isDoctor()
+    {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (loginUser == null)
+        {
+            return false;
+        }
+        return loginUser.getRoles() != null && loginUser.getRoles().contains("doctor");
+    }
 
     @GetMapping("/list")
     public TableDataInfo list(Schedule schedule)
@@ -37,32 +48,49 @@ public class ScheduleController extends BaseController
     @PostMapping
     public ResultVO<Boolean> add(@RequestBody Schedule schedule)
     {
-        SecurityUtils.checkAdminPermission(UserConstants.PERM_SCHEDULE);
+        if (!isDoctor())
+        {
+            SecurityUtils.checkAdminPermission(UserConstants.PERM_SCHEDULE);
+        }
         return ResultVO.success(scheduleService.insertSchedule(schedule));
     }
 
     @PutMapping
     public ResultVO<Boolean> edit(@RequestBody Schedule schedule)
     {
-        // 1. 首先尝试按管理员权限校验
-        try 
+        if (isDoctor())
+        {
+            return ResultVO.success(scheduleService.updateSchedule(schedule));
+        }
+        try
         {
             SecurityUtils.checkAdminPermission(UserConstants.PERM_SCHEDULE);
             return ResultVO.success(scheduleService.updateSchedule(schedule));
-        } 
-        catch (Exception e) 
+        }
+        catch (Exception e)
         {
-            // 2. 如果没有管理员权限，检查是否为合法的号源同步操作（跨服务调用）
-            // 准则：只要包含 id 和 availableSlots，且没有尝试修改 totalCapacity，则视为同步操作
-            if (schedule.getId() != null && schedule.getAvailableSlots() != null && schedule.getTotalCapacity() == null)
+            boolean isSlotsSync = schedule.getId() != null
+                    && schedule.getAvailableSlots() != null
+                    && schedule.getTotalCapacity() == null
+                    && schedule.getStatus() == null;
+            boolean isStatusSync = schedule.getId() != null
+                    && schedule.getStatus() != null
+                    && schedule.getTotalCapacity() == null
+                    && schedule.getAvailableSlots() == null;
+            if (isSlotsSync || isStatusSync)
             {
-                // 为安全起见，创建一个仅包含同步字段的新对象进行更新
                 Schedule syncSchedule = new Schedule();
                 syncSchedule.setId(schedule.getId());
-                syncSchedule.setAvailableSlots(schedule.getAvailableSlots());
+                if (schedule.getAvailableSlots() != null)
+                {
+                    syncSchedule.setAvailableSlots(schedule.getAvailableSlots());
+                }
+                if (schedule.getStatus() != null)
+                {
+                    syncSchedule.setStatus(schedule.getStatus());
+                }
                 return ResultVO.success(scheduleService.updateSchedule(syncSchedule));
             }
-            // 3. 否则，重新抛出权限异常
             throw e;
         }
     }
