@@ -52,22 +52,23 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         LoginUser loginUser = SecurityUtils.getLoginUser();
         if (loginUser == null) return false;
         
-        // 1. 检查角色标识 (不区分大小写)
-        Set<String> roles = loginUser.getRoles();
-        if (roles != null) {
-            for (String role : roles) {
-                if ("admin".equalsIgnoreCase(role) || "ROLE_ADMIN".equalsIgnoreCase(role)) {
-                    return true;
-                }
-            }
+        // 1. 检查是否有明确的 admin 角色
+        if (hasRole("admin") || hasRole("ROLE_ADMIN")) {
+            return true;
+        }
+
+        // 2. 如果是医生或患者角色，且没有 admin 角色，则视为非管理员
+        // 这一步是为了防止医生/患者的 ID 恰好为 1 时被误判为超级管理员
+        if (hasRole("doctor") || hasRole("patient")) {
+            return false;
         }
         
-        // 2. 检查用户ID (RuoYi默认超级管理员ID为1)
+        // 3. 检查用户ID (RuoYi默认超级管理员ID为1) - 仅针对非医生/患者的系统用户
         if (loginUser.getUserid() != null && loginUser.getUserid() == 1L) {
             return true;
         }
 
-        // 3. 检查系统用户标识 (如果存在)
+        // 4. 检查系统用户标识 (如果存在)
         if (loginUser.getSysUser() != null && loginUser.getSysUser().isAdmin()) {
             return true;
         }
@@ -80,7 +81,12 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         if (loginUser == null || loginUser.getRoles() == null) {
             return false;
         }
-        return loginUser.getRoles().contains(role);
+        for (String r : loginUser.getRoles()) {
+            if (role.equalsIgnoreCase(r)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isExpired(Appointment appointment) {
@@ -143,6 +149,33 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         }
         log.info("selectAppointmentList result size: {}", list != null ? list.size() : 0);
         return list;
+    }
+
+    private boolean isSameDay(Appointment appointment) {
+        if (appointment == null || appointment.getWorkDate() == null) {
+            return false;
+        }
+        java.time.LocalDate date = appointment.getWorkDate().toInstant()
+                .atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        java.time.LocalDate today = java.time.LocalDate.now();
+        return date.equals(today);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean updateStatusWithRule(Long id, String status) {
+        Appointment appointment = this.getById(id);
+        if (appointment == null) {
+            throw new ServiceException("预约记录不存在");
+        }
+        refreshExpireStatus(appointment);
+        if ("已完成".equals(status) && "已过期".equals(appointment.getStatus()) && !isSameDay(appointment)) {
+            throw new ServiceException("预约已过期且早于今天，不能进行就诊操作");
+        }
+        Appointment update = new Appointment();
+        update.setId(id);
+        update.setStatus(status);
+        return this.updateById(update);
     }
 
     @Override

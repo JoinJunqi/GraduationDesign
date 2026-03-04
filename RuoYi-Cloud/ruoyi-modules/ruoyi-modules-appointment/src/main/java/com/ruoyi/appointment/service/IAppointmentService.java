@@ -39,4 +39,9 @@ public interface IAppointmentService extends IService<Appointment> {
      * 批量恢复预约
      */
     boolean recoverAppointmentByIds(Long[] ids);
+
+    /**
+     * 更新预约状态（包含医生就诊规则校验）
+     */
+    boolean updateStatusWithRule(Long id, String status);
 }

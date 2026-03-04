@@ -27,7 +27,17 @@ public class ScheduleController extends BaseController
         {
             return false;
         }
-        return loginUser.getRoles() != null && loginUser.getRoles().contains("doctor");
+        if (loginUser.getRoles() != null)
+        {
+            for (String role : loginUser.getRoles())
+            {
+                if ("doctor".equalsIgnoreCase(role))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @GetMapping("/list")

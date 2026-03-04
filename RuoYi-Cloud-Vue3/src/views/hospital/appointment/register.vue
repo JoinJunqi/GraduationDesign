@@ -69,6 +69,8 @@
             <el-tag v-if="scope.row.status === 0" type="success">正常</el-tag>
             <el-tag v-else-if="scope.row.status === 1" type="warning">有调整</el-tag>
             <el-tag v-else-if="scope.row.status === 2" type="danger">已取消</el-tag>
+            <el-tag v-else-if="scope.row.status === 3" type="warning">待审核</el-tag>
+            <el-tag v-else-if="scope.row.status === 4" type="danger">已驳回</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="剩余号源" align="center" prop="availableSlots">
@@ -105,14 +107,14 @@
             <el-tooltip
               class="box-item"
               effect="dark"
-              :content="bookedTimeSlots.includes(time) ? '该时段已被预约' : '该时段已不可预约'"
+              :content="getTooltipContent(time)"
               placement="top"
-              :disabled="!bookedTimeSlots.includes(time) && selectedSchedule.availableSlots > 0 && selectedSchedule.status !== 2"
+              :disabled="!isSlotDisabled(time)"
             >
               <el-button 
                 :type="selectedTime === time ? 'primary' : 'default'" 
                 class="time-slot-btn"
-                :disabled="bookedTimeSlots.includes(time) || selectedSchedule.availableSlots <= 0 || selectedSchedule.status === 2"
+                :disabled="isSlotDisabled(time)"
                 @click="handleSelectTime(time)"
               >
                 {{ time }}
@@ -182,8 +184,9 @@ const availableTimeSlots = ref([]);
 const bookedTimeSlots = ref([]);
 
 /** 生成时间段 */
-function generateTimeSlots(slotType, totalCapacity) {
-  const slots = [];
+function generateTimeSlots(schedule) {
+  const slotType = schedule.timeSlot;
+  const totalCapacity = schedule.totalCapacity;
   const baseSlots = [];
   if (slotType === '上午' || slotType === '全天') {
     // 8:00 - 11:30
@@ -204,8 +207,26 @@ function generateTimeSlots(slotType, totalCapacity) {
     }
   }
   
-  // 根据总号源数限制时段数量
-  return baseSlots.slice(0, totalCapacity);
+  // 计算已过期的号源数量
+  let expiredCount = 0;
+  if (schedule.workDate) {
+    const dateStr = parseTime(schedule.workDate, '{y}-{m}-{d}');
+    const now = new Date();
+    
+    for (const time of baseSlots) {
+      const dateTimeStr = `${dateStr} ${time}`;
+      const slotTime = new Date(dateTimeStr.replace(/-/g, '/'));
+      if (now > slotTime) {
+        expiredCount++;
+      }
+    }
+  }
+
+  // 根据总号源数限制时段数量 (加上已过期的数量，确保剩余可用号源数等于 totalCapacity)
+  // 注意：不能超过 baseSlots 总长度
+  const limit = Math.min(baseSlots.length, totalCapacity + expiredCount);
+  
+  return baseSlots.slice(0, limit);
 }
 
 /** 加载科室列表 */
@@ -262,9 +283,8 @@ function getScheduleList(doctorId) {
   listSchedule(query).then(response => {
     console.log('Schedule list response:', response);
     const rawList = response.rows || response.data || (Array.isArray(response) ? response : []);
-    const today = new Date().toISOString().split('T')[0];
-    // 过滤掉已取消的排班 (或者保留但显示已取消)
-    scheduleList.value = rawList.filter(s => s.workDate >= today && s.status !== 2);
+    // 仅过滤掉已取消的排班，保证所有有效排班都能展示给患者选择
+    scheduleList.value = rawList.filter(s => s.status !== 2);
     loading.value = false;
   }).catch(err => {
     console.error('Failed to fetch schedules:', err);
@@ -275,7 +295,7 @@ function getScheduleList(doctorId) {
 /** 选择排班 */
 function handleSelectSchedule(schedule) {
   selectedSchedule.value = schedule;
-  availableTimeSlots.value = generateTimeSlots(schedule.timeSlot, schedule.totalCapacity);
+  availableTimeSlots.value = generateTimeSlots(schedule);
   selectedTime.value = "";
   
   // 获取已预约的时段
@@ -293,6 +313,49 @@ function handleSelectSchedule(schedule) {
 /** 选择时间 */
 function handleSelectTime(time) {
   selectedTime.value = time;
+}
+
+/** 检查时段是否已过期 */
+function isTimeExpired(time) {
+  if (!selectedSchedule.value.workDate) return false;
+  // 获取日期字符串 YYYY-MM-DD
+  const dateStr = parseTime(selectedSchedule.value.workDate, '{y}-{m}-{d}');
+  // 组合成完整的时间字符串 YYYY-MM-DD HH:mm:ss
+  const dateTimeStr = `${dateStr} ${time}`;
+  // 转换为 Date 对象 (兼容 IOS 需替换 - 为 /)
+  const slotTime = new Date(dateTimeStr.replace(/-/g, '/'));
+  return new Date() > slotTime;
+}
+
+/** 检查时段是否不可用 */
+function isSlotDisabled(time) {
+  // 1. 已被预约
+  if (bookedTimeSlots.value.includes(time)) return true;
+  // 2. 号源已满
+  if (selectedSchedule.value.availableSlots <= 0) return true;
+  // 3. 排班状态异常
+  if (selectedSchedule.value.status === 2) return true;
+  // 4. 已过期
+  if (isTimeExpired(time)) return true;
+  
+  return false;
+}
+
+/** 获取 Tooltip 内容 */
+function getTooltipContent(time) {
+  if (bookedTimeSlots.value.includes(time)) {
+    return '该时段已被预约';
+  }
+  if (isTimeExpired(time)) {
+    return '不可预约该时段';
+  }
+  if (selectedSchedule.value.availableSlots <= 0) {
+    return '号源已满';
+  }
+  if (selectedSchedule.value.status === 2) {
+    return '排班已取消';
+  }
+  return '不可预约';
 }
 
 /** 提交预约 */

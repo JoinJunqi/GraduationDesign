@@ -49,12 +49,22 @@ public class AppointmentController extends BaseController
         return ResultVO.success(appointmentService.selectAppointmentById(id));
     }
 
+    private boolean hasRole(String role)
+    {
+        Set<String> roles = SecurityUtils.getLoginUser().getRoles();
+        if (roles == null) return false;
+        for (String r : roles)
+        {
+            if (role.equalsIgnoreCase(r)) return true;
+        }
+        return false;
+    }
+
     @PostMapping("/create")
     public ResultVO<Boolean> create(@RequestBody Appointment appointment)
     {
         // 允许患者和医生创建预约
-        Set<String> roles = SecurityUtils.getLoginUser().getRoles();
-        if (roles == null || (!roles.contains("patient") && !roles.contains("doctor")))
+        if (!hasRole("patient") && !hasRole("doctor"))
         {
             SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
         }
@@ -93,14 +103,11 @@ public class AppointmentController extends BaseController
     public ResultVO<Boolean> updateStatus(@RequestParam("id") Long id, @RequestParam("status") String status)
     {
         // 允许医生更新预约状态（如就诊完成后自动设置为已完成）
-        if (!SecurityUtils.getLoginUser().getRoles().contains("doctor"))
+        if (!hasRole("doctor"))
         {
             SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
         }
-        Appointment appointment = new Appointment();
-        appointment.setId(id);
-        appointment.setStatus(status);
-        return ResultVO.success(appointmentService.updateById(appointment));
+        return ResultVO.success(appointmentService.updateStatusWithRule(id, status));
     }
 
     /**
@@ -110,7 +117,7 @@ public class AppointmentController extends BaseController
     public ResultVO<Boolean> cancelByScheduleId(@RequestParam("scheduleId") Long scheduleId)
     {
         // 允许医生在取消排班时级联取消预约
-        if (!SecurityUtils.getLoginUser().getRoles().contains("doctor"))
+        if (!hasRole("doctor"))
         {
             SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
         }

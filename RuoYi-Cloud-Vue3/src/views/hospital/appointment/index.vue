@@ -75,6 +75,7 @@
                 <el-option label="待就诊" value="待就诊" />
                 <el-option label="已取消" value="已取消" />
                 <el-option label="已完成" value="已完成" />
+                <el-option label="已过期" value="已过期" />
                 <el-option label="取消审核中" value="取消审核中" />
               </el-select>
             </el-form-item>
@@ -152,7 +153,19 @@
             <el-table-column label="班次" align="center" prop="timeSlot" />
             <el-table-column label="状态" align="center" prop="status" sortable="custom">
               <template #default="scope">
-                <el-tag :type="scope.row.status === '已完成' ? 'success' : (scope.row.status === '已取消' ? 'info' : (scope.row.status === '取消审核中' ? 'danger' : 'warning'))">
+                <el-tag
+                  :type="
+                    scope.row.status === '已完成'
+                      ? 'success'
+                      : scope.row.status === '已取消'
+                      ? 'info'
+                      : scope.row.status === '取消审核中'
+                      ? 'danger'
+                      : scope.row.status === '已过期'
+                      ? 'warning'
+                      : 'warning'
+                  "
+                >
                   {{ scope.row.status }}
                 </el-tag>
               </template>
@@ -168,12 +181,30 @@
                 <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="isAdmin && hasAdminPermi(AdminPermi.BOOKING)" v-hasPermi="['hospital:appointment:edit']">修改</el-button>
                 
                 <!-- 患者端操作 -->
-                <el-button link type="danger" icon="CircleClose" @click="handleRequestCancel(scope.row)" v-if="isPatient && scope.row.status === '待就诊'">取消预约</el-button>
+                <el-button
+                  link
+                  type="danger"
+                  icon="CircleClose"
+                  @click="handleRequestCancel(scope.row)"
+                  v-if="isPatient && scope.row.status === '待就诊'"
+                >取消预约</el-button>
                 
                 <!-- 医生端操作 -->
                 <template v-if="isDoctor">
-                  <el-button link type="success" icon="VideoPlay" @click="handleStartConsultation(scope.row)" v-if="scope.row.status === '待就诊'">开始就诊</el-button>
-                  <el-button link type="danger" icon="MessageBox" @click="handleRequestCancel(scope.row)" v-if="scope.row.status === '待就诊'">申请取消</el-button>
+                  <el-button
+                    link
+                    type="success"
+                    icon="VideoPlay"
+                    @click="handleStartConsultation(scope.row)"
+                    v-if="scope.row.status === '待就诊' || (scope.row.status === '已过期' && isTodayDate(scope.row.workDate))"
+                  >开始就诊</el-button>
+                  <el-button
+                    link
+                    type="danger"
+                    icon="MessageBox"
+                    @click="handleRequestCancel(scope.row)"
+                    v-if="scope.row.status === '待就诊'"
+                  >申请取消</el-button>
                 </template>
 
                 <!-- 审核中状态的操作 (撤销申请) -->
@@ -206,11 +237,12 @@
         <el-form-item label="排班ID" prop="scheduleId">
           <el-input v-model="form.scheduleId" placeholder="请输入排班ID" />
         </el-form-item>
-        <el-form-item label="状态" prop="status">
+            <el-form-item label="状态" prop="status">
           <el-select v-model="form.status" placeholder="请选择状态">
             <el-option label="待就诊" value="待就诊" />
             <el-option label="已取消" value="已取消" />
             <el-option label="已完成" value="已完成" />
+            <el-option label="已过期" value="已过期" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -270,6 +302,15 @@ watch(calendarDate, (newDate) => {
 function hasAppointment(day) {
   // 这里可以根据已加载的列表或者额外API判断
   return appointmentList.value.some(item => parseTime(item.workDate, '{y}-{m}-{d}') === day);
+}
+
+function isTodayDate(date) {
+  if (!date) {
+    return false;
+  }
+  const todayStr = parseTime(new Date(), '{y}-{m}-{d}');
+  const dateStr = parseTime(date, '{y}-{m}-{d}');
+  return dateStr === todayStr;
 }
 
 /** 开始就诊 */

@@ -43,18 +43,23 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         return SCHEDULE_SLOTS_KEY + scheduleId;
     }
 
-    private boolean isDoctor() {
+    private boolean hasRole(String role) {
         LoginUser loginUser = SecurityUtils.getLoginUser();
         if (loginUser == null) return false;
         Set<String> roles = loginUser.getRoles();
-        return roles != null && roles.contains("doctor");
+        if (roles == null) return false;
+        for (String r : roles) {
+            if (role.equalsIgnoreCase(r)) return true;
+        }
+        return false;
+    }
+
+    private boolean isDoctor() {
+        return hasRole("doctor");
     }
 
     private boolean isPatient() {
-        LoginUser loginUser = SecurityUtils.getLoginUser();
-        if (loginUser == null) return false;
-        Set<String> roles = loginUser.getRoles();
-        return roles != null && roles.contains("patient");
+        return hasRole("patient");
     }
 
     @Override
@@ -94,6 +99,69 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         return schedule;
     }
 
+    // 校验号源上限逻辑
+    private void validateCapacityLimit(Schedule schedule) {
+        if (schedule.getWorkDate() == null || schedule.getTotalCapacity() == null) {
+            return;
+        }
+
+        java.time.LocalDate workDate = schedule.getWorkDate().toInstant()
+                .atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        java.time.LocalDate today = java.time.LocalDate.now();
+
+        // 只校验当天 (过去日期的排班通常不允许新增，未来日期不做时间限制)
+        if (!workDate.equals(today)) {
+            if (workDate.isBefore(today)) {
+                // 过去的日期，理论上不允许新增排班，或者容量为0
+                // 这里暂不强制抛异常，除非业务要求严格禁止补录
+            }
+            return;
+        }
+
+        java.time.LocalTime now = java.time.LocalTime.now();
+        int maxCapacity = 0;
+        String timeSlot = schedule.getTimeSlot();
+
+        // 定义时间段
+        java.time.LocalTime amStart = java.time.LocalTime.of(8, 0);
+        java.time.LocalTime amEnd = java.time.LocalTime.of(11, 30);
+        java.time.LocalTime pmStart = java.time.LocalTime.of(14, 0);
+        java.time.LocalTime pmEnd = java.time.LocalTime.of(17, 30);
+
+        // 计算上午剩余号源
+        int amSlots = 0;
+        if (now.isBefore(amEnd)) {
+            java.time.LocalTime start = now.isBefore(amStart) ? amStart : now;
+            long minutes = java.time.Duration.between(start, amEnd).toMinutes();
+            amSlots = (int) (minutes / 15);
+        }
+
+        // 计算下午剩余号源
+        int pmSlots = 0;
+        if (now.isBefore(pmEnd)) {
+            java.time.LocalTime start = now.isBefore(pmStart) ? pmStart : now;
+            // 如果当前时间在中午休息时间，则从下午开始算
+            if (start.isBefore(pmStart)) {
+                start = pmStart;
+            }
+            long minutes = java.time.Duration.between(start, pmEnd).toMinutes();
+            pmSlots = (int) (minutes / 15);
+        }
+
+        if ("上午".equals(timeSlot)) {
+            maxCapacity = amSlots;
+        } else if ("下午".equals(timeSlot)) {
+            maxCapacity = pmSlots;
+        } else if ("全天".equals(timeSlot)) {
+            maxCapacity = amSlots + pmSlots;
+        }
+
+        // 允许少量的误差或特殊情况？ 暂时严格校验
+        if (schedule.getTotalCapacity() > maxCapacity) {
+            throw new ServiceException("当前时间已超过部分排班时段，该班次最多只能设置 " + maxCapacity + " 个号源");
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean insertSchedule(Schedule schedule) {
@@ -101,6 +169,12 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             Long userId = SecurityUtils.getUserId();
             log.info("Doctor role detected, setting doctorId to: {}", userId);
             schedule.setDoctorId(userId);
+            
+            if (schedule.getTotalCapacity() == null) {
+                throw new ServiceException("总号源数不能为空");
+            }
+            // 医生新增排班时进行时间校验
+            validateCapacityLimit(schedule);
         }
         
         if (schedule.getDoctorId() == null) {
@@ -146,6 +220,15 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             if (schedule.getTimeSlot() != null && !schedule.getTimeSlot().equals(current.getTimeSlot())) {
                 isChanged = true;
                 remoteAppointmentService.syncTimeChange(current.getId(), current.getTimeSlot(), schedule.getTimeSlot());
+            }
+
+            // 医生修改排班时进行时间校验 (仅当修改了容量或班次时)
+            if (isChanged || schedule.getWorkDate() != null) {
+                // 如果只改了容量，没传 workDate/timeSlot，需补全信息用于校验
+                if (schedule.getWorkDate() == null) schedule.setWorkDate(current.getWorkDate());
+                if (schedule.getTimeSlot() == null) schedule.setTimeSlot(current.getTimeSlot());
+                if (schedule.getTotalCapacity() == null) schedule.setTotalCapacity(current.getTotalCapacity());
+                validateCapacityLimit(schedule);
             }
 
             if (isChanged) {
