@@ -113,6 +113,7 @@
           @click="handleDelete"
           v-hasPermi="['hospital:schedule:remove']"
         >{{ isDoctor ? '申请删除' : '删除' }}</el-button>
+        <span v-if="isDoctor" style="margin-left: 10px; font-size: 12px; color: #909399;">当日之前数据不可删除</span>
       </el-col>
       <el-col :span="1.5">
         <el-button
@@ -154,7 +155,7 @@
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:schedule:edit']">修改</el-button>
           <el-button link type="primary" icon="CircleClose" @click="handleCancelSchedule(scope.row)" v-if="scope.row.status !== 2 && scope.row.status !== 3 && scope.row.status !== 4" v-hasPermi="['hospital:schedule:edit']">取消</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status !== 3 && scope.row.status !== 4" v-hasPermi="['hospital:schedule:remove']">{{ isDoctor ? '申请删除' : '删除' }}</el-button>
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="!isDoctor" v-hasPermi="['hospital:schedule:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>

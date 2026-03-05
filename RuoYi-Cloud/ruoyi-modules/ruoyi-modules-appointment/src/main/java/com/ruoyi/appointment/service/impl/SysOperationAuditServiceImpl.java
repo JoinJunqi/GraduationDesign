@@ -1,6 +1,8 @@
 package com.ruoyi.appointment.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruoyi.common.core.exception.ServiceException;
 import com.ruoyi.appointment.domain.Appointment;
 import com.ruoyi.appointment.domain.SysOperationAudit;
 import com.ruoyi.appointment.mapper.AppointmentMapper;
@@ -50,14 +52,24 @@ public class SysOperationAuditServiceImpl extends ServiceImpl<SysOperationAuditM
     public int submitAudit(SysOperationAudit audit) {
         audit.setCreatedAt(DateUtils.getNowDate());
         
-        // 修正：强制设为 0 (待审核)，除非是特殊情况
-        // 之前遇到问题是提交后马上变为“已驳回”(2)，说明这里可能没有正确初始化，或者被某些默认值覆盖
-        // 或者 submitAudit 被 processAudit 调用了？ 不太可能。
-        // 确保新插入的记录状态一定是 0
+        // 修正：强制设为 0 (待审核)
         audit.setAuditStatus(0); 
-        audit.setAdminId(null); // 清空管理员ID
-        audit.setAuditTime(null); // 清空审核时间
-        audit.setAuditRemark(null); // 清空备注
+        audit.setAdminId(null); 
+        audit.setAuditTime(null); 
+        audit.setAuditRemark(null);
+
+        // 检查是否存在同类型、同目标ID且未审核的记录
+        if (audit.getAuditType() != null && audit.getTargetId() != null) {
+            Long count = auditMapper.selectCount(new LambdaQueryWrapper<SysOperationAudit>()
+                    .eq(SysOperationAudit::getAuditType, audit.getAuditType())
+                    .eq(SysOperationAudit::getTargetId, audit.getTargetId())
+                    .eq(SysOperationAudit::getAuditStatus, 0)); // 0: 待审核
+            
+            if (count > 0) {
+                // 如果已存在待审核记录，抛出异常阻止重复提交
+                throw new ServiceException("该记录已在审核中，请勿重复提交");
+            }
+        }
 
         if (audit.getRequesterId() == null) {
             audit.setRequesterId(SecurityUtils.getUserId());
@@ -86,32 +98,41 @@ public class SysOperationAuditServiceImpl extends ServiceImpl<SysOperationAuditM
     @Override
     @Transactional
     public int processAudit(SysOperationAudit audit) {
-        // 关键：这里只更新状态，不应该再插入
-        // 如果 audit.getId() 不存在，那就是异常
-        if (audit.getId() == null) {
-            return 0;
-        }
+        // ... (原逻辑) ...
+        if (audit.getId() == null) return 0;
         
         SysOperationAudit dbAudit = auditMapper.selectById(audit.getId());
         if (dbAudit == null) return 0;
         
-        // ... (省略部分属性设置) ...
+        // 更新审核记录
         dbAudit.setAuditStatus(audit.getAuditStatus());
         dbAudit.setAuditRemark(audit.getAuditRemark());
         dbAudit.setAdminId(SecurityUtils.getUserId());
         dbAudit.setAuditTime(DateUtils.getNowDate());
+        auditMapper.updateById(dbAudit); // 先保存审核记录状态
 
         if ("APPOINTMENT_CANCEL".equals(dbAudit.getAuditType())) {
             // ... (预约取消逻辑不变) ...
+             Appointment appointment = appointmentMapper.selectById(dbAudit.getTargetId());
+             if (appointment != null) {
+                 if (audit.getAuditStatus() == 1) { // 通过
+                     appointment.setStatus("已取消");
+                     // 恢复号源逻辑...
+                     Long scheduleId = appointment.getScheduleId();
+                     String redisKey = getScheduleRedisKey(scheduleId);
+                     Long remaining = redisService.redisTemplate.opsForValue().increment(redisKey);
+                     
+                     com.ruoyi.hospital.api.domain.Schedule updateSchedule = new com.ruoyi.hospital.api.domain.Schedule();
+                     updateSchedule.setId(scheduleId);
+                     updateSchedule.setAvailableSlots(remaining != null ? remaining.intValue() : 0);
+                     remoteScheduleService.update(updateSchedule);
+                 } else if (audit.getAuditStatus() == 2) { // 驳回
+                     appointment.setStatus("待就诊");
+                 }
+                 appointmentMapper.updateById(appointment);
+             }
         } else if ("SCHEDULE_CHANGE".equals(dbAudit.getAuditType())) {
-            // 调用远程服务获取排班信息
-            // 修正：这里需要根据 targetId 调用 remoteScheduleService 获取排班
-            // 但远程调用返回值是 ResultVO<Schedule>，需要正确解析
-            // 假设 remoteScheduleService.getById 返回的是 Schedule 对象
-            
-            // 由于 remoteScheduleService 是 FeignClient，我们需要确保能正确调用
-            // 假设 remoteScheduleService.getById(id) 返回的是 ResultVO<Schedule>
-            // 这里我们先直接构造一个 Schedule 对象用于更新，因为我们只需要更新 status
+            // 调用远程服务更新排班状态
             com.ruoyi.hospital.api.domain.Schedule schedule = new com.ruoyi.hospital.api.domain.Schedule();
             schedule.setId(dbAudit.getTargetId());
             
@@ -120,23 +141,24 @@ public class SysOperationAuditServiceImpl extends ServiceImpl<SysOperationAuditM
                 if (reason != null && reason.contains("新增")) {
                     schedule.setStatus(0); // 正常
                 } else if (reason != null && reason.contains("删除")) {
-                    schedule.setStatus(2); // 已取消 (或者调用删除接口)
+                    schedule.setStatus(2); // 已取消
                 } else {
                     schedule.setStatus(1); // 有调整
                 }
             } else if (audit.getAuditStatus() == 2) { // 审核驳回
                 String reason = dbAudit.getRequestReason();
                 if (reason != null && reason.contains("新增")) {
-                    schedule.setStatus(5); // 已驳回 (假设状态码 5)
+                    schedule.setStatus(5); // 已驳回
                 } else if (reason != null && reason.contains("删除")) {
                     schedule.setStatus(0); // 删除被驳回，恢复为正常(0)
                 } else {
-                    schedule.setStatus(5); // 修改驳回，保持原状或设为驳回状态？
+                    schedule.setStatus(5); // 修改驳回
                 }
             }
+            // 确保这里调用成功
             remoteScheduleService.update(schedule);
         }
         
-        return auditMapper.updateById(dbAudit);
+        return 1;
     }
 }

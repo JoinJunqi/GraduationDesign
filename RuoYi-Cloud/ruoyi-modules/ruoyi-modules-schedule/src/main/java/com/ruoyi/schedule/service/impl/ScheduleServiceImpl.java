@@ -181,12 +181,15 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             throw new ServiceException("医生信息不能为空");
         }
 
-        // 检查排班冲突 (同一天只能有一个排班记录)
+        // 检查排班冲突 (同一天只能有一个有效排班记录)
+        // 排除已取消(2)和已驳回(5)的状态，允许重新排班
         Long count = scheduleMapper.selectCount(new LambdaQueryWrapper<Schedule>()
                 .eq(Schedule::getDoctorId, schedule.getDoctorId())
-                .eq(Schedule::getWorkDate, schedule.getWorkDate()));
+                .eq(Schedule::getWorkDate, schedule.getWorkDate())
+                .ne(Schedule::getStatus, 2)  // 排除已取消
+                .ne(Schedule::getStatus, 5)); // 排除已驳回
         if (count > 0) {
-            throw new ServiceException("该医生在 " + schedule.getWorkDate() + " 已有排班，请勿重复操作");
+            throw new ServiceException("该医生在 " + schedule.getWorkDate() + " 已有有效排班，请勿重复操作");
         }
 
         schedule.setAvailableSlots(schedule.getTotalCapacity());
@@ -366,6 +369,11 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             // 3. 医生删除操作：状态改为 3 (待审核)，等待管理员审核
             boolean allUpdated = true;
             for (Schedule schedule : list) {
+                // 如果已经是待审核状态，不允许重复提交
+                if (schedule.getStatus() == 3) {
+                    throw new ServiceException("排班 " + schedule.getWorkDate() + " 已在审核中，请勿重复申请");
+                }
+                
                 schedule.setStatus(3); 
                 // 仅更新状态为待审核
                 allUpdated &= update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Schedule>()
@@ -374,7 +382,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
                 
                 // 为了防止后续预约，这里可以将可用号源暂时置为0 (如果需要的话，但恢复比较麻烦)
                 // 或者依赖前端/后端在预约时检查状态
-                // 假设预约逻辑会检查 status != 0 && status != 1，那么状态 4 就会阻止预约
+                // 假设预约逻辑会检查 status != 0 && status != 1，那么状态 3 就会阻止预约
             }
             return allUpdated;
         }

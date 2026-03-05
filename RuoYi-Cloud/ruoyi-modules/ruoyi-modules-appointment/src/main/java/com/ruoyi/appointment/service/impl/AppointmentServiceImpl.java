@@ -168,10 +168,28 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         if (appointment == null) {
             throw new ServiceException("预约记录不存在");
         }
-        refreshExpireStatus(appointment);
-        if ("已完成".equals(status) && "已过期".equals(appointment.getStatus()) && !isSameDay(appointment)) {
-            throw new ServiceException("预约已过期且早于今天，不能进行就诊操作");
+        
+        // 1. 如果是“已完成”操作，必须是当天的预约
+        if ("已完成".equals(status)) {
+            refreshExpireStatus(appointment);
+            
+            // 检查日期：必须是今天
+            if (!isSameDay(appointment)) {
+                throw new ServiceException("无法对非当天的预约进行就诊操作");
+            }
+            
+            // 状态检查：只能从“待就诊”或“已过期”(仅限当天)转为“已完成”
+            if (!"待就诊".equals(appointment.getStatus()) && !"已过期".equals(appointment.getStatus())) {
+                throw new ServiceException("当前状态不可进行就诊操作");
+            }
         }
+        
+        // 2. 如果是“取消”操作 (医生端发起)
+        if ("已取消".equals(status)) {
+            // 复用 cancelAppointment 逻辑以处理号源恢复
+            return cancelAppointment(id);
+        }
+
         Appointment update = new Appointment();
         update.setId(id);
         update.setStatus(status);

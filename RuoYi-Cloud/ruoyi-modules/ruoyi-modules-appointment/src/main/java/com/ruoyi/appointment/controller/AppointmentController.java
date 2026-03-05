@@ -132,7 +132,11 @@ public class AppointmentController extends BaseController
                                     @RequestParam("newScheduleId") Long newScheduleId, 
                                     @RequestParam("count") Integer count)
     {
-        SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
+        // 允许医生在调整排班时级联迁移预约
+        if (!hasRole("doctor"))
+        {
+            SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
+        }
         return ResultVO.success(appointmentService.reassign(oldScheduleId, newScheduleId, count));
     }
 
@@ -143,7 +147,11 @@ public class AppointmentController extends BaseController
     public ResultVO<Boolean> syncTimeChange(@RequestParam("scheduleId") Long scheduleId,
                                           @RequestParam("oldTimeSlot") String oldTimeSlot,
                                           @RequestParam("newTimeSlot") String newTimeSlot) {
-        SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
+        // 允许医生在调整排班时级联同步预约时间
+        if (!hasRole("doctor"))
+        {
+            SecurityUtils.checkAdminPermission(UserConstants.PERM_BOOKING);
+        }
         return ResultVO.success(appointmentService.syncTimeChange(scheduleId, oldTimeSlot, newTimeSlot));
     }
 
