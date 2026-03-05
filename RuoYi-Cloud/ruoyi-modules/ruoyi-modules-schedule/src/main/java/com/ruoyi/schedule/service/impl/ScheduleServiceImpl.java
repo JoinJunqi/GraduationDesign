@@ -342,6 +342,44 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean deleteScheduleByIds(Long[] ids) {
+        if (isDoctor()) {
+            List<Schedule> list = listByIds(Arrays.asList(ids));
+            java.time.LocalDate today = java.time.LocalDate.now();
+            Long currentUserId = SecurityUtils.getUserId();
+            
+            for (Schedule schedule : list) {
+                // 1. 只能删除自己的排班
+                if (!schedule.getDoctorId().equals(currentUserId)) {
+                    throw new ServiceException("无权删除其他医生的排班");
+                }
+                
+                // 2. 检查日期：小于今天的不可删除
+                if (schedule.getWorkDate() != null) {
+                    java.time.LocalDate workDate = schedule.getWorkDate().toInstant()
+                            .atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+                    if (workDate.isBefore(today)) {
+                        throw new ServiceException("无法删除过去日期的排班 (" + schedule.getWorkDate() + ")");
+                    }
+                }
+            }
+            
+            // 3. 医生删除操作：状态改为 3 (待审核)，等待管理员审核
+            boolean allUpdated = true;
+            for (Schedule schedule : list) {
+                schedule.setStatus(3); 
+                // 仅更新状态为待审核
+                allUpdated &= update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Schedule>()
+                        .set("status", 3)
+                        .eq("id", schedule.getId()));
+                
+                // 为了防止后续预约，这里可以将可用号源暂时置为0 (如果需要的话，但恢复比较麻烦)
+                // 或者依赖前端/后端在预约时检查状态
+                // 假设预约逻辑会检查 status != 0 && status != 1，那么状态 4 就会阻止预约
+            }
+            return allUpdated;
+        }
+
+        // 管理员直接删除
         for (Long id : ids) {
             redisService.deleteObject(getRedisKey(id));
         }

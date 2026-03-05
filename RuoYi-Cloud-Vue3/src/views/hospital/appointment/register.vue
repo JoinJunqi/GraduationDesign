@@ -27,9 +27,23 @@
 
     <!-- Step 2: Select Doctor -->
     <div v-if="activeStep === 1">
-      <div class="mb20">
-        <el-button icon="Back" @click="activeStep = 0">返回重选科室</el-button>
-        <span class="ml20">当前科室：<el-tag>{{ selectedDept.name }}</el-tag></span>
+      <div class="mb20 filter-container">
+        <div class="top-row">
+          <el-button icon="Back" @click="activeStep = 0">返回重选科室</el-button>
+          <span class="ml20">当前科室：<el-tag>{{ selectedDept.name }}</el-tag></span>
+        </div>
+        
+        <div class="date-filter mt10">
+          <span class="filter-tip">选择日期查看当前有排班的医生：</span>
+          <el-date-picker
+            v-model="doctorFilterDate"
+            type="date"
+            placeholder="选择日期筛选"
+            value-format="YYYY-MM-DD"
+            :disabled-date="disabledDate"
+            @change="handleDoctorDateChange"
+          />
+        </div>
       </div>
       <el-row :gutter="20">
         <el-col v-for="doctor in doctorList" :key="doctor.id" :xs="24" :sm="12" :md="8" :lg="6" class="mb20">
@@ -43,15 +57,30 @@
             </div>
           </el-card>
         </el-col>
-        <el-empty v-if="doctorList.length === 0" description="该科室暂无医生出诊" />
+        <el-empty v-if="doctorList.length === 0" description="该日期下暂无医生排班" />
       </el-row>
     </div>
 
     <!-- Step 3: Select Schedule -->
     <div v-if="activeStep === 2">
-      <div class="mb20">
-        <el-button icon="Back" @click="activeStep = 1">返回重选医生</el-button>
-        <span class="ml20">当前医生：<el-tag type="success">{{ selectedDoctor.name }}</el-tag></span>
+      <div class="mb20 filter-container">
+        <div class="top-row">
+          <el-button icon="Back" @click="activeStep = 1">返回重选医生</el-button>
+          <span class="ml20">当前医生：<el-tag type="success">{{ selectedDoctor.name }}</el-tag></span>
+        </div>
+        
+        <div class="date-filter mt10">
+          <span class="filter-tip">选择日期筛选排班：</span>
+          <el-date-picker
+            v-model="scheduleFilterDate"
+            type="date"
+            placeholder="显示所有排班"
+            value-format="YYYY-MM-DD"
+            :disabled-date="disabledDate"
+            @change="handleScheduleDateChange"
+            clearable
+          />
+        </div>
       </div>
       <el-table :data="scheduleList" border stripe v-loading="loading">
         <el-table-column label="就诊日期" align="center" prop="workDate">
@@ -82,11 +111,21 @@
         </el-table-column>
         <el-table-column label="操作" align="center">
           <template #default="scope">
-            <el-button
-              type="primary"
-              :disabled="scope.row.availableSlots <= 0"
-              @click="handleSelectSchedule(scope.row)"
-            >立即预约</el-button>
+            <el-tooltip
+              class="box-item"
+              effect="dark"
+              :content="getScheduleTooltip(scope.row)"
+              placement="top"
+              :disabled="!isScheduleExpired(scope.row)"
+            >
+              <div style="display: inline-block;">
+                <el-button
+                  type="primary"
+                  :disabled="scope.row.availableSlots <= 0 || isScheduleExpired(scope.row)"
+                  @click="handleSelectSchedule(scope.row)"
+                >立即预约</el-button>
+              </div>
+            </el-tooltip>
           </template>
         </el-table-column>
       </el-table>
@@ -174,7 +213,9 @@ const activeStep = ref(0);
 
 const departmentList = ref([]);
 const doctorList = ref([]);
+const allDoctorList = ref([]); // 缓存所有医生
 const scheduleList = ref([]);
+const allScheduleList = ref([]); // 缓存所有排班
 
 const selectedDept = ref({});
 const selectedDoctor = ref({});
@@ -182,6 +223,14 @@ const selectedSchedule = ref({});
 const selectedTime = ref("");
 const availableTimeSlots = ref([]);
 const bookedTimeSlots = ref([]);
+
+const doctorFilterDate = ref("");
+const scheduleFilterDate = ref("");
+
+/** 禁用过去日期 */
+function disabledDate(time) {
+  return time.getTime() < Date.now() - 8.64e7; // 禁用今天之前的日期
+}
 
 /** 生成时间段 */
 function generateTimeSlots(schedule) {
@@ -248,6 +297,7 @@ function handleSelectDept(dept) {
   console.log('Selected department:', dept);
   selectedDept.value = dept;
   activeStep.value = 1;
+  doctorFilterDate.value = ""; // 重置筛选日期
   getDoctorList(dept.id);
 }
 
@@ -257,10 +307,40 @@ function getDoctorList(deptId) {
   loading.value = true;
   listDoctorByDept(deptId).then(response => {
     console.log('Doctor list response:', response);
-    doctorList.value = response.rows || response.data || (Array.isArray(response) ? response : []);
+    const list = response.rows || response.data || (Array.isArray(response) ? response : []);
+    allDoctorList.value = list; // 缓存完整列表
+    doctorList.value = list;    // 默认显示所有
     loading.value = false;
   }).catch(err => {
     console.error('Failed to fetch doctors:', err);
+    loading.value = false;
+  });
+}
+
+/** 医生日期筛选变更 */
+function handleDoctorDateChange(date) {
+  if (!date) {
+    // 如果清空日期，显示所有医生
+    doctorList.value = allDoctorList.value;
+    return;
+  }
+  
+  loading.value = true;
+  // 查询该日期下有排班的医生
+  const query = {
+    deptId: selectedDept.value.id,
+    workDate: date
+  };
+  
+  listSchedule(query).then(response => {
+    const schedules = response.rows || [];
+    // 获取有排班的医生ID集合
+    const doctorIds = new Set(schedules.map(s => s.doctorId));
+    // 过滤医生列表
+    doctorList.value = allDoctorList.value.filter(d => doctorIds.has(d.id));
+    loading.value = false;
+  }).catch(err => {
+    console.error('Failed to filter doctors:', err);
     loading.value = false;
   });
 }
@@ -270,6 +350,11 @@ function handleSelectDoctor(doctor) {
   console.log('Selected doctor:', doctor);
   selectedDoctor.value = doctor;
   activeStep.value = 2;
+  scheduleFilterDate.value = ""; // 重置筛选日期
+  // 如果在医生列表页已经选择了日期，自动带入到排班页
+  if (doctorFilterDate.value) {
+    scheduleFilterDate.value = doctorFilterDate.value;
+  }
   getScheduleList(doctor.id);
 }
 
@@ -283,13 +368,62 @@ function getScheduleList(doctorId) {
   listSchedule(query).then(response => {
     console.log('Schedule list response:', response);
     const rawList = response.rows || response.data || (Array.isArray(response) ? response : []);
-    // 仅过滤掉已取消的排班，保证所有有效排班都能展示给患者选择
-    scheduleList.value = rawList.filter(s => s.status !== 2);
+    // 仅过滤掉已取消的排班
+    const validList = rawList.filter(s => s.status !== 2);
+    allScheduleList.value = validList; // 缓存完整列表
+    
+    // 如果有预设的筛选日期，进行过滤
+    if (scheduleFilterDate.value) {
+      scheduleList.value = validList.filter(s => parseTime(s.workDate, '{y}-{m}-{d}') === scheduleFilterDate.value);
+    } else {
+      scheduleList.value = validList;
+    }
+    
     loading.value = false;
   }).catch(err => {
     console.error('Failed to fetch schedules:', err);
     loading.value = false;
   });
+}
+
+/** 排班日期筛选变更 */
+function handleScheduleDateChange(date) {
+  if (!date) {
+    scheduleList.value = allScheduleList.value;
+  } else {
+    scheduleList.value = allScheduleList.value.filter(s => parseTime(s.workDate, '{y}-{m}-{d}') === date);
+  }
+}
+
+/** 检查排班是否已过期 (超过当天17:30) */
+function isScheduleExpired(schedule) {
+  if (!schedule.workDate) return false;
+  
+  const todayStr = parseTime(new Date(), '{y}-{m}-{d}');
+  const workDateStr = parseTime(schedule.workDate, '{y}-{m}-{d}');
+  
+  // 1. 如果是过去日期，肯定过期
+  if (workDateStr < todayStr) return true;
+  
+  // 2. 如果是今天，检查时间是否超过 17:30
+  if (workDateStr === todayStr) {
+    const now = new Date();
+    // 17:30 = 17 * 60 + 30 = 1050 分钟
+    const deadline = 17 * 60 + 30;
+    const current = now.getHours() * 60 + now.getMinutes();
+    return current > deadline;
+  }
+  
+  // 3. 未来日期，不过期
+  return false;
+}
+
+/** 获取排班 Tooltip 内容 */
+function getScheduleTooltip(schedule) {
+  if (isScheduleExpired(schedule)) {
+    return '已过当天预约时间';
+  }
+  return '';
 }
 
 /** 选择排班 */
@@ -396,6 +530,33 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
+.filter-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.top-row {
+  display: flex;
+  align-items: center;
+}
+
+.date-filter {
+  /* margin-left: auto; */ /* 移除自动左边距，使其靠左对齐 */
+  display: flex;
+  align-items: center;
+}
+
+.mt10 {
+  margin-top: 10px;
+}
+
+.filter-tip {
+  font-size: 14px;
+  color: #606266;
+  margin-right: 10px;
+}
+
 .dept-card {
   cursor: pointer;
   text-align: center;

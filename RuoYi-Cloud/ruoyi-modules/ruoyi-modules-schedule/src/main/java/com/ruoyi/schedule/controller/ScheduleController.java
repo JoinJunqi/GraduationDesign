@@ -108,7 +108,10 @@ public class ScheduleController extends BaseController
     @DeleteMapping("/{ids}")
     public ResultVO<Boolean> remove(@PathVariable Long[] ids)
     {
-        SecurityUtils.checkAdminPermission(UserConstants.PERM_SCHEDULE);
+        // 允许医生删除自己的排班 (Service层会校验日期)
+        if (!isDoctor()) {
+            SecurityUtils.checkAdminPermission(UserConstants.PERM_SCHEDULE);
+        }
         return ResultVO.success(scheduleService.deleteScheduleByIds(ids));
     }
 

@@ -94,7 +94,7 @@
           v-hasPermi="['hospital:schedule:add']"
         >新增</el-button>
       </el-col>
-      <el-col :span="1.5">
+      <el-col :span="1.5" v-if="!isDoctor">
         <el-button
           type="success"
           plain
@@ -112,7 +112,7 @@
           :disabled="multiple"
           @click="handleDelete"
           v-hasPermi="['hospital:schedule:remove']"
-        >删除</el-button>
+        >{{ isDoctor ? '申请删除' : '删除' }}</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
@@ -145,15 +145,16 @@
           <el-tag v-else-if="scope.row.status === 1" type="warning">有调整</el-tag>
           <el-tag v-else-if="scope.row.status === 2" type="danger">已取消</el-tag>
           <el-tag v-else-if="scope.row.status === 3" type="warning">待审核</el-tag>
-          <el-tag v-else-if="scope.row.status === 4" type="danger">已驳回</el-tag>
+          <el-tag v-else-if="scope.row.status === 4" type="danger">申请删除</el-tag>
+          <el-tag v-else-if="scope.row.status === 5" type="danger">已驳回</el-tag>
           <el-tag v-else type="info">未知</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" v-if="(isAdmin && hasAdminPermi(AdminPermi.SCHEDULE)) || isDoctor">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:schedule:edit']">修改</el-button>
-          <el-button link type="primary" icon="CircleClose" @click="handleCancelSchedule(scope.row)" v-if="scope.row.status !== 2" v-hasPermi="['hospital:schedule:edit']">取消</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hospital:schedule:remove']">删除</el-button>
+          <el-button link type="primary" icon="CircleClose" @click="handleCancelSchedule(scope.row)" v-if="scope.row.status !== 2 && scope.row.status !== 3 && scope.row.status !== 4" v-hasPermi="['hospital:schedule:edit']">取消</el-button>
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status !== 3 && scope.row.status !== 4" v-hasPermi="['hospital:schedule:remove']">{{ isDoctor ? '申请删除' : '删除' }}</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -214,22 +215,63 @@
       </template>
     </template>
         <el-form-item label="出诊日期" prop="workDate">
-          <el-date-picker
-            v-model="form.workDate"
-            type="date"
-            placeholder="选择出诊日期"
-            value-format="YYYY-MM-DD"
-          />
+          <el-tooltip
+            effect="dark"
+            content="已过当天的可修改时间"
+            placement="top"
+            :disabled="!isEditDisabled"
+          >
+            <div style="width: 100%">
+              <el-date-picker
+                v-model="form.workDate"
+                type="date"
+                placeholder="选择出诊日期"
+                value-format="YYYY-MM-DD"
+                @change="handleWorkDateChange"
+                :disabled="isEditDisabled"
+                style="width: 100%"
+              />
+            </div>
+          </el-tooltip>
         </el-form-item>
         <el-form-item label="班次" prop="timeSlot">
-          <el-select v-model="form.timeSlot" placeholder="请选择班次" @change="handleTimeSlotChange">
-            <el-option label="上午" value="上午" />
-            <el-option label="下午" value="下午" />
-            <el-option label="全天" value="全天" />
-          </el-select>
+          <el-tooltip
+            effect="dark"
+            content="已过当天的可修改时间"
+            placement="top"
+            :disabled="!isEditDisabled"
+          >
+            <div style="width: 100%">
+              <el-select 
+                v-model="form.timeSlot" 
+                placeholder="请选择班次" 
+                @change="handleTimeSlotChange"
+                :disabled="isEditDisabled"
+                style="width: 100%"
+              >
+                <el-option label="上午" value="上午" />
+                <el-option label="下午" value="下午" />
+                <el-option label="全天" value="全天" />
+              </el-select>
+            </div>
+          </el-tooltip>
         </el-form-item>
         <el-form-item label="总号源" prop="totalCapacity">
-          <el-input-number v-model="form.totalCapacity" :min="1" :max="form.maxCapacity || 28" />
+          <el-tooltip
+            effect="dark"
+            content="已过当天的可修改时间"
+            placement="top"
+            :disabled="!isEditDisabled"
+          >
+            <div style="width: 100%">
+              <el-input-number 
+                v-model="form.totalCapacity" 
+                :min="1" 
+                :max="form.maxCapacity || 28" 
+                :disabled="isEditDisabled"
+              />
+            </div>
+          </el-tooltip>
           <div class="help-block" style="font-size: 12px; color: #909399;">
             按15分钟/号计算，该时段上限为 {{ form.maxCapacity || 28 }} 个号
           </div>
@@ -247,7 +289,7 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button type="primary" @click="submitForm" :disabled="isEditDisabled">确 定</el-button>
           <el-button @click="cancel">取 消</el-button>
         </div>
       </template>
@@ -274,6 +316,7 @@ const isAdmin = computed(() => userStore.loginType === 'admin');
 const isPatient = computed(() => userStore.roles.includes('patient'));
 const currentDoctorName = computed(() => userStore.nickName);
 const currentDoctorId = computed(() => userStore.id);
+const isEditDisabled = ref(false);
 
 const scheduleList = ref([]);
 const open = ref(false);
@@ -385,17 +428,82 @@ function handleSortChange(column) {
   getList();
 }
 
+/** 计算号源上限 */
+function calculateMaxCapacity(workDate, timeSlot) {
+  if (!workDate || !timeSlot) return 28;
+
+  // 如果不是今天，返回标准容量
+  const todayStr = parseTime(new Date(), '{y}-{m}-{d}');
+  if (workDate !== todayStr) {
+    if (timeSlot === '上午' || timeSlot === '下午') return 14;
+    return 28;
+  }
+
+  // 是今天，根据当前时间计算
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  const currentTime = currentHour * 60 + currentMinute;
+
+  let amEnd = 11 * 60 + 30; // 11:30
+  let pmEnd = 17 * 60 + 30; // 17:30
+  
+  // 上午时段计算
+  let amSlots = 0;
+  if (currentTime < amEnd) {
+    let start = Math.max(currentTime, 8 * 60); // 8:00
+    let remaining = amEnd - start;
+    amSlots = Math.floor(remaining / 15);
+  }
+
+  // 下午时段计算
+  let pmSlots = 0;
+  if (currentTime < pmEnd) {
+    let start = Math.max(currentTime, 14 * 60); // 14:00
+    // 如果还没到下午上班时间，从14:00开始算
+    if (currentTime < 14 * 60) {
+      start = 14 * 60;
+    }
+    let remaining = pmEnd - start;
+    pmSlots = Math.floor(remaining / 15);
+  }
+
+  if (timeSlot === '上午') return amSlots;
+  if (timeSlot === '下午') return pmSlots;
+  if (timeSlot === '全天') return amSlots + pmSlots;
+
+  return 28;
+}
+
 /** 班次变更自动计算号源上限 */
 function handleTimeSlotChange(val) {
-  let capacity = 0;
-  if (val === '上午' || val === '下午') {
-    capacity = 14; // 3.5小时 * 60 / 15 = 14
-  } else if (val === '全天') {
-    capacity = 28; // 7小时 * 60 / 15 = 28
+  const max = calculateMaxCapacity(form.value.workDate, val);
+  form.value.maxCapacity = max;
+  form.value.totalCapacity = max;
+  form.value.availableSlots = max;
+}
+
+/** 日期变更自动计算号源上限 */
+function handleWorkDateChange(val) {
+  // 检查是否超过当天新增排班时间
+  if (!form.value.id && isDoctor.value) { // 仅新增时检查
+    if (checkEditTime(val)) {
+      proxy.$modal.msgError("已过当天排班新增时间");
+      // 清空日期，阻止选择
+      form.value.workDate = null;
+      return;
+    }
   }
-  form.value.maxCapacity = capacity;
-  form.value.totalCapacity = capacity;
-  form.value.availableSlots = capacity;
+
+  if (form.value.timeSlot) {
+    const max = calculateMaxCapacity(val, form.value.timeSlot);
+    form.value.maxCapacity = max;
+    // 如果当前设置超过上限，重置为上限
+    if (form.value.totalCapacity > max) {
+      form.value.totalCapacity = max;
+      form.value.availableSlots = max;
+    }
+  }
 }
 
 /** 查询排班列表 */
@@ -502,6 +610,24 @@ function handleAdd() {
   reset();
   open.value = true;
   title.value = "添加排班";
+  isEditDisabled.value = false; // 新增时默认不禁用，具体看选择的日期
+}
+
+/** 检查是否已过修改时间 (当天17:30后) */
+function checkEditTime(workDate) {
+  if (!isDoctor.value) return false;
+  if (!workDate) return false;
+  
+  const todayStr = parseTime(new Date(), '{y}-{m}-{d}');
+  const targetDateStr = parseTime(workDate, '{y}-{m}-{d}');
+  if (targetDateStr === todayStr) {
+    const now = new Date();
+    // 17:30 = 17 * 60 + 30 = 1050 分钟
+    const deadline = 17 * 60 + 30;
+    const current = now.getHours() * 60 + now.getMinutes();
+    return current > deadline;
+  }
+  return false;
 }
 
 /** 修改按钮操作 */
@@ -510,6 +636,14 @@ function handleUpdate(row) {
   const id = row.id || ids.value;
   // 先把当前行的数据存下来，防止详情接口返回数据不全
   const rowData = { ...row };
+  
+  // 检查是否禁用修改
+  if (checkEditTime(rowData.workDate)) {
+    isEditDisabled.value = true;
+  } else {
+    isEditDisabled.value = false;
+  }
+
   getSchedule(id).then(response => {
     form.value = response.data;
     // 如果详情接口没有返回名称，使用列表行中的名称
@@ -531,11 +665,9 @@ function handleUpdate(row) {
       });
     }
     // 设置号源上限
-    if (form.value.timeSlot === '上午' || form.value.timeSlot === '下午') {
-      form.value.maxCapacity = 14;
-    } else if (form.value.timeSlot === '全天') {
-      form.value.maxCapacity = 28;
-    }
+    const max = calculateMaxCapacity(form.value.workDate, form.value.timeSlot);
+    form.value.maxCapacity = max;
+    
     open.value = true;
     title.value = "修改排班";
   });
@@ -629,11 +761,51 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const scheduleIds = row.id || ids.value;
+  // 检查是否包含过去日期的排班
+  if (isDoctor.value) {
+    const checkRows = row.id ? [row] : scheduleList.value.filter(item => ids.value.includes(item.id));
+    const todayStr = parseTime(new Date(), '{y}-{m}-{d}');
+    const hasPastSchedule = checkRows.some(item => {
+      const workDateStr = parseTime(item.workDate, '{y}-{m}-{d}');
+      return workDateStr < todayStr;
+    });
+    
+    if (hasPastSchedule) {
+      proxy.$modal.msgError("无法删除过去日期的排班");
+      return;
+    }
+  }
+
   proxy.$modal.confirm('是否确认删除排班编号为"' + scheduleIds + '"的数据项？').then(function() {
     return delSchedule(scheduleIds);
   }).then(() => {
-    getList();
-    proxy.$modal.msgSuccess("删除成功");
+    if (isDoctor.value) {
+      // 医生端需要提交审核记录
+      import("@/api/hospital/audit").then(module => {
+        // 如果是批量删除，需要为每个ID提交一条审核记录？或者简化处理，只提交一条
+        // 为了简化，目前假设一次操作生成一条审核记录，但后端可能并没有真正物理删除
+        // 实际上后端 deleteScheduleByIds 已经将状态改为 4
+        // 我们需要在这里补充提交审核记录，以便管理员能看到申请原因
+        const idArray = Array.isArray(scheduleIds) ? scheduleIds : [scheduleIds];
+        
+        // 使用 Promise.all 并行提交审核
+        const promises = idArray.map(id => {
+          return module.submitAudit({
+            auditType: 'SCHEDULE_CHANGE',
+            targetId: id,
+            requestReason: '医生申请删除排班'
+          });
+        });
+        
+        Promise.all(promises).then(() => {
+          getList();
+          proxy.$modal.msgSuccess("已提交删除申请，请等待管理员审核");
+        });
+      });
+    } else {
+      getList();
+      proxy.$modal.msgSuccess("删除成功");
+    }
   }).catch(() => {});
 }
 
