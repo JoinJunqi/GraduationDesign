@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import java.util.Random;
+
 @Service
 public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> implements IScheduleService {
 
@@ -38,9 +40,19 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
     private RemoteAppointmentService remoteAppointmentService;
 
     private static final String SCHEDULE_SLOTS_KEY = "hospital:schedule:slots:";
+    // 空值缓存过期时间（防止缓存穿透）
+    private static final long NULL_CACHE_EXPIRE = 60L; 
+    // 基础过期时间（秒）
+    private static final long BASE_CACHE_EXPIRE = 24 * 60 * 60L; 
 
     private String getRedisKey(Long scheduleId) {
         return SCHEDULE_SLOTS_KEY + scheduleId;
+    }
+    
+    // 获取带有随机波动的过期时间，防止缓存雪崩
+    private long getRandomExpire() {
+        // 在基础过期时间上增加 0-3600 秒（1小时）的随机值
+        return BASE_CACHE_EXPIRE + new Random().nextInt(3600);
     }
 
     private boolean hasRole(String role) {
@@ -83,18 +95,32 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         // 使用带有关联查询的方法获取详情
         Schedule query = new Schedule();
         query.setId((Long) id);
+        
+        // 1. 尝试从 Redis 获取号源 (缓存穿透与雪崩保护)
+        String redisKey = getRedisKey((Long) id);
+        Integer availableSlots = redisService.getCacheObject(redisKey);
+        
+        // 缓存穿透保护：如果缓存中是特殊标记（如-1），说明数据库也不存在，直接返回 null 或抛异常
+        if (availableSlots != null && availableSlots == -1) {
+             // 这里的处理取决于业务，如果 id 对应的排班真的不存在，应该返回 null
+             // 但 getById 的语义通常是查对象，如果号源是 -1，可能意味着排班对象缓存也空？
+             // 这里仅针对号源缓存。如果号源是-1，说明之前查过数据库不存在该排班。
+             return null;
+        }
+
         List<Schedule> list = scheduleMapper.selectScheduleList(query);
         Schedule schedule = (list != null && !list.isEmpty()) ? list.get(0) : null;
         
         if (schedule != null) {
-            // 从 Redis 获取最新号源数
-            Integer availableSlots = redisService.getCacheObject(getRedisKey(schedule.getId()));
             if (availableSlots != null) {
                 schedule.setAvailableSlots(availableSlots);
             } else {
-                // 如果 Redis 没有，缓存一份，设置 24 小时过期
-                redisService.setCacheObject(getRedisKey(schedule.getId()), schedule.getAvailableSlots(), 24L, TimeUnit.HOURS);
+                // 缓存未命中，写入缓存（防止缓存雪崩：设置随机过期时间）
+                redisService.setCacheObject(redisKey, schedule.getAvailableSlots(), getRandomExpire(), TimeUnit.SECONDS);
             }
+        } else {
+            // 缓存穿透保护：数据库也不存在，缓存空值（-1），设置较短过期时间
+            redisService.setCacheObject(redisKey, -1, NULL_CACHE_EXPIRE, TimeUnit.SECONDS);
         }
         return schedule;
     }
@@ -200,8 +226,8 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         }
         boolean saved = this.save(schedule);
         if (saved) {
-            // 写入 Redis 缓存
-            redisService.setCacheObject(getRedisKey(schedule.getId()), schedule.getAvailableSlots(), 24L, TimeUnit.HOURS);
+            // 写入 Redis 缓存 (设置随机过期时间)
+            redisService.setCacheObject(getRedisKey(schedule.getId()), schedule.getAvailableSlots(), getRandomExpire(), TimeUnit.SECONDS);
         }
         return saved;
     }
@@ -299,7 +325,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
                         other.setAvailableSlots(other.getAvailableSlots() - moveCount);
                         this.updateById(other);
                         // 同步更新 Redis
-                        redisService.setCacheObject(getRedisKey(other.getId()), other.getAvailableSlots(), 24L, TimeUnit.HOURS);
+                        redisService.setCacheObject(getRedisKey(other.getId()), other.getAvailableSlots(), getRandomExpire(), TimeUnit.SECONDS);
                         
                         remainingToMove -= moveCount;
                         if (remainingToMove <= 0) break;
@@ -316,7 +342,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             
             schedule.setAvailableSlots(schedule.getTotalCapacity() - usedSlots);
             // 更新 Redis
-            redisService.setCacheObject(getRedisKey(schedule.getId()), schedule.getAvailableSlots(), 24L, TimeUnit.HOURS);
+            redisService.setCacheObject(getRedisKey(schedule.getId()), schedule.getAvailableSlots(), getRandomExpire(), TimeUnit.SECONDS);
             
             // 如果状态还是正常(0)，则改为有调整(1)
             if (current.getStatus() == 0 && schedule.getStatus() == null) {
@@ -324,7 +350,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             }
         } else if (schedule.getAvailableSlots() != null) {
             // 如果是通过预约模块调用的 update (只更新 availableSlots)
-            redisService.setCacheObject(getRedisKey(schedule.getId()), schedule.getAvailableSlots(), 24L, TimeUnit.HOURS);
+            redisService.setCacheObject(getRedisKey(schedule.getId()), schedule.getAvailableSlots(), getRandomExpire(), TimeUnit.SECONDS);
         }
 
         // 4. 处理状态变更
@@ -334,7 +360,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
                 // 级联取消所有预约
                 remoteAppointmentService.cancelByScheduleId(schedule.getId());
                 // 清理 Redis (或者将号源置为0，防止继续预约)
-                redisService.setCacheObject(getRedisKey(schedule.getId()), 0, 24L, TimeUnit.HOURS);
+                redisService.setCacheObject(getRedisKey(schedule.getId()), 0, getRandomExpire(), TimeUnit.SECONDS);
                 schedule.setAvailableSlots(0);
             }
         }
@@ -402,7 +428,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
     public boolean recoverScheduleByIds(Long[] ids) {
         List<Schedule> list = listByIds(Arrays.asList(ids));
         for (Schedule schedule : list) {
-            redisService.setCacheObject(getRedisKey(schedule.getId()), schedule.getAvailableSlots(), 24L, TimeUnit.HOURS);
+            redisService.setCacheObject(getRedisKey(schedule.getId()), schedule.getAvailableSlots(), getRandomExpire(), TimeUnit.SECONDS);
         }
         return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Schedule>()
                 .set("is_deleted", 0)
