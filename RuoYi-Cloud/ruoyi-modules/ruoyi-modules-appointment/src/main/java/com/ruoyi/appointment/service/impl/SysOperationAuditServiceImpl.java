@@ -140,10 +140,14 @@ public class SysOperationAuditServiceImpl extends ServiceImpl<SysOperationAuditM
                 String reason = dbAudit.getRequestReason();
                 if (reason != null && reason.contains("新增")) {
                     schedule.setStatus(0); // 正常
+                    remoteScheduleService.update(schedule);
                 } else if (reason != null && reason.contains("删除")) {
-                    schedule.setStatus(2); // 已取消
+                    // 审核通过，执行删除操作（逻辑删除/进回收站）
+                    // 此时不再是设为“已取消”，而是真正删除
+                    remoteScheduleService.remove(new Long[]{schedule.getId()});
                 } else {
                     schedule.setStatus(1); // 有调整
+                    remoteScheduleService.update(schedule);
                 }
             } else if (audit.getAuditStatus() == 2) { // 审核驳回
                 String reason = dbAudit.getRequestReason();
@@ -154,9 +158,8 @@ public class SysOperationAuditServiceImpl extends ServiceImpl<SysOperationAuditM
                 } else {
                     schedule.setStatus(5); // 修改驳回
                 }
+                remoteScheduleService.update(schedule);
             }
-            // 确保这里调用成功
-            remoteScheduleService.update(schedule);
         }
         
         return 1;

@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
+
 /**
  * 排班服务
  */
@@ -26,4 +28,10 @@ public interface RemoteScheduleService {
      */
     @PutMapping("/schedule")
     ResultVO<Boolean> update(@RequestBody Schedule schedule);
+
+    /**
+     * 删除排班
+     */
+    @DeleteMapping("/schedule/{ids}")
+    ResultVO<Boolean> remove(@PathVariable("ids") Long[] ids);
 }

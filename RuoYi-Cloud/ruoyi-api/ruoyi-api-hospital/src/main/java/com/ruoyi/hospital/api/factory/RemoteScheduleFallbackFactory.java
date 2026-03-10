@@ -28,6 +28,11 @@ public class RemoteScheduleFallbackFactory implements FallbackFactory<RemoteSche
             public ResultVO<Boolean> update(Schedule schedule) {
                 return ResultVO.error("更新排班失败:" + throwable.getMessage());
             }
+
+            @Override
+            public ResultVO<Boolean> remove(Long[] ids) {
+                return ResultVO.error("删除排班失败:" + throwable.getMessage());
+            }
         };
     }
 }
