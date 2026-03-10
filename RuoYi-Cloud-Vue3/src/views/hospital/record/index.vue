@@ -178,8 +178,7 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="success" @click="handleFinishConsultation" v-if="isDoctor">就诊完成</el-button>
-          <el-button type="primary" @click="submitForm">仅保存病历</el-button>
+          <el-button type="primary" @click="submitForm">保 存</el-button>
           <el-button @click="cancel">取 消</el-button>
         </div>
       </template>
@@ -445,13 +444,15 @@ function submitForm() {
     if (valid) {
       if (form.value.id != null) {
         updateRecord(form.value).then(response => {
-          proxy.$modal.msgSuccess("修改成功");
+          const msg = isDoctor.value ? "该病历保存修改成功" : "保存成功";
+          proxy.$modal.msgSuccess(msg);
           open.value = false;
           getList();
         });
       } else {
         addRecord(form.value).then(response => {
-          proxy.$modal.msgSuccess("新增成功");
+          const finishedMsg = (isDoctor.value && form.value.appointmentId) ? "病历已保存，已完成就诊" : "保存成功";
+          proxy.$modal.msgSuccess(finishedMsg);
           open.value = false;
           getList();
         });

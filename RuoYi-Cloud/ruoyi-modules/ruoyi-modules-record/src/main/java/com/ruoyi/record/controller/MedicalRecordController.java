@@ -54,7 +54,7 @@ public class MedicalRecordController extends BaseController
     @PostMapping("/record")
     public ResultVO<Boolean> add(@RequestBody MedicalRecord medicalRecord)
     {
-        SecurityUtils.checkAdminPermission(UserConstants.PERM_RECORD);
+        // 权限校验下沉到Service层，允许医生操作
         return ResultVO.success(medicalRecordService.insertMedicalRecord(medicalRecord));
     }
 
@@ -64,7 +64,7 @@ public class MedicalRecordController extends BaseController
     @PutMapping("/record")
     public ResultVO<Boolean> edit(@RequestBody MedicalRecord medicalRecord)
     {
-        SecurityUtils.checkAdminPermission(UserConstants.PERM_RECORD);
+        // 权限校验下沉到Service层，允许医生操作
         return ResultVO.success(medicalRecordService.updateMedicalRecord(medicalRecord));
     }
 
