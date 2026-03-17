@@ -265,7 +265,7 @@ import { listDoctorByDept, listDoctor } from "@/api/hospital/doctor";
 import { parseTime } from "@/utils/ruoyi";
 import useUserStore from "@/store/modules/user";
 import { hasAdminPermi, AdminPermi } from "@/utils/adminPermi";
-import { ElNotification } from 'element-plus';
+import { ElNotification, ElMessageBox } from 'element-plus';
 
 const { proxy } = getCurrentInstance();
 const userStore = useUserStore();
@@ -434,6 +434,21 @@ function tableRowClassName({ row }) {
 }
 
 onMounted(() => {
+  if (userStore.loginType === 'guest') {
+    ElMessageBox.confirm('您当前是访客模式，查看我的预约需要登录。是否前往登录？', '提示', {
+      confirmButtonText: '去登录',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }).then(() => {
+      userStore.logOut().then(() => {
+        router.push(`/login?redirect=${router.currentRoute.value.fullPath}`);
+      });
+    }).catch(() => {
+       router.push('/hospital/register');
+    });
+    return;
+  }
+
   getDepartmentList();
   // 如果是医生且没有特定ID查询，默认显示今天的预约
   if (isDoctor.value && !route.query.newId && !queryParams.value.workDate) {

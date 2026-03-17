@@ -80,7 +80,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             Long userId = SecurityUtils.getUserId();
             log.info("Doctor role detected, filtering schedule by doctorId: {}", userId);
             schedule.setDoctorId(userId);
-        } else if (isPatient()) {
+        } else if (isPatient() || SecurityUtils.getLoginUser() == null) {
             if (schedule.getParams() == null) {
                 schedule.setParams(new java.util.HashMap<>());
             }

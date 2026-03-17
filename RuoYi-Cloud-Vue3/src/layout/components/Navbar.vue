@@ -30,7 +30,7 @@
         </el-tooltip>
       </template>
 
-      <el-dropdown @command="handleCommand" class="avatar-container right-menu-item hover-effect" trigger="hover">
+      <el-dropdown @command="handleCommand" class="avatar-container right-menu-item hover-effect" trigger="hover" v-if="userStore.loginType !== 'guest'">
         <div class="avatar-wrapper">
           <img :src="userStore.avatar" class="user-avatar" />
           <span class="user-nickname"> {{ userStore.nickName }} </span>
@@ -49,6 +49,11 @@
           </el-dropdown-menu>
         </template>
       </el-dropdown>
+      
+      <!-- 访客显示 -->
+      <div class="right-menu-item hover-effect" v-else @click="goToLogin">
+        <span style="font-size: 14px; color: #606266;">未登录 (点击登录)</span>
+      </div>
     </div>
   </div>
 </template>
@@ -130,6 +135,12 @@ onUnmounted(() => {
     clearInterval(pollingTimer)
   }
 })
+
+function goToLogin() {
+  userStore.logOut().then(() => {
+    router.push('/login');
+  })
+}
 
 function toggleSideBar() {
   appStore.toggleSideBar()

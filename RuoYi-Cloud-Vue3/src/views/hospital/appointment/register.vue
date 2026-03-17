@@ -203,10 +203,13 @@ import { listDoctorByDept } from "@/api/hospital/doctor.js";
 import { listSchedule } from "@/api/hospital/schedule.js";
 import { addAppointment, listAppointment } from "@/api/hospital/appointment.js";
 import { parseTime } from "@/utils/ruoyi";
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
+
+import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance();
 const router = useRouter();
+const userStore = useUserStore();
 const loading = ref(false);
 const submitting = ref(false);
 const activeStep = ref(0);
@@ -428,6 +431,20 @@ function getScheduleTooltip(schedule) {
 
 /** 选择排班 */
 function handleSelectSchedule(schedule) {
+  // 访客拦截：选择排班（查看详情/下一步）时触发
+  if (userStore.loginType === 'guest') {
+    ElMessageBox.confirm('您当前是访客模式，预约挂号需要登录。是否前往登录？', '提示', {
+      confirmButtonText: '去登录',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }).then(() => {
+      userStore.logOut().then(() => {
+        router.push(`/login?redirect=${router.currentRoute.value.fullPath}`);
+      });
+    }).catch(() => {});
+    return;
+  }
+
   selectedSchedule.value = schedule;
   availableTimeSlots.value = generateTimeSlots(schedule);
   selectedTime.value = "";

@@ -79,9 +79,33 @@ const useUserStore = defineStore(
           })
         })
       },
+      // 访客登录
+      loginGuest() {
+        return new Promise((resolve) => {
+          const token = 'GUEST_TOKEN'
+          setToken(token)
+          this.token = token
+          this.setLoginType('guest')
+          // 不要在这里设置 roles，留给 permission.js 里的 getInfo 去设置
+          // this.roles = ['guest']
+          this.name = '访客'
+          this.nickName = '未登录'
+          this.id = -1
+          resolve()
+        })
+      },
       // 获取用户信息
       getInfo() {
         return new Promise((resolve, reject) => {
+          if (this.loginType === 'guest') {
+            this.roles = ['guest']
+            this.permissions = ['hospital:appointment:list', 'hospital:department:list', 'hospital:doctor:list', 'hospital:schedule:list']
+            this.name = '访客'
+            this.nickName = '未登录'
+            this.avatar = defAva
+            resolve({ roles: ['guest'], permissions: this.permissions })
+            return
+          }
           getInfo().then(res => {
             const data = res.data || res;
             let user = data.user || data.sysUser || data;
@@ -140,6 +164,14 @@ const useUserStore = defineStore(
       // 退出系统
       logOut() {
         return new Promise((resolve, reject) => {
+          if (this.loginType === 'guest') {
+            this.token = ''
+            this.roles = []
+            this.permissions = []
+            removeToken()
+            resolve()
+            return
+          }
           logout(this.token).then(() => {
             this.token = ''
             this.roles = []

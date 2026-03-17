@@ -213,6 +213,7 @@ import { listDoctorByDept, listDoctor } from "@/api/hospital/doctor";
 import { parseTime } from "@/utils/ruoyi";
 import useUserStore from "@/store/modules/user";
 import { hasAdminPermi, AdminPermi } from "@/utils/adminPermi";
+import { ElMessageBox } from 'element-plus';
 
 console.log('Record index component setup started');
 
@@ -363,6 +364,21 @@ function handleQuery() {
 }
 
 onMounted(() => {
+  if (userStore.loginType === 'guest') {
+    ElMessageBox.confirm('您当前是访客模式，查看我的病历需要登录。是否前往登录？', '提示', {
+      confirmButtonText: '去登录',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }).then(() => {
+      userStore.logOut().then(() => {
+        router.push(`/login?redirect=${router.currentRoute.value.fullPath}`);
+      });
+    }).catch(() => {
+       router.push('/hospital/register');
+    });
+    return;
+  }
+
   console.log('Record index component mounted');
   getDepartmentList();
   getList();

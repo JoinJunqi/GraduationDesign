@@ -38,8 +38,8 @@ const usePermissionStore = defineStore(
           const userStore = useUserStore()
           const loginType = userStore.loginType
           
-          // 如果是患者或医生，直接使用默认菜单，不请求后端（因为他们不在 sys_user 表中，后端会返回空）
-          if (loginType === 'patient' || loginType === 'doctor') {
+          // 如果是患者或医生或访客，直接使用默认菜单
+          if (loginType === 'patient' || loginType === 'doctor' || loginType === 'guest') {
             const menuData = this.getDefaultMenuByLoginType(loginType)
             const sdata = JSON.parse(JSON.stringify(menuData))
             const rdata = JSON.parse(JSON.stringify(menuData))
@@ -101,7 +101,42 @@ const usePermissionStore = defineStore(
         })
       },
       getDefaultMenuByLoginType(type) {
-        if (type === 'patient') {
+        if (type === 'guest') {
+          return [
+            {
+              name: 'Hospital',
+              path: '/hospital',
+              hidden: false,
+              redirect: 'noRedirect',
+              component: 'Layout',
+              alwaysShow: true,
+              meta: { title: '医疗服务', icon: 'hospital', noCache: false, link: null },
+              children: [
+                {
+                  name: 'Register',
+                  path: 'register',
+                  hidden: false,
+                  component: 'hospital/appointment/register',
+                  meta: { title: '预约挂号', icon: 'edit', noCache: false, link: null }
+                },
+                {
+                  name: 'Appointment',
+                  path: 'appointment',
+                  hidden: false,
+                  component: 'hospital/appointment/index',
+                  meta: { title: '我的预约', icon: 'list', noCache: false, link: null }
+                },
+                {
+                  name: 'Record',
+                  path: 'record',
+                  hidden: false,
+                  component: 'hospital/record/index',
+                  meta: { title: '我的病历', icon: 'form', noCache: false, link: null }
+                }
+              ]
+            }
+          ]
+        } else if (type === 'patient') {
           return [
             {
               name: 'Hospital',

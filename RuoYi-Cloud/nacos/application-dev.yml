@@ -1,0 +1,64 @@
+# Spring 相关配置
+spring: 
+  datasource: 
+    driver-class-name: com.mysql.cj.jdbc.Driver 
+    # 数据库主机地址 (建议在 Nacos 中使用 ${spring.datasource.host} 变量或具体 IP)
+    host: localhost 
+    port: 3306 
+    username: root 
+    # 数据库密码 
+    password: Jun46411 
+    druid: 
+      initial-size: 5 
+      min-idle: 5 
+      max-active: 20 
+      max-wait: 60000 
+      time-between-eviction-runs-millis: 60000 
+      min-evictable-idle-time-millis: 300000 
+      validation-query: SELECT 1 
+      test-while-idle: true 
+      test-on-borrow: false 
+      test-on-return: false 
+      pool-prepared-statements: true 
+      max-pool-prepared-statement-per-connection-size: 20 
+  
+  redis: 
+    # Redis 主机地址 
+    host: localhost 
+    port: 6379 
+    password: 
+    database: 0
+
+  # Jackson 序列化配置 (确保前后端日期格式一致)
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+# MyBatis Plus 全局配置 (关键新增)
+mybatis-plus:
+  # 搜索指定包别名，让 Mapper.xml 中的 ResultType 可以简写类名
+  type-aliases-package: com.ruoyi.**.domain
+  # 配置 Mapper 映射文件存放位置
+  mapper-locations: classpath*:mapper/**/*Mapper.xml
+  # 全局策略配置
+  global-config:
+    db-config:
+      # 主键类型：0:数据库ID自增; 1:未设置; 2:用户输入; 3:全局唯一ID (Numeric); 4:全局唯一ID (String)
+      id-type: auto
+      # 逻辑删除字段名 (对应实体类属性名)
+      logic-delete-field: isDeleted
+      # 逻辑删除字面值：1 表示已删除
+      logic-delete-value: 1
+      # 逻辑未删除字面值：0 表示正常
+      logic-not-delete-value: 0
+  configuration:
+    # 开启驼峰命名自动映射 (如：user_id -> userId)
+    map-underscore-to-camel-case: true
+    # 打印 SQL 语句 (开发环境下建议开启，方便调试)
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 日志配置
+logging:
+  level:
+    com.ruoyi: debug
+    org.springframework: warn

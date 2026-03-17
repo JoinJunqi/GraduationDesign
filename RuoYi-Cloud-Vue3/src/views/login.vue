@@ -64,6 +64,10 @@
         <div style="margin-top: 10px; text-align: right;" v-if="loginType === 'patient'">
           <router-link class="link-type" :to="'/register'">立即注册</router-link>
         </div>
+        <!-- 访客通道 -->
+        <div style="margin-top: 10px; text-align: center;">
+          <el-button link type="info" @click="handleGuestAccess">游客访问 &gt;&gt;</el-button>
+        </div>
       </el-form-item>
     </el-form>
     <!--  底部  -->
@@ -189,6 +193,12 @@ function handleLogin() {
       })
     }
   })
+}
+
+function handleGuestAccess() {
+  userStore.loginGuest().then(() => {
+    router.push("/hospital/register");
+  });
 }
 
 function getCode() {

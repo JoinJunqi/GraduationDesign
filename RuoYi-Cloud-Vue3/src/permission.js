@@ -1,5 +1,5 @@
 import router from './router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 import { getToken } from '@/utils/auth'
@@ -40,7 +40,12 @@ router.beforeEach((to, from, next) => {
                 router.addRoute(route) // 动态添加可访问路由表
               }
             })
-            next({ ...to, replace: true }) // hack方法 确保addRoutes已完成
+            // 解决刷新404问题：如果目标路由在动态路由中，需要重新跳转
+            if (to.matched.length === 0) {
+                next({ ...to, replace: true })
+            } else {
+                next({ ...to, replace: true })
+            }
           })
         }).catch(err => {
           useUserStore().logOut().then(() => {
@@ -49,6 +54,25 @@ router.beforeEach((to, from, next) => {
           })
         })
       } else {
+        const loginType = useUserStore().loginType
+        if (loginType === 'guest') {
+          const blockedPaths = ['/hospital/appointment', '/hospital/record', '/user/profile']
+          if (blockedPaths.some(p => to.path.startsWith(p))) {
+            ElMessageBox.confirm('该页面需要登录后才能访问，是否立即登录？', '提示', {
+              confirmButtonText: '去登录',
+              cancelButtonText: '取消',
+              type: 'warning'
+            }).then(() => {
+              useUserStore().logOut().then(() => {
+                next(`/login?redirect=${to.fullPath}`)
+              })
+            }).catch(() => {
+              NProgress.done()
+              next(false)
+            })
+            return
+          }
+        }
         next()
       }
     }

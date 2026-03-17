@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    dynamic:
+      datasource:
+        master:
+          url: jdbc:mysql://${spring.datasource.host}:${spring.datasource.port}/hospital_booking?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+          username: ${spring.datasource.username}
+          password: ${spring.datasource.password}
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*Mapper.xml
+  # 增加了 com.ruoyi.system.api.domain，这是 SysUser/SysDept 等核心类所在包
+  type-aliases-package: com.ruoyi.system.domain,com.ruoyi.system.api.domain
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-value: 2
+      logic-not-delete-value: 0
