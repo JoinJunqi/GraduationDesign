@@ -78,12 +78,41 @@ router.beforeEach((to, from, next) => {
     }
   } else {
     // 没有token
-    if (isWhiteList(to.path)) {
-      // 在免登录白名单，直接进入
-      next()
-    } else {
-      next(`/login?redirect=${to.fullPath}`) // 否则全部重定向到登录页
+    if (to.path === '/login' && !to.query.redirect && !to.query.logout) {
+      // 显式且无重定向地访问登录页，默认走访客登录，进入首页
+      useUserStore().loginGuest().then(() => {
+        next({ path: '/index', replace: true })
+      }).catch(() => {
+        next()
+      })
       NProgress.done()
+    } else if (to.path === '/login' || to.path === '/register') {
+      // 访问登录页(带redirect)或注册页，直接放行
+      next()
+    } else if (to.path === '/') {
+      // 访问根目录，默认走访客登录，进入首页
+      useUserStore().loginGuest().then(() => {
+        next({ path: '/index', replace: true })
+      }).catch(() => {
+        next(`/login?redirect=${to.fullPath}`)
+      })
+      NProgress.done()
+    } else if (to.path === '/index') {
+      // 访问首页，如果没token则走访客登录
+      useUserStore().loginGuest().then(() => {
+        next({ path: '/index', replace: true })
+      }).catch(() => {
+        next(`/login?redirect=${to.fullPath}`)
+      })
+      NProgress.done()
+    } else {
+      // 访问其他页面，如果是白名单则放行，否则去登录页
+      if (isWhiteList(to.path)) {
+        next()
+      } else {
+        next(`/login?redirect=${to.fullPath}`)
+        NProgress.done()
+      }
     }
   }
 })

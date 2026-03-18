@@ -166,9 +166,9 @@ function logout() {
     type: 'warning'
   }).then(() => {
     userStore.logOut().then(() => {
-      location.href = '/index'
+      location.href = '/login?logout=1'
     })
-  }).catch(() => { })
+  }).catch(() => {})
 }
 
 const emits = defineEmits(['setLayout'])

@@ -46,40 +46,54 @@ public class AuthFilter implements GlobalFilter, Ordered
         ServerHttpRequest.Builder mutate = request.mutate();
 
         String url = request.getURI().getPath();
-        // 跳过不需要验证的路径
+        
+        // 提取 token
+        String token = getToken(request);
+        boolean isTokenValid = false;
+        String userkey = null;
+        String userid = null;
+        String username = null;
+        
+        // 尝试解析 token，即便是白名单接口，如果传了有效 token 也向后透传用户信息
+        if (StringUtils.isNotEmpty(token)) {
+            try {
+                Claims claims = JwtUtils.parseToken(token);
+                if (claims != null) {
+                    userkey = JwtUtils.getUserKey(claims);
+                    if (redisService.hasKey(getTokenKey(userkey))) {
+                        userid = JwtUtils.getUserId(claims);
+                        username = JwtUtils.getUserName(claims);
+                        if (StringUtils.isNotEmpty(userid) && StringUtils.isNotEmpty(username)) {
+                            isTokenValid = true;
+                            addHeader(mutate, SecurityConstants.USER_KEY, userkey);
+                            addHeader(mutate, SecurityConstants.DETAILS_USER_ID, userid);
+                            addHeader(mutate, SecurityConstants.DETAILS_USERNAME, username);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Token 解析失败忽略异常，后续判断是否是白名单决定是否拦截
+            }
+        }
+
+        // 跳过不需要验证的路径（白名单）
         if (StringUtils.matches(url, ignoreWhite.getWhites()) || 
             url.contains("/login") || url.contains("/register") ||
             url.contains("/logout") || url.contains("/code"))
         {
-            return chain.filter(exchange);
+            return chain.filter(exchange.mutate().request(mutate.build()).build());
         }
-        String token = getToken(request);
+        
+        // 非白名单接口，严格校验 token
         if (StringUtils.isEmpty(token))
         {
             return unauthorizedResponse(exchange, "令牌不能为空");
         }
-        Claims claims = JwtUtils.parseToken(token);
-        if (claims == null)
+        if (!isTokenValid)
         {
             return unauthorizedResponse(exchange, "令牌已过期或验证不正确！");
         }
-        String userkey = JwtUtils.getUserKey(claims);
-        boolean islogin = redisService.hasKey(getTokenKey(userkey));
-        if (!islogin)
-        {
-            return unauthorizedResponse(exchange, "登录状态已过期");
-        }
-        String userid = JwtUtils.getUserId(claims);
-        String username = JwtUtils.getUserName(claims);
-        if (StringUtils.isEmpty(userid) || StringUtils.isEmpty(username))
-        {
-            return unauthorizedResponse(exchange, "令牌验证失败");
-        }
 
-        // 设置用户信息到请求
-        addHeader(mutate, SecurityConstants.USER_KEY, userkey);
-        addHeader(mutate, SecurityConstants.DETAILS_USER_ID, userid);
-        addHeader(mutate, SecurityConstants.DETAILS_USERNAME, username);
         // 内部请求来源参数清除
         removeHeader(mutate, SecurityConstants.FROM_SOURCE);
         return chain.filter(exchange.mutate().request(mutate.build()).build());

@@ -84,11 +84,17 @@ import { encrypt, decrypt } from "@/utils/jsencrypt"
 import useUserStore from '@/store/modules/user'
 import useSettingsStore from '@/store/modules/settings'
 import { loginPatient, loginDoctor } from "@/api/login" 
+import { useRouter, useRoute } from 'vue-router'
 
 const userStore = useUserStore()
-const route = useRoute()
 const router = useRouter()
+const route = useRoute()
 const { proxy } = getCurrentInstance()
+
+// 如果有logout参数，说明是刚注销，清空掉URL参数防止影响下一次判断
+if (route.query.logout) {
+  router.replace({ path: '/login' })
+}
 
 // 登录类型管理
 const loginType = ref(userStore.loginType || 'admin')
@@ -197,7 +203,7 @@ function handleLogin() {
 
 function handleGuestAccess() {
   userStore.loginGuest().then(() => {
-    router.push("/hospital/register");
+    router.push("/index");
   });
 }
 
