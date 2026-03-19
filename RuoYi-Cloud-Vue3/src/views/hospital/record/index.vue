@@ -244,6 +244,7 @@ const data = reactive({
   queryParams: {
     pageNum: 1,
     pageSize: 10,
+    appointmentId: null,
     patientName: null,
     doctorName: null,
     deptId: null,
@@ -385,12 +386,14 @@ onMounted(() => {
   
   // 处理从预约列表跳转过来的“开始就诊”
   if (route.query.appointmentId) {
+    queryParams.value.appointmentId = route.query.appointmentId;
     handleAdd();
     form.value.appointmentId = route.query.appointmentId;
     form.value.patientId = route.query.patientId;
     form.value.patientName = route.query.patientName;
     form.value.doctorId = userStore.id; // 使用 store 中的 id
     form.value.visitTime = parseTime(new Date());
+    getList();
   }
 });
 
@@ -437,7 +440,7 @@ function handleAdd() {
 function handleView(row) {
   reset();
   const id = row.id || ids.value;
-  getRecord(id).then(response => {
+  getRecord(id, queryParams.value.appointmentId).then(response => {
     form.value = response.data;
     openView.value = true;
   });

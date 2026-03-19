@@ -6,6 +6,8 @@ import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.common.core.exception.ServiceException;
 import com.ruoyi.common.security.utils.SecurityUtils;
 import com.ruoyi.hospital.api.RemoteAppointmentService;
+import com.ruoyi.hospital.api.RemoteScheduleService;
+import com.ruoyi.hospital.api.domain.Schedule;
 import com.ruoyi.record.domain.MedicalRecord;
 import com.ruoyi.record.mapper.MedicalRecordMapper;
 import com.ruoyi.record.service.IMedicalRecordService;
@@ -28,6 +30,9 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
 
     @Autowired
     private RemoteAppointmentService remoteAppointmentService;
+
+    @Autowired
+    private RemoteScheduleService remoteScheduleService;
 
     /**
      * 判断是否为管理员
@@ -69,12 +74,25 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         if (isAdminUser()) {
             log.info("Admin access: viewing all records");
         } else if (roles.contains("doctor")) {
-            // 医生视角：如果提供了患者查询条件，则允许查看该患者的所有病历；否则只看自己开具的病历
-            if (medicalRecord.getPatientId() != null || (medicalRecord.getPatientName() != null && !medicalRecord.getPatientName().isEmpty())) {
-                log.info("Doctor access: searching for patient history. Not filtering by doctorId.");
+            boolean hasPatientIdFilter = medicalRecord.getPatientId() != null;
+            boolean hasAppointmentIdFilter = medicalRecord.getAppointmentId() != null;
+
+            if (hasAppointmentIdFilter) {
+                Long patientId = resolvePatientIdFromAppointmentForDoctor(medicalRecord.getAppointmentId(), userId);
+                medicalRecord.setPatientId(patientId);
+                medicalRecord.setDoctorId(null);
+            } else if (hasPatientIdFilter) {
+                if (hasDoctorTreatedPatient(userId, medicalRecord.getPatientId())) {
+                    medicalRecord.setDoctorId(null);
+                } else {
+                    log.info("Doctor access denied: no relationship with patientId={}", medicalRecord.getPatientId());
+                    throw new ServiceException("无权查看该患者病历，请从该患者的预约记录进入");
+                }
             } else {
-                log.info("Doctor access: no patient filter, defaulting to own records. doctorId={}", userId);
+                log.info("Doctor access: defaulting to own records. doctorId={}", userId);
                 medicalRecord.setDoctorId(userId);
+                medicalRecord.setPatientId(null);
+                medicalRecord.setPatientName(null);
             }
         } else if (roles.contains("patient")) {
             log.info("Patient access: filtering by patientId={}", userId);
@@ -95,6 +113,11 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
 
     @Override
     public MedicalRecord getMedicalRecordById(Long id) {
+        return getMedicalRecordById(id, null);
+    }
+
+    @Override
+    public MedicalRecord getMedicalRecordById(Long id, Long appointmentId) {
         MedicalRecord record = medicalRecordMapper.selectMedicalRecordById(id);
         if (record == null) {
             throw new ServiceException("病历不存在");
@@ -103,10 +126,34 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         Long userId = SecurityUtils.getUserId();
         Set<String> roles = getRoles();
         
-        if (!isAdminUser() && !roles.contains("doctor") && !record.getPatientId().equals(userId)) {
-            throw new ServiceException("无权查看他人病历");
+        if (isAdminUser()) {
+            return record;
         }
-        return record;
+
+        if (roles.contains("patient")) {
+            if (!record.getPatientId().equals(userId)) {
+                throw new ServiceException("无权查看他人病历");
+            }
+            return record;
+        }
+
+        if (roles.contains("doctor")) {
+            if (Objects.equals(record.getDoctorId(), userId)) {
+                return record;
+            }
+            if (appointmentId != null) {
+                Long patientIdFromAppt = resolvePatientIdFromAppointmentForDoctor(appointmentId, userId);
+                if (Objects.equals(record.getPatientId(), patientIdFromAppt)) {
+                    return record;
+                }
+            }
+            if (record.getPatientId() != null && hasDoctorTreatedPatient(userId, record.getPatientId())) {
+                return record;
+            }
+            throw new ServiceException("无权查看该病历详情");
+        }
+
+        throw new ServiceException("无权查看他人病历");
     }
 
     /**
@@ -130,22 +177,17 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         } else if (roles.contains("doctor")) {
             log.info("Doctor inserting medical record, setting doctorId={}", userId);
             medicalRecord.setDoctorId(userId);
+            if (medicalRecord.getAppointmentId() == null) {
+                throw new ServiceException("医生新增病历必须关联预约记录");
+            }
         } else {
             log.error("Patient or unknown role tried to insert medical record. User: {}, roles: {}", userId, roles);
             throw new ServiceException("患者无权新增病历单，请联系医生操作");
         }
 
-        // 如果有关联预约，从预约中获取患者ID以确保正确性
         if (medicalRecord.getAppointmentId() != null) {
-            log.info("Fetching appointment info for appointmentId={}", medicalRecord.getAppointmentId());
-            ResultVO<com.ruoyi.hospital.api.domain.Appointment> appointmentResult = remoteAppointmentService.getInfo(medicalRecord.getAppointmentId());
-            if (appointmentResult != null && appointmentResult.getData() != null) {
-                Long patientIdFromAppt = appointmentResult.getData().getPatientId();
-                log.info("Found patientId={} from appointment", patientIdFromAppt);
-                medicalRecord.setPatientId(patientIdFromAppt);
-            } else {
-                log.warn("Could not find appointment info for ID={}", medicalRecord.getAppointmentId());
-            }
+            Long patientIdFromAppt = resolvePatientIdFromAppointmentForDoctor(medicalRecord.getAppointmentId(), medicalRecord.getDoctorId());
+            medicalRecord.setPatientId(patientIdFromAppt);
         }
 
         medicalRecord.setCreatedAt(new Date());
@@ -167,6 +209,49 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
 
         log.info("Final medical record to save: {}", medicalRecord);
         return save(medicalRecord);
+    }
+
+    private boolean hasDoctorTreatedPatient(Long doctorId, Long patientId) {
+        if (doctorId == null || patientId == null) {
+            return false;
+        }
+        LambdaQueryWrapper<MedicalRecord> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(MedicalRecord::getDoctorId, doctorId).eq(MedicalRecord::getPatientId, patientId);
+        return this.count(wrapper) > 0;
+    }
+
+    private Long resolvePatientIdFromAppointmentForDoctor(Long appointmentId, Long doctorId) {
+        if (appointmentId == null) {
+            throw new ServiceException("预约ID不能为空");
+        }
+        if (doctorId == null) {
+            throw new ServiceException("医生信息缺失");
+        }
+
+        ResultVO<com.ruoyi.hospital.api.domain.Appointment> appointmentResult = remoteAppointmentService.getInfo(appointmentId);
+        if (appointmentResult == null || appointmentResult.getCode() != ResultVO.SUCCESS || appointmentResult.getData() == null) {
+            throw new ServiceException("预约记录不存在");
+        }
+
+        com.ruoyi.hospital.api.domain.Appointment appointment = appointmentResult.getData();
+        if (appointment.getPatientId() == null) {
+            throw new ServiceException("预约记录患者信息缺失");
+        }
+        if (appointment.getScheduleId() == null) {
+            throw new ServiceException("预约记录排班信息缺失");
+        }
+
+        ResultVO<Schedule> scheduleResult = remoteScheduleService.getById(appointment.getScheduleId());
+        if (scheduleResult == null || scheduleResult.getCode() != ResultVO.SUCCESS || scheduleResult.getData() == null) {
+            throw new ServiceException("排班记录不存在");
+        }
+
+        Schedule schedule = scheduleResult.getData();
+        if (!Objects.equals(schedule.getDoctorId(), doctorId)) {
+            throw new ServiceException("无权访问该预约对应的患者信息");
+        }
+
+        return appointment.getPatientId();
     }
 
     @Override

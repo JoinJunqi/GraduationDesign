@@ -43,9 +43,9 @@ public class MedicalRecordController extends BaseController
      * 获取病历详细信息
      */
     @GetMapping(value = "/record/{id}")
-    public ResultVO<MedicalRecord> getInfo(@PathVariable("id") Long id)
+    public ResultVO<MedicalRecord> getInfo(@PathVariable("id") Long id, @RequestParam(value = "appointmentId", required = false) Long appointmentId)
     {
-        return ResultVO.success(medicalRecordService.getMedicalRecordById(id));
+        return ResultVO.success(medicalRecordService.getMedicalRecordById(id, appointmentId));
     }
 
     /**

@@ -10,10 +10,11 @@ export function listRecord(query) {
 }
 
 // 查询病历详细
-export function getRecord(id) {
+export function getRecord(id, appointmentId) {
   return request({
     url: '/ruoyi-hospital-record/record/' + id,
-    method: 'get'
+    method: 'get',
+    params: appointmentId ? { appointmentId } : undefined
   })
 }
 

@@ -19,6 +19,11 @@ public interface IMedicalRecordService extends IService<MedicalRecord> {
     MedicalRecord getMedicalRecordById(Long id);
 
     /**
+     * 获取病历详细信息（带权限校验，可用于医生从预约进入查看病史）
+     */
+    MedicalRecord getMedicalRecordById(Long id, Long appointmentId);
+
+    /**
      * 新增病历（带权限校验）
      */
     boolean insertMedicalRecord(MedicalRecord medicalRecord);
