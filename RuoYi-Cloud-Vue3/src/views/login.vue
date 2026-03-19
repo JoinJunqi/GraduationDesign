@@ -65,8 +65,8 @@
           <router-link class="link-type" :to="'/register'">立即注册</router-link>
         </div>
         <!-- 访客通道 -->
-        <div style="margin-top: 10px; text-align: center;">
-          <el-button link type="info" @click="handleGuestAccess">游客访问 &gt;&gt;</el-button>
+        <div style="margin-top: 10px; text-align: center;" v-if="loginType === 'patient'">
+          <el-button link type="info" @click="handleGuestAccess">访客登录 &gt;&gt;</el-button>
         </div>
       </el-form-item>
     </el-form>
@@ -112,7 +112,7 @@ function updateUI(type) {
     accountPlaceholder.value = '身份证号/手机号'
   } else if (type === 'doctor') {
     currentTitle.value = '医生登录'
-    accountPlaceholder.value = '工号/用户名'
+    accountPlaceholder.value = '请填写账号'
   } else {
     currentTitle.value = '管理员登录'
     accountPlaceholder.value = '账号'

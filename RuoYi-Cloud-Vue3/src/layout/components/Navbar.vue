@@ -137,9 +137,16 @@ onUnmounted(() => {
 })
 
 function goToLogin() {
-  userStore.logOut().then(() => {
-    router.push('/login');
-  })
+  ElMessageBox.confirm('当前为访客模式，是否前往登录？', '提示', {
+    confirmButtonText: '去登录',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    userStore.logOut().then(() => {
+      const redirect = router.currentRoute.value.fullPath || '/index'
+      router.push(`/login?redirect=${encodeURIComponent(redirect)}`)
+    })
+  }).catch(() => {})
 }
 
 function toggleSideBar() {
