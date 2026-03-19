@@ -151,6 +151,7 @@
 <script setup name="Index">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessageBox } from 'element-plus'
 import useUserStore from '@/store/modules/user'
 import { parseTime } from '@/utils/ruoyi'
 import { listDepartmentWithIntro } from '@/api/hospital/department'
@@ -172,10 +173,10 @@ const loginType = userStore.loginType
 
 const functionList = computed(() => {
   const allFunctions = [
-    { title: '预约挂号', icon: 'Calendar', path: '/hospital/register', color: '#409EFF', roles: ['patient'] },
-    { title: '我的预约', icon: 'List', path: '/hospital/appointment', color: '#67C23A', roles: ['patient', 'doctor'] },
-    { title: '我的病历', icon: 'Form', path: '/hospital/record', color: '#E6A23C', roles: ['patient', 'doctor'] },
-    { title: '个人中心', icon: 'User', path: '/user/profile', color: '#F56C6C', roles: ['admin', 'doctor', 'patient'] },
+    { title: '预约挂号', icon: 'Calendar', path: '/hospital/register', color: '#409EFF', roles: ['patient', 'guest'] },
+    { title: '我的预约', icon: 'List', path: '/hospital/appointment', color: '#67C23A', roles: ['patient', 'doctor', 'guest'] },
+    { title: '我的病历', icon: 'Form', path: '/hospital/record', color: '#E6A23C', roles: ['patient', 'doctor', 'guest'] },
+    { title: '个人中心', icon: 'User', path: '/user/profile', color: '#F56C6C', roles: ['admin', 'doctor', 'patient', 'guest'] },
     { title: '科室管理', icon: 'OfficeBuilding', path: '/hospital/department', color: '#409EFF', roles: ['admin'] },
     { title: '医生管理', icon: 'UserFilled', path: '/hospital/doctor', color: '#67C23A', roles: ['admin'] },
     { title: '通知管理', icon: 'Message', path: '/hospital/notice', color: '#E6A23C', roles: ['admin'] }
@@ -198,7 +199,8 @@ function getNoticeList() {
   const audienceMap = {
     'admin': '管理员',
     'patient': '患者',
-    'doctor': '医生'
+    'doctor': '医生',
+    'guest': '患者'
   }
   
   listActiveNotice({ targetAudience: audienceMap[userStore.loginType] }).then(res => {
@@ -207,7 +209,19 @@ function getNoticeList() {
 }
 
 function handleJump(path) {
-  router.push(path)
+  if (userStore.loginType === 'guest' && path !== '/hospital/register') {
+    ElMessageBox.confirm('该功能需要登录后才能使用，是否立即登录？', '提示', {
+      confirmButtonText: '去登录',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }).then(() => {
+      userStore.logOut().then(() => {
+        router.push(`/login?redirect=${path}`)
+      })
+    }).catch(() => {})
+  } else {
+    router.push(path)
+  }
 }
 
 function viewNotice(notice) {
