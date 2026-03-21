@@ -295,6 +295,7 @@ onUnmounted(() => {
   z-index: 2000;
   display: flex;
   align-items: flex-start;
+  --sidebar-width: 300px;
 }
 
 .sidebar-toggle {
@@ -314,7 +315,7 @@ onUnmounted(() => {
   }
   
   &.is-open {
-    transform: translateX(-300px);
+    transform: translateX(calc(-1 * var(--sidebar-width)));
   }
 
   .toggle-text {
@@ -326,12 +327,12 @@ onUnmounted(() => {
 }
 
 .sidebar-content {
-  width: 300px;
+  width: var(--sidebar-width);
   height: calc(100vh - 150px);
   background: white;
   box-shadow: -2px 0 12px rgba(0, 0, 0, 0.1);
   position: fixed;
-  right: -300px;
+  right: calc(-1 * var(--sidebar-width));
   top: 100px;
   transition: right 0.3s;
   display: flex;
@@ -341,6 +342,18 @@ onUnmounted(() => {
 
   &.is-visible {
     right: 0;
+  }
+}
+
+@media (max-width: 1200px) {
+  .appointment-sidebar-container {
+    top: 70px;
+    --sidebar-width: min(90vw, 320px);
+  }
+
+  .sidebar-content {
+    top: 70px;
+    height: calc(100vh - 120px);
   }
 }
 

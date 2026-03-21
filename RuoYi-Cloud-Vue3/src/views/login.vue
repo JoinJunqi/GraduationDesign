@@ -268,7 +268,7 @@ getCookie()
 .login-form {
   border-radius: 6px;
   background: #ffffff;
-  width: 400px;
+  width: min(400px, 92vw);
   padding: 25px 25px 5px 25px;
   z-index: 1;
   .el-input {
@@ -281,6 +281,12 @@ getCookie()
     height: 39px;
     width: 14px;
     margin-left: 0px;
+  }
+}
+
+@media (max-width: 768px) {
+  .login-form {
+    padding: 18px 18px 4px 18px;
   }
 }
 .login-tip {

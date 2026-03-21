@@ -133,6 +133,39 @@
   }
 }
 
+@media (max-width: 480px) {
+  #app {
+    --el-font-size-base: 13px;
+    --el-font-size-small: 12px;
+    --el-component-size: 32px;
+  }
+
+  .el-card__header {
+    padding: 10px 12px 6px !important;
+    min-height: 36px;
+  }
+
+  .el-card__body {
+    padding: 12px !important;
+  }
+
+  .el-dialog:not(.is-fullscreen) {
+    margin-top: 4vh !important;
+  }
+
+  .el-form-item {
+    margin-bottom: 14px;
+  }
+
+  .el-button {
+    padding: 8px 12px;
+  }
+
+  .el-button--small {
+    padding: 6px 10px;
+  }
+}
+
 /* tree border */
 .tree-border {
   margin-top: 5px;

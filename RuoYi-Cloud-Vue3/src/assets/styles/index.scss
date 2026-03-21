@@ -125,6 +125,42 @@ aside {
   padding: 20px;
 }
 
+@media (max-width: 1200px) {
+  .app-container {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 10px;
+  }
+
+  .app-container {
+    .el-form--inline {
+      .el-form-item {
+        display: block;
+        margin-right: 0;
+      }
+    }
+
+    .el-input,
+    .el-select,
+    .el-date-editor,
+    .el-autocomplete {
+      width: 100%;
+    }
+  }
+
+  .el-table {
+    width: 100%;
+  }
+
+  .el-table__body-wrapper {
+    overflow-x: auto;
+  }
+}
+
 .components-container {
   margin: 30px 50px;
   position: relative;
