@@ -2,14 +2,6 @@
   <div class="login">
     <el-form ref="loginRef" :model="loginForm" :rules="loginRules" class="login-form">
       <h3 class="title">{{ currentTitle }}</h3>
-      
-      <div style="text-align: center; margin-bottom: 20px;">
-        <el-radio-group v-model="loginType" @change="handleTypeChange">
-          <el-radio-button label="admin">管理员</el-radio-button>
-          <el-radio-button label="patient">患者</el-radio-button>
-          <el-radio-button label="doctor">医生</el-radio-button>
-        </el-radio-group>
-      </div>
 
       <el-form-item prop="username">
         <el-input
@@ -83,7 +75,6 @@ import Cookies from "js-cookie"
 import { encrypt, decrypt } from "@/utils/jsencrypt"
 import useUserStore from '@/store/modules/user'
 import useSettingsStore from '@/store/modules/settings'
-import { loginPatient, loginDoctor } from "@/api/login" 
 import { useRouter, useRoute } from 'vue-router'
 
 const userStore = useUserStore()
@@ -97,14 +88,16 @@ if (route.query.logout) {
 }
 
 // 登录类型管理
-const loginType = ref(userStore.loginType || 'admin')
+const normalizeLoginType = (type) => {
+  if (type === 'admin' || type === 'patient' || type === 'doctor') return type
+  return undefined
+}
+
+const routeLoginType = computed(() => normalizeLoginType(route.query.type))
+const storedLoginType = normalizeLoginType(userStore.loginType)
+const loginType = ref(routeLoginType.value || storedLoginType || 'patient')
 const currentTitle = ref('')
 const accountPlaceholder = ref('账号')
-
-function handleTypeChange(val) {
-  userStore.setLoginType(val)
-  updateUI(val)
-}
 
 function updateUI(type) {
   if (type === 'patient') {
@@ -122,6 +115,7 @@ function updateUI(type) {
 
 // 初始化 UI
 updateUI(loginType.value)
+userStore.setLoginType(loginType.value)
 
 const loginForm = ref({
   username: loginType.value === 'admin' ? "admin" : "",
@@ -142,6 +136,30 @@ const loading = ref(false)
 // 验证码开关
 const captchaEnabled = ref(true)
 const redirect = ref(undefined)
+
+watch(routeLoginType, (type) => {
+  if (!type || type === loginType.value) return
+  loginType.value = type
+  userStore.setLoginType(type)
+  updateUI(type)
+})
+
+watch(loginType, (type, prevType) => {
+  if (type === prevType) return
+  if (type === 'admin') {
+    if (!loginForm.value.username && !loginForm.value.password) {
+      loginForm.value.username = 'admin'
+      loginForm.value.password = 'admin123'
+    }
+    return
+  }
+  if (prevType === 'admin') {
+    if (loginForm.value.username === 'admin' && loginForm.value.password === 'admin123') {
+      loginForm.value.username = ''
+      loginForm.value.password = ''
+    }
+  }
+})
 
 watch(route, (newRoute) => {
     redirect.value = newRoute.query && newRoute.query.redirect

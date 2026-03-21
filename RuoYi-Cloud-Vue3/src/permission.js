@@ -78,15 +78,7 @@ router.beforeEach((to, from, next) => {
     }
   } else {
     // 没有token
-    if (to.path === '/login' && !to.query.redirect && !to.query.logout) {
-      // 显式且无重定向地访问登录页，默认走访客登录，进入首页
-      useUserStore().loginGuest().then(() => {
-        next({ path: '/index', replace: true })
-      }).catch(() => {
-        next()
-      })
-      NProgress.done()
-    } else if (to.path === '/login' || to.path === '/register') {
+    if (to.path === '/login' || to.path === '/register') {
       // 访问登录页(带redirect)或注册页，直接放行
       next()
     } else if (to.path === '/') {

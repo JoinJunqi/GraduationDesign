@@ -8,26 +8,7 @@
       <template v-if="appStore.device !== 'mobile'">
         <header-search id="header-search" class="right-menu-item" />
 
-        <el-tooltip content="源码地址" effect="dark" placement="bottom">
-          <ruo-yi-git id="ruoyi-git" class="right-menu-item hover-effect" />
-        </el-tooltip>
-
-        <el-tooltip content="文档地址" effect="dark" placement="bottom">
-          <ruo-yi-doc id="ruoyi-doc" class="right-menu-item hover-effect" />
-        </el-tooltip>
-
         <screenfull id="screenfull" class="right-menu-item hover-effect" />
-
-        <el-tooltip content="主题模式" effect="dark" placement="bottom">
-          <div class="right-menu-item hover-effect theme-switch-wrapper" @click="toggleTheme">
-            <svg-icon v-if="settingsStore.isDark" icon-class="sunny" />
-            <svg-icon v-if="!settingsStore.isDark" icon-class="moon" />
-          </div>
-        </el-tooltip>
-
-        <el-tooltip content="布局大小" effect="dark" placement="bottom">
-          <size-select id="size-select" class="right-menu-item hover-effect" />
-        </el-tooltip>
       </template>
 
       <el-dropdown @command="handleCommand" class="avatar-container right-menu-item hover-effect" trigger="hover" v-if="userStore.loginType !== 'guest'">
@@ -64,10 +45,7 @@ import Breadcrumb from '@/components/Breadcrumb'
 import TopNav from '@/components/TopNav'
 import Hamburger from '@/components/Hamburger'
 import Screenfull from '@/components/Screenfull'
-import SizeSelect from '@/components/SizeSelect'
 import HeaderSearch from '@/components/HeaderSearch'
-import RuoYiGit from '@/components/RuoYi/Git'
-import RuoYiDoc from '@/components/RuoYi/Doc'
 import useAppStore from '@/store/modules/app'
 import useUserStore from '@/store/modules/user'
 import useSettingsStore from '@/store/modules/settings'
@@ -181,10 +159,6 @@ function logout() {
 const emits = defineEmits(['setLayout'])
 function setLayout() {
   emits('setLayout')
-}
-
-function toggleTheme() {
-  settingsStore.toggleTheme()
 }
 </script>
 

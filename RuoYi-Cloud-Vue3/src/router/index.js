@@ -43,6 +43,16 @@ export const constantRoutes = [
     hidden: true
   },
   {
+    path: '/admin',
+    redirect: '/login?type=admin',
+    hidden: true
+  },
+  {
+    path: '/doc',
+    redirect: '/login?type=doctor',
+    hidden: true
+  },
+  {
     path: '/register',
     component: () => import('@/views/register'),
     hidden: true
