@@ -75,25 +75,6 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          icon="Plus"
-          @click="handleAdd"
-          v-if="(isAdmin && hasAdminPermi(AdminPermi.RECORD)) || isDoctor"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="Edit"
-          :disabled="single"
-          @click="handleUpdate"
-          v-if="(isAdmin && hasAdminPermi(AdminPermi.RECORD)) || isDoctor"
-        >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
           type="danger"
           plain
           icon="Delete"
@@ -232,7 +213,6 @@ const openView = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
 const ids = ref([]);
-const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const title = ref("");
@@ -383,18 +363,6 @@ onMounted(() => {
   console.log('Record index component mounted');
   getDepartmentList();
   getList();
-  
-  // 处理从预约列表跳转过来的“开始就诊”
-  if (route.query.appointmentId) {
-    queryParams.value.appointmentId = route.query.appointmentId;
-    handleAdd();
-    form.value.appointmentId = route.query.appointmentId;
-    form.value.patientId = route.query.patientId;
-    form.value.patientName = route.query.patientName;
-    form.value.doctorId = userStore.id; // 使用 store 中的 id
-    form.value.visitTime = parseTime(new Date());
-    getList();
-  }
 });
 
 /** 就诊完成操作 */
@@ -425,15 +393,7 @@ function resetQuery() {
 /** 多选框选中数据 */
 function handleSelectionChange(selection) {
   ids.value = selection.map(item => item.id);
-  single.value = selection.length != 1;
   multiple.value = !selection.length;
-}
-
-/** 新增按钮操作 */
-function handleAdd() {
-  reset();
-  open.value = true;
-  title.value = "添加病历";
 }
 
 /** 查看详情操作 */

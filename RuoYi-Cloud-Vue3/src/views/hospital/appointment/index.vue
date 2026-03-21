@@ -191,13 +191,22 @@
                 
                 <!-- 医生端操作 -->
                 <template v-if="isDoctor">
-                  <el-button
-                    link
-                    type="success"
-                    icon="VideoPlay"
-                    @click="handleStartConsultation(scope.row)"
-                    v-if="scope.row.status === '待就诊' || (scope.row.status === '已过期' && isTodayDate(scope.row.workDate))"
-                  >开始就诊</el-button>
+                  <el-tooltip
+                    content="未到预约就诊时间"
+                    placement="top"
+                    :disabled="isTodayDate(scope.row.workDate)"
+                  >
+                    <span style="display: inline-block;">
+                      <el-button
+                        link
+                        type="success"
+                        icon="VideoPlay"
+                        @click="handleStartConsultation(scope.row)"
+                        :disabled="!isTodayDate(scope.row.workDate)"
+                        v-if="scope.row.status === '待就诊' || (scope.row.status === '已过期' && isTodayDate(scope.row.workDate))"
+                      >开始就诊</el-button>
+                    </span>
+                  </el-tooltip>
                   <el-button
                     link
                     type="danger"

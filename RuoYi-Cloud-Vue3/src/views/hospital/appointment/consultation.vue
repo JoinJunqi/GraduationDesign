@@ -93,14 +93,87 @@
           <template #header>
             <div class="card-header">
               <span class="header-title"><el-icon><Clock /></el-icon> 就诊历史记录</span>
+              <el-tag v-if="historyTotal > 0" type="info" effect="plain">{{ historyTotal }}</el-tag>
             </div>
           </template>
-          <div class="history-placeholder">
-            <el-empty description="暂无历史就诊记录" :image-size="100" />
-          </div>
+          <el-skeleton :loading="historyLoading" animated>
+            <template #template>
+              <div class="history-skeleton">
+                <el-skeleton-item variant="text" style="width: 65%" />
+                <el-skeleton-item variant="text" style="width: 90%" />
+                <el-skeleton-item variant="text" style="width: 80%" />
+                <el-skeleton-item variant="text" style="width: 70%" />
+              </div>
+            </template>
+            <template #default>
+              <div v-if="historyRecords.length === 0" class="history-empty">
+                <el-empty description="暂无历史就诊记录" :image-size="100" />
+              </div>
+              <div v-else class="history-list">
+                <el-scrollbar max-height="520px">
+                  <el-timeline>
+                    <el-timeline-item
+                      v-for="item in historyRecords"
+                      :key="item.id"
+                      :timestamp="parseTime(item.visitTime)"
+                      type="primary"
+                      placement="top"
+                    >
+                      <div class="history-item">
+                        <div class="history-item-title">
+                          <span>{{ item.deptName || '-' }}</span>
+                          <span class="split">·</span>
+                          <span>{{ item.doctorName || '-' }}</span>
+                          <span v-if="item.title" class="split">·</span>
+                          <span v-if="item.title">{{ item.title }}</span>
+                        </div>
+                        <div class="history-item-content">
+                          <div class="history-item-row">
+                            <span class="label">诊断</span>
+                            <span class="value">{{ item.diagnosis || '-' }}</span>
+                          </div>
+                        </div>
+                        <div class="history-item-actions">
+                          <el-button link type="primary" @click="openHistoryDetail(item)">详情</el-button>
+                          <el-button link type="primary" @click="appendHistoryToNotes(item)">引用到医嘱</el-button>
+                        </div>
+                      </div>
+                    </el-timeline-item>
+                  </el-timeline>
+                </el-scrollbar>
+                <div class="history-pagination" v-if="historyTotal > historyPageSize">
+                  <pagination
+                    :total="historyTotal"
+                    v-model:page="historyPageNum"
+                    v-model:limit="historyPageSize"
+                    @pagination="loadHistory"
+                    layout="prev, pager, next"
+                    :pager-count="5"
+                  />
+                </div>
+              </div>
+            </template>
+          </el-skeleton>
         </el-card>
       </el-col>
     </el-row>
+
+    <el-dialog title="历史病历详情" v-model="historyDetailOpen" width="650px" append-to-body>
+      <el-descriptions :column="1" border>
+        <el-descriptions-item label="就诊时间">{{ parseTime(historyDetail.visitTime) }}</el-descriptions-item>
+        <el-descriptions-item label="就诊科室">{{ historyDetail.deptName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="就诊医生">{{ historyDetail.doctorName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="职称">{{ historyDetail.title || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="诊断结果">{{ historyDetail.diagnosis || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="处方信息">{{ historyDetail.prescription || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="医嘱备注">{{ historyDetail.notes || '-' }}</el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="historyDetailOpen = false">关 闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -108,7 +181,7 @@
 import { ref, reactive, onMounted, getCurrentInstance } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getAppointment } from "@/api/hospital/appointment";
-import { addRecord, updateRecord } from "@/api/hospital/record";
+import { addRecord, updateRecord, listRecord } from "@/api/hospital/record";
 import { parseTime } from "@/utils/ruoyi";
 import useUserStore from "@/store/modules/user";
 // 导入图标组件
@@ -122,6 +195,14 @@ const userStore = useUserStore();
 const appointmentId = ref(route.query.appointmentId);
 const appointment = ref({});
 const loading = ref(false);
+
+const historyLoading = ref(false);
+const historyRecords = ref([]);
+const historyTotal = ref(0);
+const historyPageNum = ref(1);
+const historyPageSize = ref(6);
+const historyDetailOpen = ref(false);
+const historyDetail = ref({});
 
 const form = ref({
   id: null,
@@ -149,9 +230,60 @@ function getDetail() {
     form.value.patientId = appointment.value.patientId;
     form.value.doctorId = userStore.id;
     loading.value = false;
+    loadHistory();
   }).catch(() => {
     loading.value = false;
   });
+}
+
+function loadHistory() {
+  if (!appointmentId.value) return;
+  historyLoading.value = true;
+  const query = {
+    pageNum: historyPageNum.value,
+    pageSize: historyPageSize.value,
+    appointmentId: appointmentId.value,
+    orderByColumn: 'visitTime',
+    isAsc: 'descending',
+    params: {
+      includeDeleted: 'false'
+    }
+  };
+  listRecord(query).then(res => {
+    historyRecords.value = res.rows || [];
+    historyTotal.value = res.total || 0;
+    historyLoading.value = false;
+
+    if (!form.value.id) {
+      const current = historyRecords.value.find(r => String(r.appointmentId) === String(appointmentId.value));
+      if (current) {
+        form.value.id = current.id;
+        form.value.diagnosis = current.diagnosis || '';
+        form.value.prescription = current.prescription || '';
+        form.value.notes = current.notes || '';
+        form.value.visitTime = current.visitTime || form.value.visitTime;
+      }
+    }
+  }).catch(() => {
+    historyLoading.value = false;
+  });
+}
+
+function openHistoryDetail(item) {
+  historyDetail.value = item || {};
+  historyDetailOpen.value = true;
+}
+
+function appendHistoryToNotes(item) {
+  if (!item) return;
+  const header = `【既往就诊】${parseTime(item.visitTime)} ${item.deptName || ''} ${item.doctorName || ''}`.trim();
+  const content = [
+    header,
+    item.diagnosis ? `诊断：${item.diagnosis}` : null,
+    item.prescription ? `处方：${item.prescription}` : null,
+    item.notes ? `医嘱：${item.notes}` : null
+  ].filter(Boolean).join('\n');
+  form.value.notes = [form.value.notes, content].filter(Boolean).join('\n\n');
 }
 
 /** 仅保存病历 */
@@ -161,9 +293,7 @@ function submitForm() {
       const saveAction = form.value.id != null ? updateRecord(form.value) : addRecord(form.value);
       saveAction.then(response => {
         proxy.$modal.msgSuccess("保存成功");
-        if (!form.value.id && response.data) {
-          form.value.id = response.data.id;
-        }
+        loadHistory();
       });
     }
   });
@@ -275,4 +405,74 @@ onMounted(() => {
   font-weight: bold;
   font-size: 15px;
 }
+
+  .history-card {
+    .history-skeleton {
+      padding: 8px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .history-item {
+      padding: 10px 12px;
+      border: 1px solid #ebeef5;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .history-item-title {
+      font-weight: 600;
+      color: #303133;
+      margin-bottom: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .split {
+      color: #c0c4cc;
+    }
+
+    .history-item-content {
+      color: #606266;
+      font-size: 13px;
+    }
+
+    .history-item-row {
+      display: flex;
+      gap: 10px;
+      line-height: 1.6;
+      margin-bottom: 4px;
+    }
+
+    .label {
+      width: 38px;
+      color: #909399;
+      flex: 0 0 auto;
+    }
+
+    .value {
+      flex: 1 1 auto;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
+
+    .history-item-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .history-pagination {
+      margin-top: 12px;
+      display: flex;
+      justify-content: center;
+    }
+  }
 </style>
