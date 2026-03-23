@@ -153,9 +153,11 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" v-if="(isAdmin && hasAdminPermi(AdminPermi.SCHEDULE)) || isDoctor">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:schedule:edit']">修改</el-button>
-          <el-button link type="primary" icon="CircleClose" @click="handleCancelSchedule(scope.row)" v-if="scope.row.status !== 2 && scope.row.status !== 3 && scope.row.status !== 4" v-hasPermi="['hospital:schedule:edit']">取消</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="!isDoctor" v-hasPermi="['hospital:schedule:remove']">删除</el-button>
+          <template v-if="!shouldHideDoctorRowActions(scope.row)">
+            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hospital:schedule:edit']">修改</el-button>
+            <el-button link type="primary" icon="CircleClose" @click="handleCancelSchedule(scope.row)" v-if="scope.row.status !== 2 && scope.row.status !== 3 && scope.row.status !== 4" v-hasPermi="['hospital:schedule:edit']">取消</el-button>
+            <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="!isDoctor" v-hasPermi="['hospital:schedule:remove']">删除</el-button>
+          </template>
         </template>
       </el-table-column>
     </el-table>
@@ -525,9 +527,30 @@ function handleDateClick(day) {
 
 /** 取消排班 */
 function handleCancelSchedule(row) {
-  proxy.$modal.confirm('取消排班将同时取消该排班下的所有预约，是否确认取消？').then(function() {
+  if (shouldHideDoctorRowActions(row)) {
+    proxy.$modal.msgError("已取消或过期的排班不允许操作");
+    return;
+  }
+  const hasBookedPatient = Number(row.totalCapacity || 0) > Number(row.availableSlots || 0);
+  const confirmMsg = isDoctor.value && hasBookedPatient
+    ? '已有患者预约该日期排班，是否取消？'
+    : '取消排班将同时取消该排班下的所有预约，是否确认取消？';
+
+  proxy.$modal.confirm(confirmMsg).then(function() {
     return updateSchedule({ id: row.id, status: 2 });
   }).then(() => {
+    if (isDoctor.value) {
+      return import("@/api/hospital/audit").then(module => {
+        return module.submitAudit({
+          auditType: 'SCHEDULE_CHANGE',
+          targetId: row.id,
+          requestReason: '医生申请取消排班'
+        });
+      }).then(() => {
+        getList();
+        proxy.$modal.msgSuccess("已提交取消申请，请等待管理员审核");
+      });
+    }
     getList();
     proxy.$modal.msgSuccess("排班已取消");
   }).catch(() => {});
@@ -631,8 +654,26 @@ function checkEditTime(workDate) {
   return false;
 }
 
+/** 医生端是否隐藏操作按钮 */
+function shouldHideDoctorRowActions(row) {
+  if (!isDoctor.value || !row) return false;
+  const status = Number(row.status);
+  const workDate = new Date(row.workDate);
+  if (Number.isNaN(workDate.getTime())) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  workDate.setHours(0, 0, 0, 0);
+
+  return status === 2 || workDate.getTime() < today.getTime();
+}
+
 /** 修改按钮操作 */
 function handleUpdate(row) {
+  if (shouldHideDoctorRowActions(row)) {
+    proxy.$modal.msgError("已取消或过期的排班不允许操作");
+    return;
+  }
   reset();
   const id = row.id || ids.value;
   // 先把当前行的数据存下来，防止详情接口返回数据不全
@@ -710,49 +751,39 @@ function submitForm() {
           }
         });
       } else {
-        const checkQuery = {
-          doctorId: form.value.doctorId,
-          workDate: form.value.workDate
-        };
-        listSchedule(checkQuery).then(res => {
-          if (res.rows && res.rows.length > 0) {
-            proxy.$modal.msgError("该日期已存在排班，请勿重复添加");
-            return;
-          }
-          addSchedule(form.value).then(response => {
-            if (isDoctor.value) {
-              const query = {
-                doctorId: currentDoctorId.value,
-                workDate: form.value.workDate,
-                timeSlot: form.value.timeSlot
-              };
-              listSchedule(query).then(res2 => {
-                if (res2.rows && res2.rows.length > 0) {
-                  const scheduleId = res2.rows[0].id;
-                  import("@/api/hospital/audit").then(module => {
-                    const auditData = {
-                      auditType: 'SCHEDULE_CHANGE',
-                      targetId: scheduleId,
-                      requestReason: '医生新增排班'
-                    };
-                    module.submitAudit(auditData).then(() => {
-                      proxy.$modal.msgSuccess("已提交管理员审核");
-                      open.value = false;
-                      getList();
-                    });
+        addSchedule(form.value).then(response => {
+          if (isDoctor.value) {
+            const query = {
+              doctorId: currentDoctorId.value,
+              workDate: form.value.workDate,
+              timeSlot: form.value.timeSlot
+            };
+            listSchedule(query).then(res2 => {
+              if (res2.rows && res2.rows.length > 0) {
+                const scheduleId = res2.rows[0].id;
+                import("@/api/hospital/audit").then(module => {
+                  const auditData = {
+                    auditType: 'SCHEDULE_CHANGE',
+                    targetId: scheduleId,
+                    requestReason: '医生新增排班'
+                  };
+                  module.submitAudit(auditData).then(() => {
+                    proxy.$modal.msgSuccess("已提交管理员审核");
+                    open.value = false;
+                    getList();
                   });
-                } else {
-                  proxy.$modal.msgSuccess("已提交管理员审核");
-                  open.value = false;
-                  getList();
-                }
-              });
-            } else {
-              proxy.$modal.msgSuccess("新增成功");
-              open.value = false;
-              getList();
-            }
-          });
+                });
+              } else {
+                proxy.$modal.msgSuccess("已提交管理员审核");
+                open.value = false;
+                getList();
+              }
+            });
+          } else {
+            proxy.$modal.msgSuccess("新增成功");
+            open.value = false;
+            getList();
+          }
         });
       }
     }
@@ -761,6 +792,10 @@ function submitForm() {
 
 /** 删除按钮操作 */
 function handleDelete(row) {
+  if (row && shouldHideDoctorRowActions(row)) {
+    proxy.$modal.msgError("已取消或过期的排班不允许操作");
+    return;
+  }
   const scheduleIds = row.id || ids.value;
   // 检查是否包含过去日期的排班
   if (isDoctor.value) {
