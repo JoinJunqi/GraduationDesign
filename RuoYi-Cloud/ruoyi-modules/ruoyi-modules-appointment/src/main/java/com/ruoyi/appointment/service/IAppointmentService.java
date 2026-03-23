@@ -16,6 +16,11 @@ public interface IAppointmentService extends IService<Appointment> {
     Appointment selectAppointmentById(Long id);
 
     /**
+     * 查询某排班下最晚已预约时段
+     */
+    String getLatestBookedTime(Long scheduleId);
+
+    /**
      * 根据排班ID取消所有预约
      */
     boolean cancelByScheduleId(Long scheduleId);

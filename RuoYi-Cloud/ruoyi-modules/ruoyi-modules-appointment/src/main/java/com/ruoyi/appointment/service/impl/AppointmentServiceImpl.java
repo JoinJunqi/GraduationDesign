@@ -599,6 +599,22 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     }
 
     @Override
+    public String getLatestBookedTime(Long scheduleId) {
+        if (scheduleId == null) {
+            return null;
+        }
+
+        Appointment latestAppointment = this.getOne(new LambdaQueryWrapper<Appointment>()
+                .eq(Appointment::getScheduleId, scheduleId)
+                .ne(Appointment::getStatus, "已取消")
+                .isNotNull(Appointment::getAppointmentTime)
+                .orderByDesc(Appointment::getAppointmentTime)
+                .last("LIMIT 1"));
+
+        return latestAppointment != null ? latestAppointment.getAppointmentTime() : null;
+    }
+
+    @Override
     public boolean deleteAppointmentByIds(Long[] ids) {
         return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Appointment>()
                 .set("is_deleted", 1)

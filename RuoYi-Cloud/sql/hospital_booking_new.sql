@@ -11,7 +11,7 @@
  Target Server Version : 50732 (5.7.32-log)
  File Encoding         : 65001
 
- Date: 14/01/2026 19:12:20
+ Date: 23/03/2026 17:21:42
 */
 
 SET NAMES utf8mb4;
@@ -42,7 +42,7 @@ CREATE TABLE `admin`  (
 -- Records of admin
 -- ----------------------------
 INSERT INTO `admin` VALUES (1, 'admin', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '系统管理员', '13800000000', 1, 1, '2026-01-08 19:54:43', 0, NULL, 0);
-INSERT INTO `admin` VALUES (2, 'admintest', '$2a$10$cg4bx4r8K4ySTBmTDZIrt.TKcyjpHOc27k3e5Eb6ggw1dCejC2Z7S', '测试管理员', '13900000001', 0, 1, '2026-01-12 17:46:11', 0, NULL, 1);
+INSERT INTO `admin` VALUES (2, 'admintest', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '测试管理员', '13900000001', 0, 1, '2026-01-12 17:46:11', 0, NULL, 3);
 
 -- ----------------------------
 -- Table structure for appointment
@@ -64,7 +64,7 @@ CREATE TABLE `appointment`  (
   INDEX `idx_schedule_id`(`schedule_id`) USING BTREE,
   CONSTRAINT `appointment_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `appointment_ibfk_2` FOREIGN KEY (`schedule_id`) REFERENCES `schedule` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1246 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '预约记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1253 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '预约记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of appointment
@@ -218,6 +218,13 @@ INSERT INTO `appointment` VALUES (1240, 1, 7, '已取消', '2026-01-13 01:28:45'
 INSERT INTO `appointment` VALUES (1241, 1, 66, '已取消', '2026-01-13 02:18:22', '08:30:00', 0, NULL, NULL);
 INSERT INTO `appointment` VALUES (1244, 1, 7, '已完成', '2026-01-13 02:59:10', '08:15:00', 0, NULL, NULL);
 INSERT INTO `appointment` VALUES (1245, 1, 66, '已完成', '2026-01-13 03:19:54', '08:45:00', 0, NULL, NULL);
+INSERT INTO `appointment` VALUES (1246, 1, 121, '已过期', '2026-01-15 03:43:17', '08:45:00', 0, NULL, NULL);
+INSERT INTO `appointment` VALUES (1247, 1, 1693, '已过期', '2026-03-02 19:09:38', '17:15:00', 0, NULL, NULL);
+INSERT INTO `appointment` VALUES (1248, 1, 1694, '已过期', '2026-03-02 19:09:48', '15:45:00', 0, NULL, NULL);
+INSERT INTO `appointment` VALUES (1249, 1, 1696, '已取消', '2026-03-04 19:05:23', '08:00:00', 0, NULL, NULL);
+INSERT INTO `appointment` VALUES (1250, 1, 1700, '已过期', '2026-03-11 00:24:37', '14:15:00', 0, NULL, NULL);
+INSERT INTO `appointment` VALUES (1251, 1, 1708, '已过期', '2026-03-19 17:22:30', '09:45:00', 0, NULL, NULL);
+INSERT INTO `appointment` VALUES (1252, 1, 1710, '已过期', '2026-03-21 21:29:59', '10:00:00', 0, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for department
@@ -283,11 +290,11 @@ CREATE TABLE `department_intro`  (
 -- ----------------------------
 -- Records of department_intro
 -- ----------------------------
-INSERT INTO `department_intro` VALUES (1, 1, '内科疾病诊治中心', '内科是医院的核心科室之一，专注于各种内科疾病的诊断和治疗。我们拥有先进的医疗设备和经验丰富的医疗团队，为患者提供全面的内科医疗服务。', '高血压、糖尿病、冠心病、呼吸道疾病、消化系统疾病、内分泌疾病等内科常见病和多发病的诊治', '拥有先进的检查设备，提供个性化治疗方案，注重慢性病管理', '请携带相关检查报告，空腹就诊需提前告知', 1, 1, 1, '2026-01-11 19:06:05', '2026-01-11 19:06:05', 0, NULL);
+INSERT INTO `department_intro` VALUES (1, 1, '内科疾病诊治中心', '内科是医院的核心科室之一，专注于各种内科疾病的诊断和治疗。我们拥有先进的医疗设备和经验丰富的医疗团队，为患者提供全面的内科医疗服务。', '高血压、糖尿病、冠心病、呼吸道疾病、消化系统疾病、内分泌疾病等内科常见病和多发病的诊治', '拥有先进的检查设备，提供个性化治疗方案，注重慢性病管理', '请携带相关检查报告，空腹就诊需提前告知；；；；测试', 1, 1, 1, '2026-01-09 02:44:31', '2026-01-11 19:06:05', 0, NULL);
 INSERT INTO `department_intro` VALUES (2, 2, '外科手术专业团队', '外科是医院的重点科室，开展各类外科手术。科室技术力量雄厚，手术成功率高，术后康复指导完善。', '普外科手术、骨科手术、神经外科手术、胸外科手术、泌尿外科手术等', '微创手术技术领先，快速康复理念，多学科协作', '手术前需完成相关检查，遵守术前禁食要求', 1, 1, 1, '2026-01-11 19:06:05', '2026-01-11 19:06:05', 0, NULL);
 INSERT INTO `department_intro` VALUES (3, 3, '儿童健康守护专家', '儿科专注于0-14岁儿童的疾病防治和健康管理。科室环境温馨，医护人员耐心细致，深受家长信赖。', '儿童常见病诊治、预防接种、生长发育评估、营养指导、儿童保健', '儿童专用诊疗区，游戏化就诊环境，专业儿童心理疏导', '请携带儿童健康手册，一名患儿限两名家长陪同', 1, 1, 1, '2026-01-11 19:06:05', '2026-01-11 19:06:05', 0, NULL);
 INSERT INTO `department_intro` VALUES (4, 4, '女性健康专业关怀', '妇科致力于女性生殖系统疾病的预防、诊断和治疗。注重保护患者隐私，提供人性化服务。', '妇科炎症、月经不调、不孕不育、妇科肿瘤、更年期保健', '无痛诊疗技术，私密诊疗空间，全程陪护服务', '就诊请避开月经期，需提前预约特殊检查', 1, 1, 1, '2026-01-11 19:06:05', '2026-01-11 19:06:05', 0, NULL);
-INSERT INTO `department_intro` VALUES (5, 5, '视力健康守护者', '眼科拥有先进眼科设备，开展各种眼部疾病的诊断和治疗手术，帮助患者重获清晰视界。', '近视矫正、白内障手术、青光眼治疗、眼底病诊治、眼表疾病', '飞秒激光手术，日间手术模式，个性化视力矫正', '散瞳检查后不宜驾驶，请安排陪同人员', 1, 1, 1, '2026-01-11 19:06:05', '2026-01-11 19:06:05', 0, NULL);
+INSERT INTO `department_intro` VALUES (5, 5, '视力健康守护者', '眼科拥有先进的眼科设备，开展各种眼部疾病的诊断和治疗手术，帮助患者重获清晰视界。', '近视矫正、白内障手术、青光眼治疗、眼底病诊治、眼表疾病', '飞秒激光手术，日间手术模式，个性化视力矫正', '散瞳检查后不宜驾驶，请安排陪同人员', 1, 1, 1, '2026-01-11 19:06:05', '2026-01-11 19:06:05', 0, NULL);
 INSERT INTO `department_intro` VALUES (6, 6, '骨骼健康专业维护', '骨科专注于骨骼、关节、肌肉等运动系统疾病的诊治，拥有先进的康复设备和完善的治疗体系。', '骨折治疗、关节置换、脊柱疾病、运动损伤、骨质疏松', '微创骨科手术，快速康复流程，个性化康复计划', '外伤患者优先就诊，请携带影像学资料', 1, 1, 1, '2026-01-11 19:06:05', '2026-01-11 19:06:05', 0, NULL);
 INSERT INTO `department_intro` VALUES (7, 7, '皮肤健康美丽专家', '皮肤科诊治各种皮肤病和性病，同时开展医疗美容服务，帮助患者恢复皮肤健康与美丽。', '湿疹、痤疮、银屑病、白癜风、皮肤肿瘤、医学美容', '光动力治疗，皮肤外科手术，中医外治疗法', '治疗前需清洁皮肤，避免使用化妆品', 1, 1, 1, '2026-01-11 19:06:05', '2026-01-11 19:06:05', 0, NULL);
 INSERT INTO `department_intro` VALUES (8, 8, '耳鼻喉健康专诊', '耳鼻喉科专业诊治耳、鼻、咽喉相关疾病，拥有先进的内窥镜系统和听力检测设备。', '鼻炎、中耳炎、咽喉炎、听力障碍、头颈肿瘤', '鼻内镜手术，听力重建，嗓音康复训练', '检查前需清理鼻腔，听力检查需安静环境', 1, 1, 1, '2026-01-11 19:06:05', '2026-01-11 19:06:05', 0, NULL);
@@ -385,7 +392,7 @@ INSERT INTO `doctor` VALUES (59, 13, 'doc_13_4', '$2a$10$7JB720yubVSZvUI0rEqK/.V
 INSERT INTO `doctor` VALUES (60, 13, 'doc_13_5', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '张洋', '\"主治医师\"', 1, '2026-01-11 18:09:43', 0, NULL);
 INSERT INTO `doctor` VALUES (61, 14, 'doc_14_1', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '杨磊', '\"主任医师\"', 1, '2026-01-11 18:09:43', 0, NULL);
 INSERT INTO `doctor` VALUES (62, 14, 'doc_14_2', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '赵杰', '\"主任医师\"', 1, '2026-01-11 18:09:43', 0, NULL);
-INSERT INTO `doctor` VALUES (63, 14, 'doc_14_3', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '王伟', '\"住院医师\"', 1, '2026-01-11 18:09:43', 0, NULL);
+INSERT INTO `doctor` VALUES (63, 14, 'doc_14_3', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '王伟', '\"住院医师\"', 1, '2026-01-11 18:09:43', 1, '2026-01-14 19:54:41');
 INSERT INTO `doctor` VALUES (64, 14, 'doc_14_4', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '赵洋', '\"主治医师\"', 1, '2026-01-11 18:09:43', 0, '2026-01-13 19:51:01');
 INSERT INTO `doctor` VALUES (65, 14, 'doc_14_5', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '陈洋', '\"副主任医师\"', 1, '2026-01-11 18:09:43', 0, NULL);
 INSERT INTO `doctor` VALUES (66, 15, 'doc_15_1', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '周洋', '\"主治医师\"', 1, '2026-01-11 18:09:43', 0, NULL);
@@ -447,7 +454,7 @@ INSERT INTO `hospital_notice` VALUES (15, '医院APP新版上线', '我院官方
 INSERT INTO `hospital_notice` VALUES (16, '爱心献血活动通知', '我院将于2026年3月1日联合市中心血站开展无偿献血活动，地点：门诊楼前广场。献血有益健康，欢迎参与。', '医院动态', '全部', '普通', '2026-02-28 09:00:00', '2026-03-01 23:59:59', 0, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11', 0, NULL);
 INSERT INTO `hospital_notice` VALUES (17, '医保政策调整说明', '根据最新医保政策，2026年3月1日起部分药品和诊疗项目报销比例有所调整，具体变化请咨询医保办。', '政策法规', '患者', '重要', '2026-02-15 16:00:00', '2026-03-31 23:59:59', 1, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11', 0, NULL);
 INSERT INTO `hospital_notice` VALUES (18, '医院环境改造公告', '为改善就诊环境，医院将于2026年3月进行部分区域装修改造，施工期间可能产生噪音，敬请谅解。', '温馨提示', '全部', '普通', '2026-02-20 08:30:00', '2026-03-31 23:59:59', 0, 1, 0, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11', 0, NULL);
-INSERT INTO `hospital_notice` VALUES (19, '专家义诊活动预告', '为庆祝建院70周年，我院将于2026年3月15日举办大型专家义诊活动，届时各科专家将免费为市民提供咨询服务。', '医院动态', '患者', '重要', '2026-03-01 10:00:00', '2026-03-15 23:59:59', 1, 1, 2, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11', 0, NULL);
+INSERT INTO `hospital_notice` VALUES (19, '专家义诊活动预告', '为庆祝建院70周年，我院将于2026年3月15日举办大型专家义诊活动，届时各科专家将免费为市民提供咨询服务。', '医院动态', '患者', '重要', '2026-03-01 10:00:00', '2026-03-15 23:59:59', 1, 1, 3, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11', 0, NULL);
 INSERT INTO `hospital_notice` VALUES (20, '医疗投诉渠道公示', '为更好服务患者，现将医疗投诉渠道公示：投诉电话：XXXX-XXXXXXX，投诉邮箱：ts@hospital.com，现场投诉：医患关系办公室。', '政策法规', '患者', '普通', '2026-01-10 09:00:00', '2026-12-31 23:59:59', 0, 1, 3, 1, '2026-01-11 19:06:11', '2026-01-11 19:06:11', 0, NULL);
 
 -- ----------------------------
@@ -536,7 +543,6 @@ CREATE TABLE `patient`  (
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '姓名',
   `phone` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '手机号',
   `id_card` char(18) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '身份证号',
-  `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '头像地址',
   `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `is_active` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否启用(1启用,0禁用)',
   `is_deleted` tinyint(1) NULL DEFAULT 0 COMMENT '是否删除(1是,0否)',
@@ -549,21 +555,21 @@ CREATE TABLE `patient`  (
 -- ----------------------------
 -- Records of patient
 -- ----------------------------
-INSERT INTO `patient` VALUES (1, 'patient1', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '赵患者1', '13800138000', '110101199001011234', NULL, '2026-01-09 02:44:31', 1, 0, NULL);
-INSERT INTO `patient` VALUES (2, 'patient002', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '钱患者', '13900139000', '110101199505055678', NULL, '2026-01-09 02:44:31', 1, 0, NULL);
-INSERT INTO `patient` VALUES (3, 'wangwei', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '王伟', '13800138001', '110101198501011234', NULL, '2026-01-11 10:00:00', 1, 0, NULL);
-INSERT INTO `patient` VALUES (4, 'liming', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '李明', '13800138002', '110101199002022345', NULL, '2026-01-11 10:00:00', 1, 0, NULL);
-INSERT INTO `patient` VALUES (5, 'zhangwei', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '张伟', '13800138003', '110101198803033456', NULL, '2026-01-11 10:00:00', 1, 0, NULL);
-INSERT INTO `patient` VALUES (6, 'liuyang', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '刘洋', '13800138004', '110101199504044567', NULL, '2026-01-11 10:00:00', 1, 0, NULL);
-INSERT INTO `patient` VALUES (7, 'chenmin', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '陈敏', '13800138005', '110101198705055678', NULL, '2026-01-11 10:00:00', 1, 0, NULL);
-INSERT INTO `patient` VALUES (8, '张磊', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '张磊', '13800138000', '110101198310151550', NULL, '2026-01-11 18:09:56', 1, 0, NULL);
-INSERT INTO `patient` VALUES (9, '李杰', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '李杰', '13800138001', '110101198803100810', NULL, '2026-01-11 18:09:56', 1, 0, NULL);
-INSERT INTO `patient` VALUES (10, '赵洋', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '赵洋', '13800138002', '110101197001143685', NULL, '2026-01-11 18:09:56', 1, 0, NULL);
-INSERT INTO `patient` VALUES (11, '赵杰', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '赵杰', '13800138003', '110101200401190165', NULL, '2026-01-11 18:09:56', 1, 0, NULL);
-INSERT INTO `patient` VALUES (12, '王洋', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '王洋', '13800138004', '110101196102115061', NULL, '2026-01-11 18:09:56', 1, 0, NULL);
-INSERT INTO `patient` VALUES (13, '刘娜', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '刘娜', '13800138005', '110101198402101623', NULL, '2026-01-11 18:09:56', 1, 0, NULL);
-INSERT INTO `patient` VALUES (14, '周洋', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '周洋', '13800138006', '110101198712035409', NULL, '2026-01-11 18:09:56', 1, 0, NULL);
-INSERT INTO `patient` VALUES (16, 'patient111', '$2a$10$IuZSuD5u5xwAiKKOD96hCuJmvn.lI6.ObvqIbV/80L/0gzQ2CD5iq', '患者测试', '13300001331', '110201238438730974', NULL, '2026-01-13 21:09:50', 1, 0, NULL);
+INSERT INTO `patient` VALUES (1, 'patient1', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '赵患者1', '13800138000', '110101199001011234', '2026-01-09 02:44:31', 1, 0, NULL);
+INSERT INTO `patient` VALUES (2, 'patient002', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '钱患者', '13900139000', '110101199505055678', '2026-01-09 02:44:31', 1, 0, NULL);
+INSERT INTO `patient` VALUES (3, 'wangwei', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '王伟', '13800138001', '110101198501011234', '2026-01-11 10:00:00', 1, 0, NULL);
+INSERT INTO `patient` VALUES (4, 'liming', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '李明', '13800138002', '110101199002022345', '2026-01-11 10:00:00', 1, 0, NULL);
+INSERT INTO `patient` VALUES (5, 'zhangwei', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '张伟', '13800138003', '110101198803033456', '2026-01-11 10:00:00', 1, 0, NULL);
+INSERT INTO `patient` VALUES (6, 'liuyang', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '刘洋', '13800138004', '110101199504044567', '2026-01-11 10:00:00', 1, 0, NULL);
+INSERT INTO `patient` VALUES (7, 'chenmin', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '陈敏', '13800138005', '110101198705055678', '2026-01-11 10:00:00', 1, 0, NULL);
+INSERT INTO `patient` VALUES (8, '张磊', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '张磊', '13800138011', '110101198310151550', '2026-01-11 18:09:56', 1, 0, NULL);
+INSERT INTO `patient` VALUES (9, '李杰', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '李杰', '13800138001', '110101198803100810', '2026-01-11 18:09:56', 1, 0, NULL);
+INSERT INTO `patient` VALUES (10, '赵洋', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '赵洋', '13800138002', '110101197001143685', '2026-01-11 18:09:56', 1, 0, NULL);
+INSERT INTO `patient` VALUES (11, '赵杰', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '赵杰', '13800138003', '110101200401190165', '2026-01-11 18:09:56', 1, 0, NULL);
+INSERT INTO `patient` VALUES (12, '王洋', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '王洋', '13800138004', '110101196102115061', '2026-01-11 18:09:56', 1, 0, NULL);
+INSERT INTO `patient` VALUES (13, '刘娜', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '刘娜', '13800138005', '110101198402101623', '2026-01-11 18:09:56', 1, 0, NULL);
+INSERT INTO `patient` VALUES (14, '周洋', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '周洋', '13800138006', '110101198712035409', '2026-01-11 18:09:56', 1, 0, NULL);
+INSERT INTO `patient` VALUES (16, 'patient111', '$2a$10$IuZSuD5u5xwAiKKOD96hCuJmvn.lI6.ObvqIbV/80L/0gzQ2CD5iq', '患者测试', '13300001331', '110201238438730974', '2026-01-13 21:09:50', 1, 0, NULL);
 
 -- ----------------------------
 -- Table structure for schedule
@@ -576,14 +582,14 @@ CREATE TABLE `schedule`  (
   `time_slot` enum('上午','下午','全天') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '班次',
   `total_capacity` int(11) NOT NULL DEFAULT 20 COMMENT '总号源数',
   `available_slots` int(11) NOT NULL DEFAULT 20 COMMENT '剩余号源',
-  `status` tinyint(1) NOT NULL DEFAULT 0 COMMENT '状态: 0正常, 1有调整, 2已取消',
+  `status` tinyint(1) NOT NULL DEFAULT 0 COMMENT '状态: 0正常, 1有调整, 2已取消,3待审核,4已驳回',
   `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `is_deleted` tinyint(1) NULL DEFAULT 0 COMMENT '是否删除(1是,0否)',
   `deleted_at` datetime NULL DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_doctor_date_slot`(`doctor_id`, `work_date`, `time_slot`) USING BTREE,
+  INDEX `idx_doctor_date_slot`(`doctor_id`, `work_date`, `time_slot`) USING BTREE,
   CONSTRAINT `schedule_ibfk_1` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1691 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '医生排班表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1711 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '医生排班表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of schedule
@@ -708,7 +714,7 @@ INSERT INTO `schedule` VALUES (117, 67, '2026-01-13', '下午', 20, 20, 0, '2026
 INSERT INTO `schedule` VALUES (118, 68, '2026-01-13', '上午', 20, 20, 0, '2026-01-11 18:10:33', 0, NULL);
 INSERT INTO `schedule` VALUES (119, 69, '2026-01-13', '上午', 20, 20, 0, '2026-01-11 18:10:33', 0, NULL);
 INSERT INTO `schedule` VALUES (120, 70, '2026-01-13', '下午', 20, 20, 0, '2026-01-11 18:10:33', 0, NULL);
-INSERT INTO `schedule` VALUES (121, 1, '2026-01-14', '上午', 14, 14, 1, '2026-01-11 18:10:33', 0, NULL);
+INSERT INTO `schedule` VALUES (121, 1, '2026-01-14', '上午', 14, 13, 1, '2026-01-11 18:10:33', 0, NULL);
 INSERT INTO `schedule` VALUES (122, 2, '2026-01-14', '上午', 20, 20, 0, '2026-01-11 18:10:33', 0, NULL);
 INSERT INTO `schedule` VALUES (123, 3, '2026-01-14', '下午', 20, 20, 0, '2026-01-11 18:10:33', 0, NULL);
 INSERT INTO `schedule` VALUES (124, 4, '2026-01-14', '上午', 20, 20, 0, '2026-01-11 18:10:33', 0, NULL);
@@ -2277,6 +2283,21 @@ INSERT INTO `schedule` VALUES (1687, 68, '2026-02-10', '下午', 20, 20, 0, '202
 INSERT INTO `schedule` VALUES (1688, 69, '2026-02-10', '全天', 40, 40, 0, '2026-01-11 18:10:33', 0, NULL);
 INSERT INTO `schedule` VALUES (1689, 70, '2026-02-10', '下午', 20, 20, 0, '2026-01-11 18:10:33', 0, NULL);
 INSERT INTO `schedule` VALUES (1690, 1, '2026-01-22', '下午', 14, 14, 0, '2026-01-13 22:15:15', 0, NULL);
+INSERT INTO `schedule` VALUES (1691, 1, '2026-02-27', '全天', 20, 20, 0, '2026-02-26 18:52:56', 0, NULL);
+INSERT INTO `schedule` VALUES (1692, 1, '2026-02-26', '全天', 28, 28, 0, '2026-02-26 18:53:31', 0, NULL);
+INSERT INTO `schedule` VALUES (1693, 1, '2026-03-02', '全天', 28, 27, 1, '2026-03-01 23:33:50', 0, NULL);
+INSERT INTO `schedule` VALUES (1694, 1, '2026-03-03', '全天', 28, 27, 1, '2026-03-01 23:42:30', 0, NULL);
+INSERT INTO `schedule` VALUES (1695, 1, '2026-03-04', '下午', 14, 14, 0, '2026-03-02 16:33:16', 0, NULL);
+INSERT INTO `schedule` VALUES (1696, 1, '2026-03-05', '全天', 17, 0, 3, '2026-03-04 18:28:42', 1, '2026-03-05 20:49:46');
+INSERT INTO `schedule` VALUES (1697, 1, '2026-03-06', '下午', 14, 0, 3, '2026-03-05 17:22:13', 1, '2026-03-05 20:49:50');
+INSERT INTO `schedule` VALUES (1698, 1, '2026-03-06', '全天', 28, 0, 3, '2026-03-05 20:50:09', 1, '2026-03-05 21:07:40');
+INSERT INTO `schedule` VALUES (1699, 1, '2026-03-09', '全天', 10, 10, 3, '2026-03-09 14:51:12', 0, NULL);
+INSERT INTO `schedule` VALUES (1700, 1, '2026-03-11', '全天', 28, 27, 0, '2026-03-11 00:23:55', 0, NULL);
+INSERT INTO `schedule` VALUES (1701, 1, '2026-03-17', '全天', 23, 23, 0, '2026-03-16 18:55:36', 0, NULL);
+INSERT INTO `schedule` VALUES (1707, 1, '2026-03-19', '下午', 14, 14, 0, '2026-03-18 19:45:54', 0, NULL);
+INSERT INTO `schedule` VALUES (1708, 1, '2026-03-20', '全天', 28, 27, 0, '2026-03-19 17:21:53', 0, NULL);
+INSERT INTO `schedule` VALUES (1709, 1, '2026-03-21', '下午', 13, 13, 0, '2026-03-21 14:08:08', 0, NULL);
+INSERT INTO `schedule` VALUES (1710, 1, '2026-03-22', '全天', 28, 27, 0, '2026-03-21 21:29:36', 0, NULL);
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -2308,7 +2329,7 @@ CREATE TABLE `sys_menu`  (
   INDEX `idx_menu_type`(`menu_type`) USING BTREE,
   INDEX `idx_visible`(`visible`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_menu
@@ -2331,6 +2352,8 @@ INSERT INTO `sys_menu` VALUES (15, '医院信息管理', 1, 9, 'notice', 'hospit
 INSERT INTO `sys_menu` VALUES (16, '操作审核', 1, 10, 'audit', 'hospital/audit/index', NULL, '', '1', '0', 'C', '0', '0', 'appointment:audit:list', 'eye-open', 'admin', '2026-01-13 18:56:53', '', NULL, '操作审核菜单');
 INSERT INTO `sys_menu` VALUES (17, '审核查询', 16, 1, '', '', NULL, '', '1', '0', 'F', '0', '0', 'appointment:audit:query', '#', 'admin', '2026-01-13 18:56:53', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (18, '审核处理', 16, 2, '', '', NULL, '', '1', '0', 'F', '0', '0', 'appointment:audit:process', '#', 'admin', '2026-01-13 18:56:53', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (19, '数据看板', 1, 0, 'dashboard', 'hospital/dashboard/index', NULL, '', '1', '0', 'C', '0', '0', 'hospital:dashboard:list', 'chart', 'admin', '2026-01-14 21:25:59', '', NULL, '数据统计看板');
+INSERT INTO `sys_menu` VALUES (20, '数据看板', 2000, 1, 'dashboard', 'hospital/dashboard/index', NULL, '', '1', '0', 'C', '0', '0', 'hospital:appointment:stats', 'chart', 'admin', '2026-01-14 21:50:16', '', NULL, '');
 
 -- ----------------------------
 -- Table structure for sys_operation_audit
@@ -2353,7 +2376,7 @@ CREATE TABLE `sys_operation_audit`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_target_id`(`target_id`) USING BTREE,
   INDEX `idx_audit_status`(`audit_status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统操作审核表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 47 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统操作审核表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_operation_audit
@@ -2380,7 +2403,30 @@ INSERT INTO `sys_operation_audit` VALUES (19, 'APPOINTMENT_CANCEL', 355, 12, 'pa
 INSERT INTO `sys_operation_audit` VALUES (20, 'OTHER', 373, 43, 'doctor', '申请使用进口药品', 0, NULL, NULL, NULL, '2026-01-13 16:15:00', 0, NULL);
 INSERT INTO `sys_operation_audit` VALUES (21, 'APPOINTMENT_CANCEL', 389, 6, 'patient', '孩子生病需要照顾', 1, 1, '2026-01-13 17:00:00', '理解，注意孩子健康', '2026-01-13 16:20:00', 0, NULL);
 INSERT INTO `sys_operation_audit` VALUES (22, 'APPOINTMENT_CANCEL', 404, 14, 'patient', '外出旅游无法返回', 1, 1, '2026-01-13 19:49:20', '请提前规划行程，按时就诊', '2026-01-13 17:10:00', 0, NULL);
-INSERT INTO `sys_operation_audit` VALUES (23, 'OTHER', 423, 15, 'doctor', '申请调整排班', 0, NULL, NULL, NULL, '2026-01-13 18:30:00', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (23, 'OTHER', 423, 15, 'doctor', '申请调整排班', 1, 1, '2026-03-01 22:41:15', '1', '2026-01-13 18:30:00', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (24, 'SCHEDULE_CHANGE', 1693, 1, 'doctor', '医生新增排班', 1, 1, '2026-03-01 23:34:46', '1', '2026-03-01 23:33:50', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (25, 'SCHEDULE_CHANGE', 1694, 1, 'doctor', '医生新增排班', 1, 1, '2026-03-01 23:43:06', '1', '2026-03-01 23:42:30', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (26, 'SCHEDULE_CHANGE', 1695, 1, 'doctor', '医生新增排班', 1, 1, '2026-03-02 16:33:34', '1', '2026-03-02 16:33:17', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (27, 'APPOINTMENT_CANCEL', 1246, 1, 'patient', '1', 0, NULL, NULL, NULL, '2026-03-02 16:34:13', 1, NULL);
+INSERT INTO `sys_operation_audit` VALUES (28, 'APPOINTMENT_CANCEL', 1246, 1, 'patient', '1', 0, NULL, NULL, NULL, '2026-03-02 16:34:35', 1, NULL);
+INSERT INTO `sys_operation_audit` VALUES (29, 'SCHEDULE_CHANGE', 1696, 1, 'doctor', '医生新增排班', 1, 1, '2026-03-04 18:29:08', '同意', '2026-03-04 18:28:42', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (30, 'SCHEDULE_CHANGE', 1696, 1, 'doctor', '医生申请删除排班', 1, 1, '2026-03-05 17:21:27', '1', '2026-03-05 17:20:48', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (31, 'SCHEDULE_CHANGE', 1697, 1, 'doctor', '医生新增排班', 1, 1, '2026-03-05 19:10:08', '1', '2026-03-05 17:22:13', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (32, 'SCHEDULE_CHANGE', 1697, 1, 'doctor', '医生申请删除排班', 1, 1, '2026-03-05 19:10:05', '1', '2026-03-05 17:23:10', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (33, 'SCHEDULE_CHANGE', 1696, 1, 'doctor', '医生申请删除排班', 1, 1, '2026-03-05 17:43:56', '1', '2026-03-05 17:42:54', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (34, 'SCHEDULE_CHANGE', 1696, 1, 'doctor', '医生申请删除排班', 1, 1, '2026-03-05 19:09:52', '1', '2026-03-05 18:48:42', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (35, 'SCHEDULE_CHANGE', 1697, 1, 'doctor', '医生申请删除排班', 1, 1, '2026-03-05 19:09:50', '1', '2026-03-05 18:48:42', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (36, 'SCHEDULE_CHANGE', 1697, 1, 'doctor', '医生申请删除排班', 1, 1, '2026-03-05 19:09:36', '1', '2026-03-05 18:48:56', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (37, 'SCHEDULE_CHANGE', 1696, 1, 'doctor', '医生申请删除排班', 1, 1, '2026-03-05 19:09:38', '1', '2026-03-05 18:48:56', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (38, 'SCHEDULE_CHANGE', 1697, 1, 'doctor', '医生申请删除排班', 1, 1, '2026-03-05 19:10:36', '1', '2026-03-05 19:10:27', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (39, 'SCHEDULE_CHANGE', 1698, 1, 'doctor', '医生新增排班', 1, 1, '2026-03-05 20:50:31', '1', '2026-03-05 20:50:10', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (40, 'SCHEDULE_CHANGE', 1698, 1, 'doctor', '医生申请删除排班', 1, 1, '2026-03-05 20:50:58', '1', '2026-03-05 20:50:50', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (41, 'SCHEDULE_CHANGE', 1698, 1, 'doctor', '医生申请删除排班', 1, 1, '2026-03-05 21:07:40', '1', '2026-03-05 21:06:52', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (42, 'SCHEDULE_CHANGE', 1699, 1, 'doctor', '医生新增排班', 0, NULL, NULL, NULL, '2026-03-09 14:51:13', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (43, 'SCHEDULE_CHANGE', 1700, 1, 'doctor', '医生新增排班', 1, 1, '2026-03-11 00:24:14', '1', '2026-03-11 00:23:56', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (44, 'SCHEDULE_CHANGE', 1701, 1, 'doctor', '医生新增排班', 1, 1, '2026-03-16 18:56:13', '1', '2026-03-16 18:55:36', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (45, 'SCHEDULE_CHANGE', 1707, 1, 'doctor', '医生新增排班', 1, 1, '2026-03-19 17:22:03', '1', '2026-03-18 19:45:54', 0, NULL);
+INSERT INTO `sys_operation_audit` VALUES (46, 'SCHEDULE_CHANGE', 1708, 1, 'doctor', '医生新增排班', 1, 1, '2026-03-19 17:22:13', '1', '2026-03-19 17:21:54', 0, NULL);
 
 -- ----------------------------
 -- Procedure structure for GenerateAppointments

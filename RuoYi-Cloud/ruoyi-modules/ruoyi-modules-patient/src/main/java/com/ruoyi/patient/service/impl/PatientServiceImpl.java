@@ -1,7 +1,9 @@
 package com.ruoyi.patient.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruoyi.common.core.utils.StringUtils;
 import com.ruoyi.common.core.exception.ServiceException;
 import com.ruoyi.common.core.utils.uuid.IdUtils;
 import com.ruoyi.common.security.service.TokenService;
@@ -17,11 +19,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 @Service
 public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> implements IPatientService {
 
     private static final Logger log = LoggerFactory.getLogger(PatientServiceImpl.class);
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^1\\d{10}$");
+    private static final Pattern IDCARD_PATTERN = Pattern.compile("^([1-9]\\d{14}|[1-9]\\d{16}[0-9Xx])$");
 
     @Autowired
     private PatientMapper patientMapper;
@@ -31,10 +36,18 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
 
     @Override
     public Patient selectPatientByUsername(String username) {
-        return patientMapper.selectOne(new LambdaQueryWrapper<Patient>()
-                .eq(Patient::getUsername, username)
-                .or().eq(Patient::getPhone, username)
-                .or().eq(Patient::getIdCard, username));
+        String account = StringUtils.trim(username);
+        if (StringUtils.isEmpty(account)) {
+            return null;
+        }
+
+        if (isPhone(account)) {
+            return selectSingleByField(Patient::getPhone, account, "手机号");
+        }
+        if (isIdCard(account)) {
+            return selectSingleByField(Patient::getIdCard, account, "身份证号");
+        }
+        return null;
     }
 
     @Override
@@ -50,15 +63,34 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
     @Override
     public boolean checkPhoneUnique(Patient patient) {
         Long id = patient.getId() == null ? -1L : patient.getId();
-        Patient info = patientMapper.selectOne(new LambdaQueryWrapper<Patient>().eq(Patient::getPhone, patient.getPhone()));
-        return info == null || info.getId().equals(id);
+        List<Patient> list = patientMapper.selectList(new LambdaQueryWrapper<Patient>().eq(Patient::getPhone, patient.getPhone()));
+        return list.stream().allMatch(info -> info.getId().equals(id));
     }
 
     @Override
     public boolean checkIdCardUnique(Patient patient) {
         Long id = patient.getId() == null ? -1L : patient.getId();
-        Patient info = patientMapper.selectOne(new LambdaQueryWrapper<Patient>().eq(Patient::getIdCard, patient.getIdCard()));
-        return info == null || info.getId().equals(id);
+        List<Patient> list = patientMapper.selectList(new LambdaQueryWrapper<Patient>().eq(Patient::getIdCard, patient.getIdCard()));
+        return list.stream().allMatch(info -> info.getId().equals(id));
+    }
+
+    private Patient selectSingleByField(SFunction<Patient, ?> field, String account, String fieldLabel) {
+        List<Patient> list = patientMapper.selectList(new LambdaQueryWrapper<Patient>().eq(field, account));
+        if (list.isEmpty()) {
+            return null;
+        }
+        if (list.size() > 1) {
+            throw new ServiceException(fieldLabel + "存在重复数据，请联系管理员处理");
+        }
+        return list.get(0);
+    }
+
+    private boolean isPhone(String account) {
+        return PHONE_PATTERN.matcher(account).matches();
+    }
+
+    private boolean isIdCard(String account) {
+        return IDCARD_PATTERN.matcher(account).matches();
     }
 
     @Override

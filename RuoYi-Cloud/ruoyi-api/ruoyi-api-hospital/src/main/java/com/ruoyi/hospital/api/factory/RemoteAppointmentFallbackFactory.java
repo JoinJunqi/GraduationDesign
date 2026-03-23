@@ -30,6 +30,11 @@ public class RemoteAppointmentFallbackFactory implements FallbackFactory<RemoteA
             }
 
             @Override
+            public ResultVO<String> getLatestBookedTime(Long scheduleId) {
+                return ResultVO.error("获取最晚预约时段失败:" + throwable.getMessage());
+            }
+
+            @Override
             public ResultVO<Boolean> cancelByScheduleId(Long scheduleId) {
                 return ResultVO.error("根据排班ID取消预约失败:" + throwable.getMessage());
             }

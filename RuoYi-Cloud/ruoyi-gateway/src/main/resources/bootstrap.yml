@@ -24,7 +24,8 @@ spring:
       eager: true
       transport:
         # 控制台地址
-        dashboard: 192.168.233.128:8718
+        dashboard: 192.168.233.128:8858
+        client-ip: 192.168.233.1
       # nacos配置持久化
       datasource:
         ds1:

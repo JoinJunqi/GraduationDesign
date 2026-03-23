@@ -2,6 +2,7 @@ package com.ruoyi.schedule.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruoyi.common.core.domain.ResultVO;
 import com.ruoyi.common.core.exception.ServiceException;
 import com.ruoyi.schedule.domain.Schedule;
 import com.ruoyi.schedule.mapper.ScheduleMapper;
@@ -22,6 +23,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.time.LocalTime;
 
 import java.util.Random;
 
@@ -188,6 +190,76 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         }
     }
 
+    private int calculateSlotIndexByTime(String timeSlot, String appointmentTime) {
+        if (appointmentTime == null || appointmentTime.length() < 5) {
+            return 0;
+        }
+
+        LocalTime time;
+        try {
+            time = LocalTime.parse(appointmentTime);
+        } catch (Exception e) {
+            return 0;
+        }
+
+        LocalTime amStart = LocalTime.of(8, 0);
+        LocalTime amLast = LocalTime.of(11, 15);
+        LocalTime pmStart = LocalTime.of(14, 0);
+        LocalTime pmLast = LocalTime.of(17, 15);
+
+        if ("上午".equals(timeSlot)) {
+            if (time.isBefore(amStart) || time.isAfter(amLast)) {
+                return 0;
+            }
+            return (int) (java.time.Duration.between(amStart, time).toMinutes() / 15) + 1;
+        }
+
+        if ("下午".equals(timeSlot)) {
+            if (time.isBefore(pmStart) || time.isAfter(pmLast)) {
+                return 0;
+            }
+            return (int) (java.time.Duration.between(pmStart, time).toMinutes() / 15) + 1;
+        }
+
+        if ("全天".equals(timeSlot)) {
+            if (!time.isBefore(amStart) && !time.isAfter(amLast)) {
+                return (int) (java.time.Duration.between(amStart, time).toMinutes() / 15) + 1;
+            }
+            if (!time.isBefore(pmStart) && !time.isAfter(pmLast)) {
+                return 14 + (int) (java.time.Duration.between(pmStart, time).toMinutes() / 15) + 1;
+            }
+        }
+
+        return 0;
+    }
+
+    private int getMinCapacityByLatestBookedSlot(Schedule current) {
+        ResultVO<String> latestBookedResult = remoteAppointmentService.getLatestBookedTime(current.getId());
+        if (latestBookedResult == null || latestBookedResult.getCode() != ResultVO.SUCCESS) {
+            throw new ServiceException("查询最晚预约时段失败");
+        }
+
+        String latestBookedTime = latestBookedResult.getData();
+        if (latestBookedTime == null || latestBookedTime.trim().isEmpty()) {
+            return 0;
+        }
+
+        int minCapacity = calculateSlotIndexByTime(current.getTimeSlot(), latestBookedTime);
+        if (minCapacity <= 0) {
+            throw new ServiceException("预约时段数据异常，无法调整号源");
+        }
+        return minCapacity;
+    }
+
+    private boolean isSameDate(Date d1, Date d2) {
+        if (d1 == null || d2 == null) {
+            return false;
+        }
+        java.time.LocalDate ld1 = d1.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        java.time.LocalDate ld2 = d2.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        return ld1.equals(ld2);
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean insertSchedule(Schedule schedule) {
@@ -207,13 +279,12 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             throw new ServiceException("医生信息不能为空");
         }
 
-        // 检查排班冲突 (同一天只能有一个有效排班记录)
-        // 排除已取消(2)和已驳回(5)的状态，允许重新排班
+        // 检查排班冲突：仅“正常(0)”和“有调整(1)”状态视为有效冲突
+        // 已取消排班保留在列表中，但不阻止同日期新增排班
         Long count = scheduleMapper.selectCount(new LambdaQueryWrapper<Schedule>()
                 .eq(Schedule::getDoctorId, schedule.getDoctorId())
                 .eq(Schedule::getWorkDate, schedule.getWorkDate())
-                .ne(Schedule::getStatus, 2)  // 排除已取消
-                .ne(Schedule::getStatus, 5)); // 排除已驳回
+                .in(Schedule::getStatus, Arrays.asList(0, 1)));
         if (count > 0) {
             throw new ServiceException("该医生在 " + schedule.getWorkDate() + " 已有有效排班，请勿重复操作");
         }
@@ -242,6 +313,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
 
         // 医生端特定逻辑：自动匹配状态
         if (isDoctor()) {
+            boolean requestCancel = schedule.getStatus() != null && schedule.getStatus() == 2;
             boolean isChanged = false;
             if (schedule.getTotalCapacity() != null && !schedule.getTotalCapacity().equals(current.getTotalCapacity())) {
                 isChanged = true;
@@ -260,7 +332,16 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
                 validateCapacityLimit(schedule);
             }
 
-            if (isChanged) {
+            if (requestCancel) {
+                if (current.getStatus() != null && current.getStatus() == 2) {
+                    throw new ServiceException("该排班已取消，请勿重复操作");
+                }
+                if (current.getStatus() != null && current.getStatus() == 3) {
+                    throw new ServiceException("该排班取消申请已提交，请等待管理员审核");
+                }
+                // 医生取消排班时仅提交审核，审核通过后由管理员完成真正取消
+                schedule.setStatus(3);
+            } else if (isChanged) {
                 schedule.setStatus(3);
             } else {
                 schedule.setStatus(current.getStatus());
@@ -275,9 +356,9 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         }
         
         boolean isFull = currentAvailable <= 0;
-        boolean changeCapacityOrDate = schedule.getTotalCapacity() != null || schedule.getWorkDate() != null;
+        boolean changeWorkDate = schedule.getWorkDate() != null && !isSameDate(schedule.getWorkDate(), current.getWorkDate());
         boolean changeToCancel = schedule.getStatus() != null && schedule.getStatus() == 2;
-        if (isFull && (changeCapacityOrDate || changeToCancel)) {
+        if (isFull && (changeWorkDate || changeToCancel)) {
             // 注意：如果是取消预约导致的 availableSlots 增加，不应该拦截。但这里的 updateSchedule 是管理端/医生端发起的修改
             // 如果是预约模块调用的 (schedule.getAvailableSlots() != null && schedule.getTotalCapacity() == null)，不拦截
             if (!(schedule.getAvailableSlots() != null && schedule.getTotalCapacity() == null)) {
@@ -285,18 +366,25 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             }
         }
 
-        // 2. 检查排班冲突 (仅在修改了日期时检查)
+        // 2. 检查排班冲突：仅“正常(0)”和“有调整(1)”状态参与冲突判定
         if (schedule.getDoctorId() != null && schedule.getWorkDate() != null) {
-            Schedule existingSchedule = scheduleMapper.selectOne(new LambdaQueryWrapper<Schedule>()
+            Long conflictCount = scheduleMapper.selectCount(new LambdaQueryWrapper<Schedule>()
                     .eq(Schedule::getDoctorId, schedule.getDoctorId())
-                    .eq(Schedule::getWorkDate, schedule.getWorkDate()));
-            if (existingSchedule != null && !existingSchedule.getId().equals(schedule.getId())) {
+                    .eq(Schedule::getWorkDate, schedule.getWorkDate())
+                    .ne(Schedule::getId, schedule.getId())
+                    .in(Schedule::getStatus, Arrays.asList(0, 1)));
+            if (conflictCount > 0) {
                 throw new ServiceException("该医生在 " + schedule.getWorkDate() + " 已有其他排班记录");
             }
         }
         
         // 3. 处理号源调整
         if (schedule.getTotalCapacity() != null) {
+            int minCapacityByLatestBookedSlot = getMinCapacityByLatestBookedSlot(current);
+            if (schedule.getTotalCapacity() < minCapacityByLatestBookedSlot) {
+                throw new ServiceException("调整后号源数量不能低于最晚已预约时段序号(" + minCapacityByLatestBookedSlot + ")");
+            }
+
             int usedSlots = current.getTotalCapacity() - currentAvailable;
             if (schedule.getTotalCapacity() < usedSlots) {
                 // 如果新容量小于已预约人数，尝试将多出的预约分配到该医生当天的其他排班

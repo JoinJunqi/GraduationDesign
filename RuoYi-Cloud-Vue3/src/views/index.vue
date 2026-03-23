@@ -37,7 +37,7 @@
         <el-card shadow="hover" class="notice-card">
           <template #header>
             <div class="card-header">
-              <span class="header-title"><el-icon :size="headerIconSize"><Notification /></el-icon> 医院通知</span>
+              <span class="header-title"><el-icon><Notification /></el-icon> 医院通知</span>
             </div>
           </template>
           <el-scrollbar height="400px">
@@ -58,7 +58,7 @@
         <el-card shadow="hover" class="dept-card" style="margin-top: 20px;">
           <template #header>
             <div class="card-header">
-              <span class="header-title"><el-icon :size="headerIconSize"><OfficeBuilding /></el-icon> 科室概览</span>
+              <span class="header-title"><el-icon><OfficeBuilding /></el-icon> 科室概览</span>
             </div>
           </template>
           <el-row :gutter="20">
@@ -66,7 +66,7 @@
               <el-card shadow="hover" class="dept-inner-card">
                 <div class="dept-info">
                   <div class="dept-icon">
-                    <el-icon :size="isPhone ? 22 : 30" color="#409EFF"><Guide /></el-icon>
+                    <el-icon :size="30" color="#409EFF"><Guide /></el-icon>
                   </div>
                   <div class="dept-text">
                     <h4 class="dept-name">{{ dept.name }}</h4>
@@ -107,7 +107,7 @@
         <el-card shadow="hover" class="side-card" style="margin-top: 20px;">
           <template #header>
             <div class="card-header">
-              <span class="header-title"><el-icon :size="headerIconSize"><Help /></el-icon> 就诊指南</span>
+              <span class="header-title"><el-icon><Help /></el-icon> 就诊指南</span>
             </div>
           </template>
           <div class="guide-steps">
@@ -150,7 +150,6 @@
 
 <script setup name="Index">
 import { ref, onMounted, computed } from 'vue'
-import { useWindowSize } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import useUserStore from '@/store/modules/user'
@@ -161,9 +160,6 @@ import AdminDashboard from './hospital/dashboard/index.vue'
 
 const userStore = useUserStore()
 const router = useRouter()
-const { width } = useWindowSize()
-const isPhone = computed(() => width.value <= 480)
-const headerIconSize = computed(() => (isPhone.value ? 16 : 18))
 
 const isAdmin = computed(() => userStore.loginType === 'admin' || userStore.roles.includes('admin'))
 
@@ -179,7 +175,7 @@ const functionList = computed(() => {
   const allFunctions = [
     { title: '预约挂号', icon: 'Calendar', path: '/hospital/register', color: '#409EFF', roles: ['patient', 'guest'] },
     { title: '我的预约', icon: 'List', path: '/hospital/appointment', color: '#67C23A', roles: ['patient', 'doctor', 'guest'] },
-    { title: '我的病历', icon: 'Form', path: '/hospital/record', color: '#E6A23C', roles: ['patient', 'doctor', 'guest'] },
+    { title: '我的病历', icon: 'Document', path: '/hospital/record', color: '#E6A23C', roles: ['patient', 'doctor', 'guest'] },
     { title: '个人中心', icon: 'User', path: '/user/profile', color: '#F56C6C', roles: ['admin', 'doctor', 'patient', 'guest'] },
     { title: '科室管理', icon: 'OfficeBuilding', path: '/hospital/department', color: '#409EFF', roles: ['admin'] },
     { title: '医生管理', icon: 'UserFilled', path: '/hospital/doctor', color: '#67C23A', roles: ['admin'] },
@@ -432,68 +428,6 @@ function getNoticeTag(priority) {
       line-height: 1.8;
       color: #303133;
       white-space: pre-wrap;
-    }
-  }
-}
-
-@media (max-width: 480px) {
-  .home {
-    padding: 12px;
-
-    .header-title {
-      font-size: 14px;
-      gap: 6px;
-    }
-
-    .notice-item {
-      padding: 10px 8px;
-
-      .notice-main {
-        gap: 8px;
-
-        .notice-title {
-          font-size: 12px;
-        }
-      }
-
-      .notice-time {
-        font-size: 12px;
-      }
-    }
-
-    .dept-inner-card {
-      .dept-info {
-        gap: 10px;
-      }
-
-      .dept-text {
-        .dept-name {
-          font-size: 13px;
-        }
-
-        .dept-overview {
-          font-size: 12px;
-        }
-      }
-    }
-
-    .guide-steps {
-      padding: 6px;
-
-      :deep(.el-step__title) {
-        font-size: 13px;
-        line-height: 1.2;
-      }
-
-      :deep(.el-step__description) {
-        font-size: 12px;
-        line-height: 1.3;
-      }
-
-      :deep(.el-step__icon) {
-        transform: scale(0.9);
-        transform-origin: left top;
-      }
     }
   }
 }

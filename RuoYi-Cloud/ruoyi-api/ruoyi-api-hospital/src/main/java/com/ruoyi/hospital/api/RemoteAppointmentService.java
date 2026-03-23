@@ -24,6 +24,12 @@ public interface RemoteAppointmentService {
     ResultVO<Appointment> getInfo(@PathVariable("id") Long id);
 
     /**
+     * 查询某排班下最晚已预约时段
+     */
+    @GetMapping("/appointment/latestBookedTime")
+    ResultVO<String> getLatestBookedTime(@RequestParam("scheduleId") Long scheduleId);
+
+    /**
      * 根据排班ID取消所有预约
      */
     @PutMapping("/appointment/cancelByScheduleId")

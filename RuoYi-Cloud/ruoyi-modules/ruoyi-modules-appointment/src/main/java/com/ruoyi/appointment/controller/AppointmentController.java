@@ -49,6 +49,12 @@ public class AppointmentController extends BaseController
         return ResultVO.success(appointmentService.selectAppointmentById(id));
     }
 
+    @GetMapping("/latestBookedTime")
+    public ResultVO<String> getLatestBookedTime(@RequestParam("scheduleId") Long scheduleId)
+    {
+        return ResultVO.success(appointmentService.getLatestBookedTime(scheduleId));
+    }
+
     private boolean hasRole(String role)
     {
         Set<String> roles = SecurityUtils.getLoginUser().getRoles();
