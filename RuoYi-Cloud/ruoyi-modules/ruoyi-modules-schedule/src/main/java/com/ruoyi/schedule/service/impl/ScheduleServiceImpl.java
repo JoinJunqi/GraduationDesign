@@ -470,17 +470,22 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
                     throw new ServiceException("无权删除其他医生的排班");
                 }
                 
-                // 2. 检查日期：小于今天的不可删除
+                // 2. 仅允许申请删除日期大于今天的排班
                 if (schedule.getWorkDate() != null) {
                     java.time.LocalDate workDate = schedule.getWorkDate().toInstant()
                             .atZone(java.time.ZoneId.systemDefault()).toLocalDate();
-                    if (workDate.isBefore(today)) {
-                        throw new ServiceException("无法删除过去日期的排班 (" + schedule.getWorkDate() + ")");
+                    if (!workDate.isAfter(today)) {
+                        throw new ServiceException("仅可申请删除日期大于今天的排班 (" + schedule.getWorkDate() + ")");
                     }
+                }
+
+                // 3. 仅允许申请删除状态为已取消(2)的排班
+                if (schedule.getStatus() == null || schedule.getStatus() != 2) {
+                    throw new ServiceException("仅可申请删除状态为“已取消”的排班");
                 }
             }
             
-            // 3. 医生删除操作：状态改为 3 (待审核)，等待管理员审核
+            // 4. 医生删除操作：状态改为 3 (待审核)，等待管理员审核
             boolean allUpdated = true;
             for (Schedule schedule : list) {
                 // 如果已经是待审核状态，不允许重复提交
@@ -514,13 +519,15 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean recoverScheduleByIds(Long[] ids) {
+        int recovered = scheduleMapper.recoverScheduleByIds(ids);
+        if (recovered <= 0) {
+            return false;
+        }
+
         List<Schedule> list = listByIds(Arrays.asList(ids));
         for (Schedule schedule : list) {
             redisService.setCacheObject(getRedisKey(schedule.getId()), schedule.getAvailableSlots(), getRandomExpire(), TimeUnit.SECONDS);
         }
-        return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Schedule>()
-                .set("is_deleted", 0)
-                .set("deleted_at", null)
-                .in("id", Arrays.asList(ids)));
+        return true;
     }
 }

@@ -113,7 +113,7 @@
           @click="handleDelete"
           v-hasPermi="['hospital:schedule:remove']"
         >{{ isDoctor ? '申请删除' : '删除' }}</el-button>
-        <span v-if="isDoctor" style="margin-left: 10px; font-size: 12px; color: #909399;">当日之前数据不可删除</span>
+        <span v-if="isDoctor" style="margin-left: 10px; font-size: 12px; color: #909399;">仅可申请删除未来且已取消排班</span>
       </el-col>
       <el-col :span="1.5">
         <el-button
@@ -301,7 +301,7 @@
 </template>
 
 <script setup name="Schedule">
-import { ref, reactive, toRefs, computed, getCurrentInstance, onMounted } from 'vue';
+import { ref, reactive, toRefs, computed, getCurrentInstance, onMounted, onActivated } from 'vue';
 import { listSchedule, getSchedule, delSchedule, addSchedule, updateSchedule } from "@/api/hospital/schedule";
 import { listDepartment } from "@/api/hospital/department";
 import { listDoctorByDept, listDoctor } from "@/api/hospital/doctor";
@@ -396,6 +396,10 @@ onMounted(() => {
   }
   getList();
   getDepartmentList();
+});
+
+onActivated(() => {
+  getList();
 });
 
 /** 查询科室列表 */
@@ -797,17 +801,17 @@ function handleDelete(row) {
     return;
   }
   const scheduleIds = row.id || ids.value;
-  // 检查是否包含过去日期的排班
+  // 医生端仅允许申请删除：日期大于今天且状态为已取消(2)
   if (isDoctor.value) {
     const checkRows = row.id ? [row] : scheduleList.value.filter(item => ids.value.includes(item.id));
     const todayStr = parseTime(new Date(), '{y}-{m}-{d}');
-    const hasPastSchedule = checkRows.some(item => {
+    const hasInvalidSchedule = checkRows.some(item => {
       const workDateStr = parseTime(item.workDate, '{y}-{m}-{d}');
-      return workDateStr < todayStr;
+      return workDateStr <= todayStr || Number(item.status) !== 2;
     });
     
-    if (hasPastSchedule) {
-      proxy.$modal.msgError("无法删除过去日期的排班");
+    if (hasInvalidSchedule) {
+      proxy.$modal.msgError("仅可申请删除日期大于今天且状态为“已取消”的排班");
       return;
     }
   }
