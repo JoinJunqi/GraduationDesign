@@ -44,6 +44,7 @@ const useSettingsStore = defineStore(
       toggleTheme() {
         this.isDark = !this.isDark
         toggleDark()
+        this.sideTheme = this.isDark ? 'theme-dark' : 'theme-light'
       }
     }
   })

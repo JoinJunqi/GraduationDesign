@@ -122,7 +122,16 @@
 /* 移动端适配 */
 @media (max-width: 768px) {
   .pagination-container {
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+
     .el-pagination {
+      flex-wrap: nowrap;
+      min-width: max-content;
+
       > .el-pagination__jump {
         display: none !important;
       }
@@ -130,6 +139,22 @@
         display: none !important;
       }
     }
+  }
+
+  .el-dialog:not(.is-fullscreen) {
+    width: 92% !important;
+    max-width: 92vw;
+    margin-top: 4vh !important;
+  }
+
+  .el-dialog__body {
+    max-height: 65vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .el-dialog__footer {
+    padding-top: 10px;
   }
 }
 

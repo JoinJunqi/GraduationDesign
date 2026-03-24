@@ -58,7 +58,7 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="显示已删除" prop="includeDeleted">
+      <el-form-item label="显示已删除" prop="includeDeleted" v-if="!isPatient">
         <el-switch
           v-model="queryParams.params.includeDeleted"
           active-value="true"
@@ -83,11 +83,22 @@
           v-if="isAdmin && hasAdminPermi(AdminPermi.RECORD)"
         >删除</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="success"
+          plain
+          icon="Refresh"
+          :disabled="recoverMultiple"
+          @click="handleRecover"
+          v-if="isAdmin && hasAdminPermi(AdminPermi.RECORD)"
+        >恢复</el-button>
+      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
     <el-table v-loading="loading" :data="recordList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
-      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column v-if="isDoctor" type="index" label="序号" width="70" align="center" :index="getTableIndex" />
+      <el-table-column type="selection" width="55" align="center" v-if="isAdmin" />
       <el-table-column label="患者姓名" align="center" prop="patientName" v-if="!isPatient" sortable="custom">
         <template #default="scope">
           <span>{{ scope.row.patientName }}</span>
@@ -116,6 +127,14 @@
             <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="(isAdmin && hasAdminPermi(AdminPermi.RECORD)) || isDoctor">修改</el-button>
             <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="isAdmin && hasAdminPermi(AdminPermi.RECORD)">删除</el-button>
           </template>
+          <el-button
+            v-else-if="isAdmin && hasAdminPermi(AdminPermi.RECORD)"
+            link
+            type="success"
+            icon="Refresh"
+            @click="handleRecover(scope.row)">
+            恢复
+          </el-button>
           <el-tag v-else type="info" style="margin-left: 5px">无更多操作</el-tag>
         </template>
       </el-table-column>
@@ -188,7 +207,7 @@
 <script setup name="Record">
 import { getCurrentInstance, computed, ref, reactive, toRefs, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { listRecord, getRecord, delRecord, addRecord, updateRecord } from "@/api/hospital/record";
+import { listRecord, getRecord, delRecord, recoverRecord, addRecord, updateRecord } from "@/api/hospital/record";
 import { listDepartment } from "@/api/hospital/department";
 import { listDoctorByDept, listDoctor } from "@/api/hospital/doctor";
 import { parseTime } from "@/utils/ruoyi";
@@ -214,6 +233,7 @@ const loading = ref(true);
 const showSearch = ref(true);
 const ids = ref([]);
 const multiple = ref(true);
+const recoverMultiple = ref(true);
 const total = ref(0);
 const title = ref("");
 const departmentList = ref([]);
@@ -386,6 +406,7 @@ function handleFinishConsultation() {
 /** 重置按钮操作 */
 function resetQuery() {
   queryDoctorOptions.value = [];
+  queryParams.value.params = { includeDeleted: "false" };
   proxy.resetForm("queryRef");
   handleQuery();
 }
@@ -394,6 +415,12 @@ function resetQuery() {
 function handleSelectionChange(selection) {
   ids.value = selection.map(item => item.id);
   multiple.value = !selection.length;
+  recoverMultiple.value = !selection.length || selection.some(item => item.isDeleted !== 1);
+}
+
+/** 计算跨页连续序号 */
+function getTableIndex(index) {
+  return (queryParams.value.pageNum - 1) * queryParams.value.pageSize + index + 1;
 }
 
 /** 查看详情操作 */
@@ -448,6 +475,17 @@ function handleDelete(row) {
   }).then(() => {
     getList();
     proxy.$modal.msgSuccess("删除成功");
+  }).catch(() => {});
+}
+
+/** 恢复按钮操作 */
+function handleRecover(row) {
+  const recordIds = row?.id || ids.value;
+  proxy.$modal.confirm('是否确认恢复病历编号为"' + recordIds + '"的数据项？').then(function() {
+    return recoverRecord(recordIds);
+  }).then(() => {
+    getList();
+    proxy.$modal.msgSuccess("恢复成功");
   }).catch(() => {});
 }
 

@@ -3,6 +3,7 @@ package com.ruoyi.department.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.ruoyi.department.domain.Department;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 /**
@@ -19,4 +20,9 @@ public interface DepartmentMapper extends BaseMapper<Department> {
      * 查询包含说明的科室列表
      */
     List<Department> selectDepartmentWithIntroList(Department department);
+
+    /**
+     * 批量恢复逻辑删除的科室
+     */
+    int recoverDepartmentByIds(@Param("ids") Long[] ids);
 }

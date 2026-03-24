@@ -3,6 +3,7 @@ package com.ruoyi.appointment.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.ruoyi.appointment.domain.Appointment;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 @Mapper
@@ -36,4 +37,9 @@ public interface AppointmentMapper extends BaseMapper<Appointment> {
      * 查询医生总数
      */
     int selectDoctorCount();
+
+    /**
+     * 批量恢复逻辑删除预约
+     */
+    int recoverAppointmentByIds(@Param("ids") Long[] ids);
 }

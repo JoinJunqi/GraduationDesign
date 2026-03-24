@@ -127,9 +127,13 @@ function handleRecover(row) {
   const deptIds = row.id || ids.value;
   proxy.$modal.confirm('是否确认恢复科室编号为"' + deptIds + '"的数据项？').then(function () {
     return recoverDepartment(deptIds);
-  }).then(() => {
-    getList();
-    proxy.$modal.msgSuccess("恢复成功");
+  }).then((res) => {
+    if (res && res.data) {
+      getList();
+      proxy.$modal.msgSuccess("恢复成功");
+      return;
+    }
+    proxy.$modal.msgError("恢复失败，请刷新后重试");
   }).catch(() => {});
 }
 

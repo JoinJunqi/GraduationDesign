@@ -77,4 +77,14 @@ public class MedicalRecordController extends BaseController
         SecurityUtils.checkAdminPermission(UserConstants.PERM_RECORD);
         return ResultVO.success(medicalRecordService.deleteMedicalRecordByIds(ids));
     }
+
+    /**
+     * 恢复病历
+     */
+    @PutMapping("/record/recover/{ids}")
+    public ResultVO<Boolean> recover(@PathVariable Long[] ids)
+    {
+        SecurityUtils.checkAdminPermission(UserConstants.PERM_RECORD);
+        return ResultVO.success(medicalRecordService.recoverMedicalRecordByIds(ids));
+    }
 }

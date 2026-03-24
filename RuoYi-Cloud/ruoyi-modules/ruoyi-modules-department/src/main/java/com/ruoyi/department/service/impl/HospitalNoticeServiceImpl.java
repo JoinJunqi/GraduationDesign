@@ -17,10 +17,16 @@ import java.util.List;
 public class HospitalNoticeServiceImpl extends ServiceImpl<HospitalNoticeMapper, HospitalNotice> implements IHospitalNoticeService {
     @Override
     public List<HospitalNotice> selectActiveNoticeList(String targetAudience) {
+        Date now = new Date();
         return this.list(new LambdaQueryWrapper<HospitalNotice>()
                 .eq(HospitalNotice::getIsActive, 1)
-                .and(targetAudience != null, w -> w.eq(HospitalNotice::getTargetAudience, "全部").or().eq(HospitalNotice::getTargetAudience, targetAudience))
+                .ne(HospitalNotice::getTargetAudience, "管理员")
+                .and(w -> w.isNull(HospitalNotice::getPublishTime).or().le(HospitalNotice::getPublishTime, now))
+                .and(w -> w.isNull(HospitalNotice::getExpireTime).or().ge(HospitalNotice::getExpireTime, now))
+                .and(targetAudience != null && !targetAudience.trim().isEmpty(),
+                        w -> w.eq(HospitalNotice::getTargetAudience, "全部").or().eq(HospitalNotice::getTargetAudience, targetAudience))
                 .orderByDesc(HospitalNotice::getIsTop)
+                .orderByDesc(HospitalNotice::getCreatedAt)
                 .orderByDesc(HospitalNotice::getPublishTime));
     }
 

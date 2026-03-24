@@ -71,12 +71,21 @@
               </el-select>
             </el-form-item>
             <el-form-item label="状态" prop="status">
-              <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-                <el-option label="待就诊" value="待就诊" />
-                <el-option label="已取消" value="已取消" />
-                <el-option label="已完成" value="已完成" />
-                <el-option label="已过期" value="已过期" />
-                <el-option label="取消审核中" value="取消审核中" />
+              <el-select
+                v-model="queryParams.status"
+                placeholder="请选择状态"
+                clearable
+                @change="handleQuery"
+                class="status-select"
+              >
+                <el-option
+                  v-for="item in appointmentStatusOptions"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                >
+                  <el-tag size="small" :type="item.type">{{ item.label }}</el-tag>
+                </el-option>
               </el-select>
             </el-form-item>
             <el-form-item label="就诊日期" prop="workDate">
@@ -141,7 +150,7 @@
           </el-row>
 
           <el-table v-loading="loading" :data="appointmentList" @selection-change="handleSelectionChange" @sort-change="handleSortChange" :row-class-name="tableRowClassName">
-            <el-table-column type="selection" width="55" align="center" />
+            <el-table-column type="selection" width="55" align="center" v-if="!isPatient" />
             <el-table-column label="患者姓名" align="center" prop="patientName" sortable="custom" />
             <el-table-column label="医生" align="center" prop="doctorName" sortable="custom" />
             <el-table-column label="职称" align="center" prop="title" />
@@ -153,19 +162,7 @@
             <el-table-column label="班次" align="center" prop="timeSlot" />
             <el-table-column label="状态" align="center" prop="status" sortable="custom">
               <template #default="scope">
-                <el-tag
-                  :type="
-                    scope.row.status === '已完成'
-                      ? 'success'
-                      : scope.row.status === '已取消'
-                      ? 'info'
-                      : scope.row.status === '取消审核中'
-                      ? 'danger'
-                      : scope.row.status === '已过期'
-                      ? 'warning'
-                      : 'warning'
-                  "
-                >
+                <el-tag :type="getAppointmentStatusTagType(scope.row.status)">
                   {{ scope.row.status }}
                 </el-tag>
               </template>
@@ -298,6 +295,18 @@ const newAppointmentId = ref(null);
 const calendarDate = ref(new Date());
 const departmentList = ref([]);
 const queryDoctorOptions = ref([]);
+const appointmentStatusOptions = [
+  { label: '待就诊', value: '待就诊', type: 'warning' },
+  { label: '已取消', value: '已取消', type: 'info' },
+  { label: '已完成', value: '已完成', type: 'success' },
+  { label: '已过期', value: '已过期', type: 'danger' },
+  { label: '取消审核中', value: '取消审核中', type: 'primary' }
+];
+
+function getAppointmentStatusTagType(status) {
+  const statusItem = appointmentStatusOptions.find(item => item.value === status);
+  return statusItem ? statusItem.type : 'warning';
+}
 
 /** 监听日历日期变化 */
 watch(calendarDate, (newDate) => {
@@ -485,6 +494,7 @@ function reset() {
 
 /** 搜索按钮操作 */
 function handleQuery() {
+  queryParams.value.pageNum = 1;
   getList();
 }
 
@@ -492,6 +502,13 @@ function handleQuery() {
 function resetQuery() {
   queryDoctorOptions.value = [];
   proxy.resetForm("queryRef");
+  queryParams.value.patientName = null;
+  queryParams.value.doctorName = null;
+  queryParams.value.deptId = null;
+  queryParams.value.doctorId = null;
+  queryParams.value.status = null;
+  queryParams.value.workDate = null;
+  queryParams.value.pageNum = 1;
   handleQuery();
 }
 
@@ -644,5 +661,13 @@ function handleRecycle() {
 
 :deep(.el-calendar__body) {
   padding: 10px;
+}
+
+:deep(.status-select) {
+  width: 180px;
+}
+
+:deep(.status-select .el-select__wrapper) {
+  min-width: 180px;
 }
 </style>

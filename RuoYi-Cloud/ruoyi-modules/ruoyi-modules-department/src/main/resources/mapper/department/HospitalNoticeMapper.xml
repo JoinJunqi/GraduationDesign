@@ -31,19 +31,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectNoticeList" parameterType="com.ruoyi.department.domain.HospitalNotice" resultMap="HospitalNoticeResult">
         <include refid="selectHospitalNoticeVo"/>
         <where>  
-            <choose>
-                <when test="params.includeDeleted != null and params.includeDeleted == 'true'">
-                    and is_deleted = 1
-                </when>
-                <otherwise>
-                    and is_deleted = 0
-                </otherwise>
-            </choose>
+            <if test="params.includeDeleted == null or params.includeDeleted != 'true'">
+                and is_deleted = 0
+            </if>
+            and target_audience != '管理员'
             <if test="title != null  and title != ''"> and title like concat('%', #{title}, '%')</if>
             <if test="noticeType != null  and noticeType != ''"> and notice_type = #{noticeType}</if>
+            <if test="targetAudience != null  and targetAudience != ''"> and target_audience = #{targetAudience}</if>
+            <if test="priority != null  and priority != ''"> and priority = #{priority}</if>
+            <if test="isTop != null "> and is_top = #{isTop}</if>
             <if test="isActive != null "> and is_active = #{isActive}</if>
+            <if test="params.beginPublishTime != null and params.beginPublishTime != ''"><![CDATA[ and publish_time >= #{params.beginPublishTime} ]]></if>
+            <if test="params.endPublishTime != null and params.endPublishTime != ''"><![CDATA[ and publish_time <= #{params.endPublishTime} ]]></if>
         </where>
-        order by is_top desc, publish_time desc
     </select>
     
 </mapper>

@@ -11,6 +11,19 @@
         <screenfull id="screenfull" class="right-menu-item hover-effect" />
       </template>
 
+      <el-tooltip content="亮色/暗色" placement="bottom">
+        <div
+          class="right-menu-item hover-effect theme-switch-wrapper"
+          v-if="userStore.loginType !== 'guest'"
+          @click="toggleTheme"
+        >
+          <el-icon>
+            <Moon v-if="settingsStore.isDark" />
+            <Sunny v-else />
+          </el-icon>
+        </div>
+      </el-tooltip>
+
       <el-dropdown @command="handleCommand" class="avatar-container right-menu-item hover-effect" trigger="hover" v-if="userStore.loginType !== 'guest'">
         <div class="avatar-wrapper">
           <img :src="userStore.avatar" class="user-avatar" />
@@ -51,61 +64,190 @@ import useUserStore from '@/store/modules/user'
 import useSettingsStore from '@/store/modules/settings'
 import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { Moon, Sunny } from '@element-plus/icons-vue'
 import { listAppointment } from "@/api/hospital/appointment.js"
+import { listAudit } from "@/api/hospital/audit"
 
 const appStore = useAppStore()
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()
 const router = useRouter()
 
-const lastCheckTime = ref(new Date())
 let pollingTimer = null
 const isDoctor = computed(() => userStore.loginType === 'doctor')
+const isPatient = computed(() => userStore.loginType === 'patient')
+const isAdmin = computed(() => userStore.loginType === 'admin' || userStore.roles.includes('admin'))
 
-/** 检查新预约 (轮询) */
-function checkNewAppointments() {
-  if (!isDoctor.value) return
-  
-  const query = {
-    pageNum: 1,
-    pageSize: 5,
-    orderByColumn: "bookedAt",
-    isAsc: "descending"
-  }
-  
-  listAppointment(query).then(response => {
-    if (response.rows && response.rows.length > 0) {
-      const latest = response.rows[0]
-      const bookedAt = new Date(latest.bookedAt)
-      
-      if (bookedAt > lastCheckTime.value) {
-        lastCheckTime.value = bookedAt
-        
-        const notification = ElNotification({
-          title: '新预约提醒',
-          message: `患者 ${latest.patientName} 提交了新的预约 (${latest.appointmentTime})`,
-          type: 'info',
-          duration: 15000,
-          onClick: () => {
-            router.push({ 
-              path: '/hospital/appointment', 
-              query: { 
-                newId: latest.id,
-                _t: Date.now() // 确保即使在同一页面也能触发 watch
-              } 
-            })
-            notification.close()
-          }
-        })
-      }
+const appointmentInited = ref(false)
+const auditInited = ref(false)
+const appointmentSnapshot = ref(new Map())
+const pendingAuditSnapshot = ref(new Set())
+
+function goAppointmentList(query = {}) {
+  router.push({
+    path: '/hospital/appointment',
+    query: {
+      ...query,
+      _t: Date.now()
     }
   })
 }
 
-onMounted(() => {
-  if (isDoctor.value) {
-    pollingTimer = setInterval(checkNewAppointments, 10000)
+function goAuditList() {
+  router.push({
+    path: '/hospital/audit',
+    query: { _t: Date.now() }
+  })
+}
+
+function notifyStatusChange(prev, curr) {
+  if (!prev || !curr || prev.status === curr.status) return
+
+  if (curr.status === '已取消') {
+    const approvedByAdmin = prev.status === '取消审核中'
+    const message = isPatient.value
+      ? (approvedByAdmin
+        ? `管理员已同意您的取消申请，预约（${curr.appointmentTime}）已取消。`
+        : `您的预约（${curr.appointmentTime}）已被管理员取消，请重新选择其他号源。`)
+      : (approvedByAdmin
+        ? `管理员已同意取消申请，预约（${curr.patientName} ${curr.appointmentTime}）已取消。`
+        : `管理员已取消预约（${curr.patientName} ${curr.appointmentTime}），请关注后续排班。`)
+    const notification = ElNotification({
+      title: '预约状态变更',
+      message,
+      type: 'warning',
+      duration: 12000,
+      onClick: () => {
+        goAppointmentList({ newId: curr.id })
+        notification.close()
+      }
+    })
+    return
   }
+
+  if (prev.status === '取消审核中' && curr.status === '待就诊') {
+    const notification = ElNotification({
+      title: '取消申请结果',
+      message: `您的预约取消申请未通过，预约已恢复为待就诊。`,
+      type: 'info',
+      duration: 12000,
+      onClick: () => {
+        goAppointmentList({ newId: curr.id })
+        notification.close()
+      }
+    })
+  }
+}
+
+function checkAppointmentNotifications() {
+  if (!isDoctor.value && !isPatient.value) return
+
+  const query = {
+    pageNum: 1,
+    pageSize: 50,
+    orderByColumn: "bookedAt",
+    isAsc: "descending"
+  }
+
+  listAppointment(query).then(response => {
+    const rows = response.rows || []
+    const nextMap = new Map(rows.map(item => [item.id, item]))
+
+    if (!appointmentInited.value) {
+      appointmentSnapshot.value = nextMap
+      appointmentInited.value = true
+      return
+    }
+
+    if (isDoctor.value) {
+      const newAppointments = rows.filter(item => {
+        return item.status === '待就诊' && !appointmentSnapshot.value.has(item.id)
+      })
+
+      newAppointments.slice(0, 3).forEach(item => {
+        const notification = ElNotification({
+          title: '新预约提醒',
+          message: `患者 ${item.patientName} 提交了新的预约（${item.appointmentTime}）`,
+          type: 'info',
+          duration: 15000,
+          onClick: () => {
+            goAppointmentList({ newId: item.id })
+            notification.close()
+          }
+        })
+      })
+    }
+
+    rows.forEach(item => {
+      const prev = appointmentSnapshot.value.get(item.id)
+      notifyStatusChange(prev, item)
+      if (prev && prev.timeChangeNotice !== item.timeChangeNotice && item.timeChangeNotice) {
+        const notification = ElNotification({
+          title: '就诊时段调整',
+          message: item.timeChangeNotice,
+          type: 'warning',
+          duration: 12000,
+          onClick: () => {
+            goAppointmentList({ newId: item.id })
+            notification.close()
+          }
+        })
+      }
+    })
+
+    appointmentSnapshot.value = nextMap
+  }).catch(() => {})
+}
+
+function checkAuditNotifications() {
+  if (!isAdmin.value) return
+
+  listAudit({
+    pageNum: 1,
+    pageSize: 20,
+    auditStatus: 0,
+    orderByColumn: 'createdAt',
+    isAsc: 'descending'
+  }).then(response => {
+    const rows = response.rows || []
+    const nextIds = new Set(rows.map(item => item.id))
+
+    if (!auditInited.value) {
+      pendingAuditSnapshot.value = nextIds
+      auditInited.value = true
+      return
+    }
+
+    const newAudits = rows.filter(item => !pendingAuditSnapshot.value.has(item.id))
+    newAudits.slice(0, 3).forEach(item => {
+      const roleText = item.requesterRole === 'doctor' ? '医生' : '患者'
+      const notification = ElNotification({
+        title: '新的审核申请',
+        message: `${roleText}${item.requesterName}提交了预约取消审核申请。`,
+        type: 'info',
+        duration: 15000,
+        onClick: () => {
+          goAuditList()
+          notification.close()
+        }
+      })
+    })
+
+    pendingAuditSnapshot.value = nextIds
+  }).catch(() => {})
+}
+
+/** 检查跨端提醒 (轮询) */
+function checkCrossRoleNotifications() {
+  if (userStore.loginType === 'guest') return
+  checkAppointmentNotifications()
+  checkAuditNotifications()
+}
+
+onMounted(() => {
+  if (userStore.loginType === 'guest') return
+  checkCrossRoleNotifications()
+  pollingTimer = setInterval(checkCrossRoleNotifications, 10000)
 })
 
 onUnmounted(() => {
@@ -129,6 +271,10 @@ function goToLogin() {
 
 function toggleSideBar() {
   appStore.toggleSideBar()
+}
+
+function toggleTheme() {
+  settingsStore.toggleTheme()
 }
 
 function handleCommand(command) {

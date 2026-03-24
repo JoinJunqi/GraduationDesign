@@ -59,6 +59,7 @@ public class HospitalNoticeController extends BaseController {
     @PostMapping
     public ResultVO<Boolean> add(@RequestBody HospitalNotice notice) {
         SecurityUtils.checkAdminPermission(UserConstants.PERM_HOSPITAL);
+        notice.setPublisherId(SecurityUtils.getUserId());
         return ResultVO.success(hospitalNoticeService.save(notice));
     }
 

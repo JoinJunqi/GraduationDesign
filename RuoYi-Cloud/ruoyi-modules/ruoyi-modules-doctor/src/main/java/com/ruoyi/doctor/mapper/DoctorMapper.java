@@ -3,6 +3,7 @@ package com.ruoyi.doctor.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.ruoyi.doctor.domain.Doctor;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 @Mapper
@@ -22,4 +23,9 @@ public interface DoctorMapper extends BaseMapper<Doctor> {
      * @return 医生信息
      */
     public Doctor selectDoctorById(Long id);
+
+    /**
+     * 批量恢复逻辑删除的医生
+     */
+    int recoverDoctorByIds(@Param("ids") Long[] ids);
 }

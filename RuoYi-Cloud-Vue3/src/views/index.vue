@@ -19,10 +19,10 @@
 
     <!-- 功能快捷入口 -->
     <el-row :gutter="20" class="function-section">
-      <el-col :span="6" v-for="item in functionList" :key="item.title">
+      <el-col :xs="12" :sm="12" :md="8" :lg="6" v-for="item in functionList" :key="item.title">
         <el-card shadow="hover" class="function-card" @click="handleJump(item.path)">
           <div class="function-item">
-            <el-icon :size="40" :color="item.color">
+            <el-icon :size="isMobile ? 30 : 40" :color="item.color">
               <component :is="item.icon" />
             </el-icon>
             <span class="function-title">{{ item.title }}</span>
@@ -33,24 +33,35 @@
 
     <el-row :gutter="20" class="main-content-section">
       <!-- 左侧：医院通知 -->
-      <el-col :span="16">
+      <el-col :xs="24" :sm="24" :md="16">
         <el-card shadow="hover" class="notice-card">
           <template #header>
             <div class="card-header">
               <span class="header-title"><el-icon><Notification /></el-icon> 医院通知</span>
+              <div v-if="isAdmin" class="notice-filter">
+                <span class="filter-label">受众群体</span>
+                <el-select v-model="noticeAudienceFilter" size="small" class="filter-select">
+                  <el-option label="全部" value="全部" />
+                  <el-option label="患者" value="患者" />
+                  <el-option label="医生" value="医生" />
+                </el-select>
+              </div>
             </div>
           </template>
           <el-scrollbar height="400px">
-            <div v-for="notice in noticeList" :key="notice.id" class="notice-item" @click="viewNotice(notice)">
+            <div v-for="notice in filteredNoticeList" :key="notice.id" class="notice-item" @click="viewNotice(notice)">
               <div class="notice-main">
                 <el-tag :type="getNoticeTag(notice.priority)" size="small" class="notice-tag">
                   {{ notice.noticeType }}
+                </el-tag>
+                <el-tag v-if="isAdmin" type="success" size="small" class="notice-audience-tag">
+                  {{ notice.targetAudience || '全部' }}
                 </el-tag>
                 <span class="notice-title" :class="{ 'is-top': notice.isTop }">{{ notice.title }}</span>
               </div>
               <span class="notice-time">{{ parseTime(notice.publishTime, '{y}-{m}-{d}') }}</span>
             </div>
-            <el-empty v-if="noticeList.length === 0" description="暂无通知" />
+            <el-empty v-if="filteredNoticeList.length === 0" description="暂无通知" />
           </el-scrollbar>
         </el-card>
 
@@ -62,7 +73,7 @@
             </div>
           </template>
           <el-row :gutter="20">
-            <el-col :span="8" v-for="dept in deptList" :key="dept.id" class="dept-col">
+            <el-col :xs="24" :sm="12" :md="8" v-for="dept in deptList" :key="dept.id" class="dept-col">
               <el-card shadow="hover" class="dept-inner-card">
                 <div class="dept-info">
                   <div class="dept-icon">
@@ -81,7 +92,7 @@
       </el-col>
 
       <!-- 右侧：侧边辅助信息 (可以放一些健康贴士或医院地图等) -->
-      <el-col :span="8">
+      <el-col :xs="24" :sm="24" :md="8">
         <el-card shadow="hover" class="side-card">
           <template #header>
             <div class="card-header">
@@ -136,7 +147,7 @@
     </el-row>
     
     <!-- 通知详情对话框 -->
-    <el-dialog v-model="noticeVisible" :title="currentNotice.title" width="600px">
+    <el-dialog v-model="noticeVisible" :title="currentNotice.title" :width="dialogWidth">
       <div class="notice-detail">
         <div class="notice-meta">
           <span>类型：{{ currentNotice.noticeType }}</span>
@@ -150,6 +161,7 @@
 
 <script setup name="Index">
 import { ref, onMounted, computed } from 'vue'
+import { useWindowSize } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import useUserStore from '@/store/modules/user'
@@ -166,20 +178,41 @@ const isAdmin = computed(() => userStore.loginType === 'admin' || userStore.role
 const currentDate = ref(parseTime(new Date(), '{y}年{m}月{d}日 星期{a}'))
 const deptList = ref([])
 const noticeList = ref([])
+const noticeAudienceFilter = ref('全部')
 const noticeVisible = ref(false)
 const currentNotice = ref({})
+const { width } = useWindowSize()
+const isMobile = computed(() => width.value <= 768)
+const dialogWidth = computed(() => (isMobile.value ? '92%' : '600px'))
+
+const filteredNoticeList = computed(() => {
+  if (!isAdmin.value || noticeAudienceFilter.value === '全部') {
+    return noticeList.value
+  }
+  return noticeList.value.filter(item => item.targetAudience === noticeAudienceFilter.value)
+})
 
 const loginType = userStore.loginType
 
 const functionList = computed(() => {
   const allFunctions = [
     { title: '预约挂号', icon: 'Calendar', path: '/hospital/register', color: '#409EFF', roles: ['patient', 'guest'] },
-    { title: '我的预约', icon: 'List', path: '/hospital/appointment', color: '#67C23A', roles: ['patient', 'doctor', 'guest'] },
-    { title: '我的病历', icon: 'Document', path: '/hospital/record', color: '#E6A23C', roles: ['patient', 'doctor', 'guest'] },
+    { title: '我的预约', icon: 'List', path: '/hospital/appointment', color: '#67C23A', roles: ['patient', 'guest'] },
+    { title: '我的病历', icon: 'Document', path: '/hospital/record', color: '#E6A23C', roles: ['patient', 'guest'] },
+    { title: '我的排班', icon: 'Calendar', path: '/hospital/schedule', color: '#409EFF', roles: ['doctor'] },
+    { title: '预约列表', icon: 'List', path: '/hospital/appointment', color: '#67C23A', roles: ['doctor'] },
+    { title: '病历管理', icon: 'Document', path: '/hospital/record', color: '#E6A23C', roles: ['doctor'] },
     { title: '个人中心', icon: 'User', path: '/user/profile', color: '#F56C6C', roles: ['admin', 'doctor', 'patient', 'guest'] },
-    { title: '科室管理', icon: 'OfficeBuilding', path: '/hospital/department', color: '#409EFF', roles: ['admin'] },
-    { title: '医生管理', icon: 'UserFilled', path: '/hospital/doctor', color: '#67C23A', roles: ['admin'] },
-    { title: '通知管理', icon: 'Message', path: '/hospital/notice', color: '#E6A23C', roles: ['admin'] }
+    { title: '数据看板', icon: 'DataLine', path: '/hospital/dashboard', color: '#409EFF', roles: ['admin'] },
+    { title: '管理员管理', icon: 'UserFilled', path: '/hospital/admin', color: '#67C23A', roles: ['admin'] },
+    { title: '科室信息管理', icon: 'OfficeBuilding', path: '/hospital/department', color: '#E6A23C', roles: ['admin'] },
+    { title: '医生管理', icon: 'Avatar', path: '/hospital/doctor', color: '#909399', roles: ['admin'] },
+    { title: '患者管理', icon: 'User', path: '/hospital/patient', color: '#F56C6C', roles: ['admin'] },
+    { title: '排班管理', icon: 'Calendar', path: '/hospital/schedule', color: '#409EFF', roles: ['admin'] },
+    { title: '预约管理', icon: 'List', path: '/hospital/appointment', color: '#67C23A', roles: ['admin'] },
+    { title: '病历管理', icon: 'Document', path: '/hospital/record', color: '#E6A23C', roles: ['admin'] },
+    { title: '医院信息管理', icon: 'Message', path: '/hospital/notice', color: '#909399', roles: ['admin'] },
+    { title: '操作审核', icon: 'View', path: '/hospital/audit', color: '#F56C6C', roles: ['admin'] }
   ]
   return allFunctions.filter(item => item.roles.includes(loginType))
 })
@@ -197,13 +230,14 @@ function getDeptList() {
 
 function getNoticeList() {
   const audienceMap = {
-    'admin': '管理员',
     'patient': '患者',
     'doctor': '医生',
     'guest': '患者'
   }
-  
-  listActiveNotice({ targetAudience: audienceMap[userStore.loginType] }).then(res => {
+
+  const targetAudience = audienceMap[userStore.loginType]
+  const query = targetAudience ? { targetAudience } : {}
+  listActiveNotice(query).then(res => {
     noticeList.value = res.data
   })
 }
@@ -307,6 +341,27 @@ function getNoticeTag(priority) {
     gap: 8px;
   }
 
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .notice-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    .filter-label {
+      color: #606266;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .filter-select {
+      width: 120px;
+    }
+  }
+
   .notice-item {
     display: flex;
     justify-content: space-between;
@@ -323,6 +378,9 @@ function getNoticeTag(priority) {
       gap: 10px;
       flex: 1;
       overflow: hidden;
+      .notice-audience-tag {
+        flex-shrink: 0;
+      }
       .notice-title {
         white-space: nowrap;
         overflow: hidden;
@@ -428,6 +486,99 @@ function getNoticeTag(priority) {
       line-height: 1.8;
       color: #303133;
       white-space: pre-wrap;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .home {
+    padding: 10px;
+
+    .welcome-section {
+      .welcome-card {
+        .welcome-content {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 8px;
+
+          .user-info {
+            h2 {
+              font-size: 20px;
+              line-height: 1.5;
+            }
+
+            .current-date {
+              font-size: 14px;
+            }
+          }
+
+          .weather-placeholder {
+            font-size: 14px;
+            gap: 6px;
+          }
+        }
+      }
+    }
+
+    .function-section {
+      .function-card {
+        margin-bottom: 12px;
+
+        .function-item {
+          padding: 4px 0;
+
+          .function-title {
+            margin-top: 8px;
+            font-size: 15px;
+          }
+        }
+      }
+    }
+
+    .header-title {
+      font-size: 16px;
+    }
+
+    .card-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .notice-filter {
+      width: 100%;
+      .filter-select {
+        width: 100%;
+      }
+    }
+
+    .notice-item {
+      align-items: flex-start;
+      gap: 6px;
+
+      .notice-time {
+        margin-left: 0;
+        font-size: 12px;
+      }
+    }
+
+    .working-hours {
+      .hour-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+
+        .hour-value {
+          font-size: 14px;
+        }
+      }
+    }
+
+    .notice-detail {
+      .notice-meta {
+        flex-direction: column;
+        gap: 6px;
+      }
     }
   }
 }

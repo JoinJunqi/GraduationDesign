@@ -53,4 +53,15 @@
         </where>
     </select>
 
+    <update id="recoverDepartmentByIds">
+        update department
+        set is_deleted = 0,
+            deleted_at = null
+        where is_deleted = 1
+          and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
 </mapper>

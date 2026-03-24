@@ -40,5 +40,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isActive != null "> and is_active = #{isActive}</if>
         </where>
     </select>
+
+    <update id="recoverPatientByIds">
+        update patient
+        set is_deleted = 0,
+            deleted_at = null
+        where is_deleted = 1
+          and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
     
 </mapper>

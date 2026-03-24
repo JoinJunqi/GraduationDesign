@@ -452,7 +452,9 @@ function handleSelectSchedule(schedule) {
   // 获取已预约的时段
   loading.value = true;
   listAppointment({ scheduleId: schedule.id }).then(response => {
-    bookedTimeSlots.value = (response.rows || []).map(item => item.appointmentTime);
+    bookedTimeSlots.value = (response.rows || [])
+      .filter(item => item.status !== '已取消')
+      .map(item => item.appointmentTime);
     activeStep.value = 3;
     loading.value = false;
   }).catch(() => {

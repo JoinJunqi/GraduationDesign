@@ -2,7 +2,7 @@
   <div class="app-container">
     <el-row :gutter="20">
       <!-- 左侧日历 -->
-      <el-col :span="6" v-if="!isDoctor">
+      <el-col :xs="24" :sm="24" :md="6" v-if="!isDoctor" class="calendar-col">
         <el-card shadow="never">
           <template #header>
             <div class="card-header">
@@ -20,7 +20,7 @@
       </el-col>
 
       <!-- 右侧列表 -->
-      <el-col :span="isDoctor ? 24 : 18">
+      <el-col :xs="24" :sm="24" :md="isDoctor ? 24 : 18" class="list-col">
         <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
           <el-form-item label="医生姓名" prop="doctorName" v-if="!isDoctor">
         <el-autocomplete
@@ -41,7 +41,7 @@
         </el-autocomplete>
       </el-form-item>
       <el-form-item label="医生筛选" v-if="!isDoctor">
-        <el-select v-model="queryParams.deptId" placeholder="选择科室" clearable @change="handleQueryDeptChange" style="width: 130px; margin-right: 5px;">
+        <el-select v-model="queryParams.deptId" placeholder="选择科室" clearable @change="handleQueryDeptChange" class="filter-select filter-select-dept">
           <el-option
             v-for="item in departmentList"
             :key="item.id"
@@ -49,7 +49,7 @@
             :value="item.id"
           />
         </el-select>
-        <el-select v-model="queryParams.doctorId" placeholder="选择医生" clearable :disabled="!queryParams.deptId" @change="handleQuery" style="width: 130px;">
+        <el-select v-model="queryParams.doctorId" placeholder="选择医生" clearable :disabled="!queryParams.deptId" @change="handleQuery" class="filter-select">
           <el-option
             v-for="item in queryDoctorOptions"
             :key="item.id"
@@ -128,7 +128,7 @@
     </el-row>
 
     <el-table v-loading="loading" :data="scheduleList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
-      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column type="selection" width="55" align="center" :selectable="isRowSelectable" />
       <el-table-column label="出诊日期" align="center" prop="workDate" width="120" sortable="custom">
         <template #default="scope">
           <span>{{ parseTime(scope.row.workDate, '{y}-{m}-{d}') }}</span>
@@ -173,7 +173,7 @@
     </el-row>
     
     <!-- 添加或修改排班对话框 -->
-    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
+    <el-dialog :title="title" v-model="open" :width="dialogWidth" :top="dialogTop" append-to-body>
       <el-form ref="scheduleRef" :model="form" :rules="rules" label-width="80px">
     <template v-if="isDoctor">
       <el-form-item label="医生" prop="doctorName">
@@ -302,6 +302,7 @@
 
 <script setup name="Schedule">
 import { ref, reactive, toRefs, computed, getCurrentInstance, onMounted, onActivated } from 'vue';
+import { useWindowSize } from '@vueuse/core'
 import { listSchedule, getSchedule, delSchedule, addSchedule, updateSchedule } from "@/api/hospital/schedule";
 import { listDepartment } from "@/api/hospital/department";
 import { listDoctorByDept, listDoctor } from "@/api/hospital/doctor";
@@ -320,6 +321,10 @@ const isPatient = computed(() => userStore.roles.includes('patient'));
 const currentDoctorName = computed(() => userStore.nickName);
 const currentDoctorId = computed(() => userStore.id);
 const isEditDisabled = ref(false);
+const { width } = useWindowSize()
+const isMobile = computed(() => width.value <= 768)
+const dialogWidth = computed(() => (isMobile.value ? '92%' : '500px'))
+const dialogTop = computed(() => (isMobile.value ? '4vh' : '15vh'))
 
 const scheduleList = ref([]);
 const open = ref(false);
@@ -672,6 +677,20 @@ function shouldHideDoctorRowActions(row) {
   return status === 2 || workDate.getTime() < today.getTime();
 }
 
+/** 医生端是否符合申请删除条件 */
+function canDoctorApplyDelete(row) {
+  if (!row) return false;
+  const workDateStr = parseTime(row.workDate, '{y}-{m}-{d}');
+  const todayStr = parseTime(new Date(), '{y}-{m}-{d}');
+  return !!workDateStr && workDateStr > todayStr && Number(row.status) === 2;
+}
+
+/** 列表行是否允许勾选 */
+function isRowSelectable(row) {
+  if (!isDoctor.value) return true;
+  return canDoctorApplyDelete(row);
+}
+
 /** 修改按钮操作 */
 function handleUpdate(row) {
   if (shouldHideDoctorRowActions(row)) {
@@ -804,11 +823,7 @@ function handleDelete(row) {
   // 医生端仅允许申请删除：日期大于今天且状态为已取消(2)
   if (isDoctor.value) {
     const checkRows = row.id ? [row] : scheduleList.value.filter(item => ids.value.includes(item.id));
-    const todayStr = parseTime(new Date(), '{y}-{m}-{d}');
-    const hasInvalidSchedule = checkRows.some(item => {
-      const workDateStr = parseTime(item.workDate, '{y}-{m}-{d}');
-      return workDateStr <= todayStr || Number(item.status) !== 2;
-    });
+    const hasInvalidSchedule = checkRows.some(item => !canDoctorApplyDelete(item));
     
     if (hasInvalidSchedule) {
       proxy.$modal.msgError("仅可申请删除日期大于今天且状态为“已取消”的排班");
@@ -880,5 +895,57 @@ function handleDelete(row) {
 .doctor-suggestion {
   display: flex;
   align-items: center;
+}
+
+.filter-select {
+  width: 130px;
+}
+
+.filter-select-dept {
+  margin-right: 5px;
+}
+
+@media (max-width: 768px) {
+  .calendar-col {
+    display: none;
+  }
+
+  .mb8 :deep(.el-col) {
+    width: 100%;
+    max-width: 100%;
+    flex: 0 0 100%;
+    margin-bottom: 8px;
+  }
+
+  .mb8 :deep(.el-button) {
+    width: 100%;
+  }
+
+  .list-col {
+    margin-bottom: 12px;
+  }
+
+  .filter-select,
+  .filter-select-dept {
+    width: 100% !important;
+    margin-right: 0;
+  }
+
+  .doctor-suggestion {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  .mini-calendar :deep(.el-calendar-table .el-calendar-day) {
+    height: 34px;
+  }
+
+  .calendar-cell {
+    font-size: 12px;
+  }
+
+  .app-container :deep(.el-table) {
+    font-size: 13px;
+  }
 }
 </style>

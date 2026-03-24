@@ -32,7 +32,12 @@
       <el-table-column label="申请人" align="center" prop="requesterName">
         <template #default="scope">
           <span>{{ scope.row.requesterName }}</span>
-          <el-tag size="small" :type="scope.row.requesterRole === 'doctor' ? 'success' : 'primary'" style="margin-left: 5px">
+          <el-tag
+            size="small"
+            effect="dark"
+            :type="scope.row.requesterRole === 'doctor' ? 'success' : 'primary'"
+            style="margin-left: 5px"
+          >
             {{ scope.row.requesterRole === 'doctor' ? '医生' : '患者' }}
           </el-tag>
         </template>

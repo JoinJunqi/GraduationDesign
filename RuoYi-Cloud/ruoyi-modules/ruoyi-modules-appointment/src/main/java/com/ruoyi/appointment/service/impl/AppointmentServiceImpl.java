@@ -624,10 +624,8 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
 
     @Override
     public boolean recoverAppointmentByIds(Long[] ids) {
-        return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Appointment>()
-                .set("is_deleted", 0)
-                .set("deleted_at", null)
-                .in("id", Arrays.asList(ids)));
+        int recovered = appointmentMapper.recoverAppointmentByIds(ids);
+        return recovered > 0;
     }
 
 

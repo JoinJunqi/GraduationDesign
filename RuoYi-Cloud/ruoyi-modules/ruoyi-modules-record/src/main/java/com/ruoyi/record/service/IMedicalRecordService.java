@@ -37,4 +37,9 @@ public interface IMedicalRecordService extends IService<MedicalRecord> {
      * 删除病历（带权限校验）
      */
     boolean deleteMedicalRecordByIds(Long[] ids);
+
+    /**
+     * 恢复病历（带权限校验）
+     */
+    boolean recoverMedicalRecordByIds(Long[] ids);
 }

@@ -64,14 +64,25 @@
           icon="RefreshLeft"
           :disabled="multiple"
           @click="handleRecover"
+          v-if="!isDoctor"
           v-hasPermi="['hospital:schedule:edit']"
         >批量恢复</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
+    <el-alert
+      v-if="isDoctor"
+      title="仅管理员可恢复，请联系管理员"
+      type="warning"
+      :closable="false"
+      show-icon
+      class="mb8"
+    />
+
     <el-table v-loading="loading" :data="scheduleList" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
-      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column v-if="isDoctor" type="index" label="序号" width="70" align="center" :index="getTableIndex" />
+      <el-table-column v-if="!isDoctor" type="selection" width="55" align="center" />
       <el-table-column label="医生" align="center" prop="doctorName" />
       <el-table-column label="职称" align="center" prop="title" />
       <el-table-column label="出诊日期" align="center" prop="workDate" width="120" sortable="custom">
@@ -85,7 +96,7 @@
           <span>{{ parseTime(scope.row.deletedAt) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column v-if="!isDoctor" label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="success" icon="RefreshLeft" @click="handleRecover(scope.row)" v-hasPermi="['hospital:schedule:edit']">恢复</el-button>
         </template>
@@ -106,11 +117,14 @@
 import { listSchedule, recoverSchedule } from "@/api/hospital/schedule";
 import { listDepartment } from "@/api/hospital/department";
 import { listDoctorByDept, listDoctor } from "@/api/hospital/doctor";
-import { getCurrentInstance, ref, reactive, toRefs, onMounted } from "vue";
+import { getCurrentInstance, ref, reactive, toRefs, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
+import useUserStore from "@/store/modules/user";
 
 const { proxy } = getCurrentInstance();
 const router = useRouter();
+const userStore = useUserStore();
+const isDoctor = computed(() => userStore.roles.includes('doctor'));
 
 const scheduleList = ref([]);
 const loading = ref(true);
@@ -212,6 +226,11 @@ function resetQuery() {
 function handleSelectionChange(selection) {
   ids.value = selection.map(item => item.id);
   multiple.value = !selection.length;
+}
+
+/** 计算跨页连续序号 */
+function getTableIndex(index) {
+  return (queryParams.value.pageNum - 1) * queryParams.value.pageSize + index + 1;
 }
 
 /** 恢复按钮操作 */

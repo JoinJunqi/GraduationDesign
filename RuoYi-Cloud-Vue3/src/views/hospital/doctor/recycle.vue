@@ -217,9 +217,13 @@ function handleRecover(row) {
   const doctorIds = row.id || ids.value;
   proxy.$modal.confirm('是否确认恢复医生编号为"' + doctorIds + '"的数据项？').then(function () {
     return recoverDoctor(doctorIds);
-  }).then(() => {
-    getList();
-    proxy.$modal.msgSuccess("恢复成功");
+  }).then((res) => {
+    if (res && res.data) {
+      getList();
+      proxy.$modal.msgSuccess("恢复成功");
+      return;
+    }
+    proxy.$modal.msgError("恢复失败，请刷新后重试");
   }).catch(() => {});
 }
 

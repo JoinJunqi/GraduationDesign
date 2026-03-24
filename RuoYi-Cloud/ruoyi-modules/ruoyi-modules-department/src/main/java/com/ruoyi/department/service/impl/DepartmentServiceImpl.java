@@ -69,12 +69,13 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean recoverDepartmentByIds(Long[] ids) {
+        int recovered = baseMapper.recoverDepartmentByIds(ids);
+        if (recovered <= 0) {
+            return false;
+        }
+
         // 恢复关联的科室说明
         departmentIntroService.recoverByDeptIds(ids);
-
-        return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Department>()
-                .set("is_deleted", 0)
-                .set("deleted_at", null)
-                .in("id", Arrays.asList(ids)));
+        return true;
     }
 }

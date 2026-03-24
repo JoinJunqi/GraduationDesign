@@ -220,9 +220,13 @@ function handleRecover(row) {
   const appointmentIds = row.id || ids.value;
   proxy.$modal.confirm('是否确认恢复预约编号为"' + appointmentIds + '"的数据项？').then(function () {
     return recoverAppointment(appointmentIds);
-  }).then(() => {
-    getList();
-    proxy.$modal.msgSuccess("恢复成功");
+  }).then((res) => {
+    if (res && res.data) {
+      getList();
+      proxy.$modal.msgSuccess("恢复成功");
+      return;
+    }
+    proxy.$modal.msgError("恢复失败，请刷新后重试");
   }).catch(() => {});
 }
 

@@ -210,10 +210,8 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
 
     @Override
     public boolean recoverPatientByIds(Long[] ids) {
-        return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Patient>()
-                .set("is_deleted", 0)
-                .set("deleted_at", null)
-                .in("id", Arrays.asList(ids)));
+        int recovered = patientMapper.recoverPatientByIds(ids);
+        return recovered > 0;
     }
 
     @Override

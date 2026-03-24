@@ -309,4 +309,25 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         log.error("Unauthorized delete attempt by User: {}, roles: {}", userId, roles);
         throw new ServiceException("无权删除病历单，仅管理员可执行此操作");
     }
+
+    @Override
+    public boolean recoverMedicalRecordByIds(Long[] ids) {
+        Long userId = SecurityUtils.getUserId();
+        Set<String> roles = getRoles();
+
+        log.info("Recover medical records: {}. User: {}, roles: {}", Arrays.toString(ids), userId, roles);
+
+        if (isAdminUser()) {
+            MedicalRecord record = new MedicalRecord();
+            record.setIsDeleted(0);
+            record.setDeletedAt(null);
+            return update(record,
+                    new LambdaQueryWrapper<MedicalRecord>()
+                            .in(MedicalRecord::getId, Arrays.asList(ids))
+                            .eq(MedicalRecord::getIsDeleted, 1));
+        }
+
+        log.error("Unauthorized recover attempt by User: {}, roles: {}", userId, roles);
+        throw new ServiceException("无权恢复病历单，仅管理员可执行此操作");
+    }
 }

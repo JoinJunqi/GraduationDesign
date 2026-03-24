@@ -136,10 +136,8 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
 
     @Override
     public boolean recoverDoctorByIds(Long[] ids) {
-        return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Doctor>()
-                .set("is_deleted", 0)
-                .set("deleted_at", null)
-                .in("id", Arrays.asList(ids)));
+        int recovered = doctorMapper.recoverDoctorByIds(ids);
+        return recovered > 0;
     }
 
     @Override
