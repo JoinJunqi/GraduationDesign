@@ -43,3 +43,11 @@ export function delRecord(ids) {
     method: 'delete'
   })
 }
+
+// 恢复病历
+export function recoverRecord(ids) {
+  return request({
+    url: '/ruoyi-hospital-record/record/recover/' + ids,
+    method: 'put'
+  })
+}

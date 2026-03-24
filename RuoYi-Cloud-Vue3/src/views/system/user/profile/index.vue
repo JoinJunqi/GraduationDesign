@@ -24,7 +24,7 @@
                         <svg-icon icon-class="user" />{{ loginType === 'patient' ? '患者姓名' : '用户昵称' }}
                         <div class="pull-right">{{ state.user.nickName || state.user.name }}</div>
                      </li>
-                     <li class="list-group-item">
+                     <li class="list-group-item" v-if="loginType !== 'doctor'">
                         <svg-icon icon-class="phone" />手机号码
                         <div class="pull-right">{{ state.user.phonenumber || state.user.phone }}</div>
                      </li>

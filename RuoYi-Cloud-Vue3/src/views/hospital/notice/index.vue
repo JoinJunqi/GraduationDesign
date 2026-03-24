@@ -1,35 +1,95 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="标题" prop="title">
-        <el-input
-          v-model="queryParams.title"
-          placeholder="请输入通知标题"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="类型" prop="noticeType">
-        <el-select v-model="queryParams.noticeType" placeholder="通知类型" clearable>
-          <el-option label="系统公告" value="系统公告" />
-          <el-option label="医院动态" value="医院动态" />
-          <el-option label="停诊通知" value="停诊通知" />
-          <el-option label="政策法规" value="政策法规" />
-          <el-option label="温馨提示" value="温馨提示" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="显示已删除" prop="includeDeleted">
-        <el-switch
-          v-model="queryParams.params.includeDeleted"
-          active-value="true"
-          inactive-value="false"
-          @change="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="68px" class="notice-query-form">
+      <el-row :gutter="12" class="query-main-row">
+        <el-col :xl="5" :lg="6" :md="8" :sm="12" :xs="24">
+          <el-form-item label="标题" prop="title" class="query-item">
+            <el-input
+              v-model="queryParams.title"
+              placeholder="请输入通知标题"
+              clearable
+              @keyup.enter="handleQuery"
+              class="query-control"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :xl="3" :lg="4" :md="6" :sm="12" :xs="24">
+          <el-form-item label="类型" prop="noticeType" class="query-item">
+            <el-select v-model="queryParams.noticeType" placeholder="通知类型" clearable class="query-control">
+              <el-option label="系统公告" value="系统公告" />
+              <el-option label="医院动态" value="医院动态" />
+              <el-option label="停诊通知" value="停诊通知" />
+              <el-option label="政策法规" value="政策法规" />
+              <el-option label="温馨提示" value="温馨提示" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :xl="3" :lg="4" :md="6" :sm="12" :xs="24">
+          <el-form-item label="受众" prop="targetAudience" class="query-item">
+            <el-select v-model="queryParams.targetAudience" placeholder="目标受众" clearable class="query-control">
+              <el-option label="全部" value="全部" />
+              <el-option label="患者" value="患者" />
+              <el-option label="医生" value="医生" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :xl="3" :lg="4" :md="6" :sm="12" :xs="24">
+          <el-form-item label="优先级" prop="priority" class="query-item">
+            <el-select v-model="queryParams.priority" placeholder="通知优先级" clearable class="query-control">
+              <el-option label="普通" value="普通" />
+              <el-option label="重要" value="重要" />
+              <el-option label="紧急" value="紧急" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :xl="3" :lg="4" :md="6" :sm="12" :xs="24">
+          <el-form-item label="状态" prop="isActive" class="query-item">
+            <el-select v-model="queryParams.isActive" placeholder="通知状态" clearable class="query-control">
+              <el-option label="有效" :value="1" />
+              <el-option label="无效" :value="0" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :xl="3" :lg="4" :md="6" :sm="12" :xs="24">
+          <el-form-item label="置顶" prop="isTop" class="query-item">
+            <el-select v-model="queryParams.isTop" placeholder="是否置顶" clearable class="query-control">
+              <el-option label="是" :value="1" />
+              <el-option label="否" :value="0" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :xl="7" :lg="8" :md="12" :sm="24" :xs="24">
+          <el-form-item label="发布时间" class="query-item">
+            <el-date-picker
+              v-model="dateRangePublishTime"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              type="datetimerange"
+              range-separator="-"
+              start-placeholder="开始时间"
+              end-placeholder="结束时间"
+              class="query-control"
+            />
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row :gutter="12" class="query-action-row">
+        <el-col :xl="5" :lg="6" :md="8" :sm="12" :xs="24">
+          <el-form-item label="显示已删除" prop="includeDeleted" class="query-item">
+            <el-switch
+              v-model="queryParams.params.includeDeleted"
+              active-value="true"
+              inactive-value="false"
+              @change="handleQuery"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :xl="19" :lg="18" :md="16" :sm="12" :xs="24">
+          <el-form-item class="query-actions">
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8" v-if="hasAdminPermi(AdminPermi.HOSPITAL)">
@@ -84,7 +144,7 @@
           <el-tag :type="getPriorityTag(scope.row.priority)">{{ scope.row.priority }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="发布时间" align="center" prop="publishTime" width="160">
+      <el-table-column label="发布时间" align="center" prop="publishTime" width="160" sortable="custom">
         <template #default="scope">
           <span>{{ parseTime(scope.row.publishTime) }}</span>
         </template>
@@ -155,7 +215,6 @@
                 <el-option label="全部" value="全部" />
                 <el-option label="患者" value="患者" />
                 <el-option label="医生" value="医生" />
-                <el-option label="管理员" value="管理员" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -242,14 +301,21 @@ const single = ref(true);
 const multiple = ref(true);
 const title = ref("");
 const total = ref(0);
+const dateRangePublishTime = ref([]);
 
 const data = reactive({
   form: {},
   queryParams: {
     pageNum: 1,
     pageSize: 10,
+    orderByColumn: 'createdAt',
+    isAsc: 'desc',
     title: null,
     noticeType: null,
+    targetAudience: null,
+    priority: null,
+    isTop: null,
+    isActive: null,
     params: {
       includeDeleted: "false"
     }
@@ -271,7 +337,7 @@ onMounted(() => {
 /** 查询通知列表 */
 function getList() {
   loading.value = true;
-  listNotice(queryParams.value).then(response => {
+  listNotice(proxy.addDateRange(queryParams.value, dateRangePublishTime.value, 'PublishTime')).then(response => {
     noticeList.value = response.rows;
     total.value = response.total;
     loading.value = false;
@@ -297,7 +363,7 @@ function reset() {
     expireTime: null,
     isTop: 0,
     isActive: 1,
-    publisherId: userStore.userId
+    publisherId: userStore.id
   };
   proxy.resetForm("noticeRef");
 }
@@ -310,8 +376,21 @@ function handleQuery() {
 
 /** 重置按钮操作 */
 function resetQuery() {
+  queryParams.value.pageNum = 1;
+  queryParams.value.pageSize = 10;
+  queryParams.value.orderByColumn = 'createdAt';
+  queryParams.value.isAsc = 'desc';
+  queryParams.value.params = { includeDeleted: "false" };
+  dateRangePublishTime.value = [];
   proxy.resetForm("queryRef");
   handleQuery();
+}
+
+/** 排序触发 */
+function handleSortChange({ prop, order }) {
+  queryParams.value.orderByColumn = order ? prop : 'createdAt';
+  queryParams.value.isAsc = order === 'ascending' ? 'asc' : order === 'descending' ? 'desc' : 'desc';
+  getList();
 }
 
 /** 多选框选中数据 */
@@ -393,7 +472,44 @@ function getPriorityTag(priority) {
   return map[priority] || 'info';
 }
 
-onMounted(() => {
-  getList();
-});
 </script>
+
+<style scoped lang="scss">
+.notice-query-form {
+  margin-bottom: 6px;
+  padding: 12px 14px 2px;
+  background: #f8fafc;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+
+  .query-main-row,
+  .query-action-row {
+    margin-bottom: 4px;
+  }
+
+  .query-item {
+    margin-bottom: 10px;
+  }
+
+  .query-control {
+    width: 100%;
+  }
+
+  .query-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .notice-query-form {
+    padding: 10px 10px 0;
+
+    .query-actions {
+      justify-content: flex-start;
+    }
+  }
+}
+</style>

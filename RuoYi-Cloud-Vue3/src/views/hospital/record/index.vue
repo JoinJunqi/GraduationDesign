@@ -472,9 +472,13 @@ function handleDelete(row) {
   const recordIds = row.id || ids.value;
   proxy.$modal.confirm('是否确认删除病历编号为"' + recordIds + '"的数据项？').then(function() {
     return delRecord(recordIds);
-  }).then(() => {
+  }).then((response) => {
     getList();
-    proxy.$modal.msgSuccess("删除成功");
+    if (response && response.data === true) {
+      proxy.$modal.msgSuccess("删除成功");
+    } else {
+      proxy.$modal.msgWarning("删除未生效，请刷新后重试");
+    }
   }).catch(() => {});
 }
 
@@ -483,9 +487,13 @@ function handleRecover(row) {
   const recordIds = row?.id || ids.value;
   proxy.$modal.confirm('是否确认恢复病历编号为"' + recordIds + '"的数据项？').then(function() {
     return recoverRecord(recordIds);
-  }).then(() => {
+  }).then((response) => {
     getList();
-    proxy.$modal.msgSuccess("恢复成功");
+    if (response && response.data === true) {
+      proxy.$modal.msgSuccess("恢复成功");
+    } else {
+      proxy.$modal.msgWarning("恢复未生效，请刷新后重试");
+    }
   }).catch(() => {});
 }
 

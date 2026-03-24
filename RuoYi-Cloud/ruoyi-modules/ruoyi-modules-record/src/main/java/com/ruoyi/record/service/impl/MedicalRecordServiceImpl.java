@@ -299,10 +299,11 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         log.info("Delete medical records: {}. User: {}, roles: {}", Arrays.toString(ids), userId, roles);
 
         if (isAdminUser()) {
-            MedicalRecord record = new MedicalRecord();
-            record.setIsDeleted(1);
-            record.setDeletedAt(new Date());
-            return update(record, new LambdaQueryWrapper<MedicalRecord>().in(MedicalRecord::getId, Arrays.asList(ids)));
+            return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<MedicalRecord>()
+                    .set("is_deleted", 1)
+                    .set("deleted_at", new Date())
+                    .in("id", Arrays.asList(ids))
+                    .eq("is_deleted", 0));
         }
 
         // 既不是管理员，也不允许医生或患者删除
@@ -318,13 +319,11 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         log.info("Recover medical records: {}. User: {}, roles: {}", Arrays.toString(ids), userId, roles);
 
         if (isAdminUser()) {
-            MedicalRecord record = new MedicalRecord();
-            record.setIsDeleted(0);
-            record.setDeletedAt(null);
-            return update(record,
-                    new LambdaQueryWrapper<MedicalRecord>()
-                            .in(MedicalRecord::getId, Arrays.asList(ids))
-                            .eq(MedicalRecord::getIsDeleted, 1));
+            return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<MedicalRecord>()
+                    .set("is_deleted", 0)
+                    .set("deleted_at", null)
+                    .in("id", Arrays.asList(ids))
+                    .eq("is_deleted", 1));
         }
 
         log.error("Unauthorized recover attempt by User: {}, roles: {}", userId, roles);
