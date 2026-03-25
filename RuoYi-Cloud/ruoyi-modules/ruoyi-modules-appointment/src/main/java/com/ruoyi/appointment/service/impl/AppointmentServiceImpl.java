@@ -40,9 +40,21 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     private com.ruoyi.appointment.service.ISysOperationAuditService auditService;
 
     private static final String SCHEDULE_SLOTS_KEY = "hospital:schedule:slots:";
+    private static final String APPOINTMENT_SLOT_LOCK_KEY = "hospital:appointment:slot:lock:";
 
     private String getScheduleRedisKey(Long scheduleId) {
         return SCHEDULE_SLOTS_KEY + scheduleId;
+    }
+
+    private String getAppointmentSlotLockKey(Long scheduleId, String appointmentTime) {
+        return APPOINTMENT_SLOT_LOCK_KEY + scheduleId + ":" + appointmentTime;
+    }
+
+    private void releaseAppointmentSlotLock(Long scheduleId, String appointmentTime) {
+        if (scheduleId == null || appointmentTime == null || appointmentTime.trim().isEmpty()) {
+            return;
+        }
+        redisService.deleteObject(getAppointmentSlotLockKey(scheduleId, appointmentTime));
     }
 
     /**
@@ -295,6 +307,8 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         // 2. 检查排班是否存在及剩余号源 (Redis 优先)
         Long scheduleId = appointment.getScheduleId();
         String redisKey = getScheduleRedisKey(scheduleId);
+        String slotLockKey = null;
+        boolean slotLocked = false;
         log.info("Checking Redis slots for key: {}", redisKey);
         
         // 获取 Redis 中的值（用于调试）
@@ -363,6 +377,21 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
             throw new ServiceException("系统繁忙，请重试");
         }
 
+        if (appointment.getAppointmentTime() != null && !appointment.getAppointmentTime().trim().isEmpty()) {
+            slotLockKey = getAppointmentSlotLockKey(scheduleId, appointment.getAppointmentTime());
+            Boolean lockResult = redisService.redisTemplate.opsForValue().setIfAbsent(
+                    slotLockKey,
+                    String.valueOf(appointment.getPatientId()),
+                    24L,
+                    java.util.concurrent.TimeUnit.HOURS
+            );
+            if (!Boolean.TRUE.equals(lockResult)) {
+                redisService.redisTemplate.opsForValue().increment(redisKey);
+                throw new ServiceException("该具体时段已被预约，请选择其他时段");
+            }
+            slotLocked = true;
+        }
+
         try {
             // 3. 同步到排班服务 (异步或后续同步，这里简单处理)
             Schedule updateSchedule = new Schedule();
@@ -386,6 +415,9 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
             log.error("Error creating appointment, rolling back Redis slots...", e);
             // 数据库更新失败，回退 Redis
             redisService.redisTemplate.opsForValue().increment(redisKey);
+            if (slotLocked && slotLockKey != null) {
+                redisService.deleteObject(slotLockKey);
+            }
             throw e;
         }
     }
@@ -427,7 +459,11 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
 
         // 3. 更新预约状态
         appointment.setStatus("已取消");
-        return this.updateById(appointment);
+        boolean updated = this.updateById(appointment);
+        if (updated) {
+            releaseAppointmentSlotLock(scheduleId, appointment.getAppointmentTime());
+        }
+        return updated;
     }
 
     @Override
@@ -486,6 +522,11 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         // 注意：排班取消后，availableSlots 应该恢复为 totalCapacity
         // 但由于排班本身状态变更为“已取消”，挂号页面会过滤掉，所以这里恢复 Redis 主要是为了数据完整性
         
+        if (updated) {
+            for (Appointment appointment : appointments) {
+                releaseAppointmentSlotLock(appointment.getScheduleId(), appointment.getAppointmentTime());
+            }
+        }
         return updated;
     }
 
