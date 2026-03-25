@@ -10,6 +10,7 @@ const useUserStore = defineStore(
   {
     state: () => ({
       token: getToken(),
+      // loginType 是本项目前端区分三端能力的核心字段：admin / doctor / patient / guest
       loginType: localStorage.getItem('loginType') || 'admin',
       id: '',
       name: '',
@@ -98,6 +99,7 @@ const useUserStore = defineStore(
       getInfo() {
         return new Promise((resolve, reject) => {
           if (this.loginType === 'guest') {
+            // 访客不请求后端用户中心，前端本地构造最小权限集
             this.roles = ['guest']
             this.permissions = ['hospital:appointment:list', 'hospital:department:list', 'hospital:doctor:list', 'hospital:schedule:list']
             this.name = '访客'
@@ -120,7 +122,7 @@ const useUserStore = defineStore(
             
             const avatar = (isEmpty(user.avatar)) ? defAva : user.avatar
             
-            // 简单处理权限，如果是患者或医生，给予默认权限
+            // 患者/医生与管理员的数据结构不同，因此分支解析字段
             if (this.loginType === 'patient' || this.loginType === 'doctor') {
                 this.roles = data.roles || ['ROLE_USER']
                 this.permissions = data.permissions || ['*:*:*'] // 暂时给全部权限，后续细化
@@ -138,7 +140,7 @@ const useUserStore = defineStore(
                 this.name = user.userName || user.username
                 this.nickName = user.nickName || user.name
                 
-                // 统一从 user 对象中获取管理员相关字段
+                // 管理端额外维护“管理员级别 + 位运算权限”用于细粒度按钮控制
                 this.adminLevel = parseInt(user.adminLevel || 0)
                 this.adminPermissions = parseInt(user.permissions || 0)
             }

@@ -17,6 +17,7 @@ const isWhiteList = (path) => {
   return whiteList.some(pattern => isPathMatch(pattern, path))
 }
 
+// 全局前置守卫：统一处理登录态、角色信息初始化、动态路由注入与访客拦截
 router.beforeEach((to, from, next) => {
   NProgress.start()
   if (getToken()) {
@@ -30,7 +31,7 @@ router.beforeEach((to, from, next) => {
     } else {
       if (useUserStore().roles.length === 0) {
         isRelogin.show = true
-        // 判断当前用户是否已拉取完user_info信息
+        // 首次进入或刷新后：先拉取用户信息，再按角色生成可访问菜单路由
         useUserStore().getInfo().then(() => {
           isRelogin.show = false
           usePermissionStore().generateRoutes().then(accessRoutes => {
@@ -56,6 +57,7 @@ router.beforeEach((to, from, next) => {
       } else {
         const loginType = useUserStore().loginType
         if (loginType === 'guest') {
+          // 访客账号仅允许浏览公开能力，访问受限页面时引导登录
           const blockedPaths = ['/hospital/appointment', '/hospital/record', '/user/profile']
           if (blockedPaths.some(p => to.path.startsWith(p))) {
             ElMessageBox.confirm('该页面需要登录后才能访问，是否立即登录？', '提示', {
@@ -82,7 +84,7 @@ router.beforeEach((to, from, next) => {
       // 访问登录页(带redirect)或注册页，直接放行
       next()
     } else if (to.path === '/') {
-      // 访问根目录，默认走访客登录，进入首页
+      // 本项目支持“游客模式”：未登录用户可先以 guest 身份浏览首页与部分功能
       useUserStore().loginGuest().then(() => {
         next({ path: '/index', replace: true })
       }).catch(() => {

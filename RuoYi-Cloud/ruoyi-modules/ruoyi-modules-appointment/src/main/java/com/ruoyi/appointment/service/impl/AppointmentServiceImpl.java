@@ -42,14 +42,24 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     private static final String SCHEDULE_SLOTS_KEY = "hospital:schedule:slots:";
     private static final String APPOINTMENT_SLOT_LOCK_KEY = "hospital:appointment:slot:lock:";
 
+    /**
+     * 构建排班号源缓存 Key。
+     */
     private String getScheduleRedisKey(Long scheduleId) {
         return SCHEDULE_SLOTS_KEY + scheduleId;
     }
 
+    /**
+     * 构建具体时段互斥锁 Key，用于同一时段并发抢占控制。
+     */
     private String getAppointmentSlotLockKey(Long scheduleId, String appointmentTime) {
         return APPOINTMENT_SLOT_LOCK_KEY + scheduleId + ":" + appointmentTime;
     }
 
+    /**
+     * 释放具体时段锁。
+     * 在取消预约、批量取消等场景中调用，避免“幽灵占位”。
+     */
     private void releaseAppointmentSlotLock(Long scheduleId, String appointmentTime) {
         if (scheduleId == null || appointmentTime == null || appointmentTime.trim().isEmpty()) {
             return;
@@ -101,6 +111,10 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         return false;
     }
 
+    /**
+     * 判断预约是否已过就诊时间。
+     * 仅进行时间判断，不直接改库。
+     */
     private boolean isExpired(Appointment appointment) {
         if (appointment == null || appointment.getWorkDate() == null || appointment.getAppointmentTime() == null) {
             return false;
@@ -117,6 +131,10 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         return java.time.LocalDateTime.now().isAfter(apptDateTime);
     }
 
+    /**
+     * 刷新单条预约过期状态。
+     * 当状态为“待就诊”且已过期时，自动置为“已过期”。
+     */
     private void refreshExpireStatus(Appointment appointment) {
         if (appointment == null) {
             return;
@@ -163,6 +181,9 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         return list;
     }
 
+    /**
+     * 判断预约日期是否为当天。
+     */
     private boolean isSameDay(Appointment appointment) {
         if (appointment == null || appointment.getWorkDate() == null) {
             return false;
@@ -208,6 +229,9 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         return this.updateById(update);
     }
 
+    /**
+     * 获取预约统计总览（总数、待就诊、已完成、已取消）。
+     */
     @Override
     public Map<String, Object> selectAppointmentStats() {
         Map<String, Object> stats = new HashMap<>();
@@ -227,6 +251,10 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         return stats;
     }
 
+    /**
+     * 大屏/首页统计数据。
+     * 支持按日期筛选核心指标，并返回趋势、科室分布、状态分布等聚合数据。
+     */
     @Override
     public Map<String, Object> selectDashboardStats(String date) {
         Map<String, Object> stats = new HashMap<>();
@@ -422,6 +450,10 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         }
     }
 
+    /**
+     * 直接取消预约。
+     * 处理顺序：校验状态 -> 回补 Redis 号源 -> 同步排班服务 -> 更新预约状态。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean cancelAppointment(Long appointmentId) {
@@ -466,6 +498,10 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         return updated;
     }
 
+    /**
+     * 发起取消申请（进入审核流）。
+     * 该方法仅创建审核记录，不直接修改号源与预约状态。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean requestCancel(Long appointmentId) {
@@ -497,6 +533,9 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         return true;
     }
 
+    /**
+     * 排班被取消时，批量取消该排班下的全部有效预约。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean cancelByScheduleId(Long scheduleId) {
@@ -530,6 +569,10 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         return updated;
     }
 
+    /**
+     * 撤回取消申请。
+     * 删除待审核记录并将预约状态恢复为“待就诊”。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean cancelRequest(Long appointmentId) {
@@ -555,6 +598,10 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         return this.updateById(appointment);
     }
 
+    /**
+     * 排班调整时迁移部分预约到新排班。
+     * 当前仅迁移 scheduleId，不主动改预约时段。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean reassign(Long oldScheduleId, Long newScheduleId, Integer count) {
@@ -580,6 +627,9 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         return this.updateBatchById(appointments);
     }
 
+    /**
+     * 同步排班上下半天变更到预约时段，并生成时段变更通知。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean syncTimeChange(Long scheduleId, String oldTimeSlot, String newTimeSlot) {
@@ -631,6 +681,9 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         return this.updateBatchById(appointments);
     }
 
+    /**
+     * 查询预约详情（含关联展示字段）。
+     */
     @Override
     public Appointment selectAppointmentById(Long id) {
         Appointment query = new Appointment();
@@ -639,6 +692,9 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         return (list != null && !list.isEmpty()) ? list.get(0) : null;
     }
 
+    /**
+     * 获取某排班最近一次被预约的具体时间。
+     */
     @Override
     public String getLatestBookedTime(Long scheduleId) {
         if (scheduleId == null) {
@@ -655,6 +711,9 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         return latestAppointment != null ? latestAppointment.getAppointmentTime() : null;
     }
 
+    /**
+     * 批量逻辑删除预约记录。
+     */
     @Override
     public boolean deleteAppointmentByIds(Long[] ids) {
         return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Appointment>()
@@ -663,6 +722,9 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
                 .in("id", Arrays.asList(ids)));
     }
 
+    /**
+     * 批量恢复逻辑删除的预约记录。
+     */
     @Override
     public boolean recoverAppointmentByIds(Long[] ids) {
         int recovered = appointmentMapper.recoverAppointmentByIds(ids);

@@ -38,6 +38,9 @@ const usePermissionStore = defineStore(
           const userStore = useUserStore()
           const loginType = userStore.loginType
           
+          // 本项目的菜单生成分两条链路：
+          // 1) patient/doctor/guest：前端本地菜单（固定业务入口，避免依赖后台菜单配置）
+          // 2) admin：后端返回菜单（按权限动态渲染）
           // 如果是患者或医生或访客，直接使用默认菜单
           if (loginType === 'patient' || loginType === 'doctor' || loginType === 'guest') {
             const menuData = this.getDefaultMenuByLoginType(loginType)
@@ -50,7 +53,8 @@ const usePermissionStore = defineStore(
             const asyncRoutes = filterDynamicRoutes(dynamicRoutes)
             asyncRoutes.forEach(route => { router.addRoute(route) })
             
-            // 对于患者和医生，sidebarRouters 包含业务菜单和公共菜单（如首页）
+            // sidebar = 公共固定路由(constantRoutes) + 当前登录类型业务菜单
+            // rewriteRoutes 用于权限路由树渲染，default/topbar 用于顶部与默认展示
             this.setRoutes(rewriteRoutes)
             this.setSidebarRouters(constantRoutes.concat(sidebarRoutes)) 
             this.setDefaultRoutes(sidebarRoutes)
@@ -92,6 +96,8 @@ const usePermissionStore = defineStore(
             const defaultRoutes = filterAsyncRouter(defaultData)
             const asyncRoutes = filterDynamicRoutes(dynamicRoutes)
             asyncRoutes.forEach(route => { router.addRoute(route) })
+
+            // 管理员菜单来源于后端，便于后续做精细化权限与菜单可配置化
             this.setRoutes(rewriteRoutes)
             this.setSidebarRouters(constantRoutes.concat(sidebarRoutes))
             this.setDefaultRoutes(sidebarRoutes)
@@ -231,6 +237,7 @@ function filterAsyncRouter(asyncRouterMap, lastRouter = false, type = false) {
       }
     }
     if (route.children != null && route.children && route.children.length) {
+      // 递归处理子路由，把字符串组件名映射为真实组件
       route.children = filterAsyncRouter(route.children, route, type)
     } else {
       delete route['children']
@@ -275,6 +282,7 @@ export const loadView = (view) => {
   for (const path in modules) {
     const dir = path.split('views/')[1].split('.vue')[0]
     if (dir === view) {
+      // 懒加载视图，降低首屏包体积
       res = () => modules[path]()
     }
   }

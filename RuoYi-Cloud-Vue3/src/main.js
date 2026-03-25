@@ -45,6 +45,15 @@ import DictTag from '@/components/DictTag'
 
 const app = createApp(App)
 
+// =========================
+// 应用启动主链路（答辩可重点说明）
+// 1) 创建 Vue 应用实例
+// 2) 挂载全局工具方法（字典、时间、下载等）
+// 3) 注册全局通用组件（分页、上传、富文本等）
+// 4) 注入路由、状态、插件与指令
+// 5) 注入 Element Plus，最终挂载到 #app
+// =========================
+
 // 全局方法挂载
 app.config.globalProperties.useDict = useDict
 app.config.globalProperties.download = download
@@ -64,6 +73,7 @@ app.component('ImagePreview', ImagePreview)
 app.component('RightToolbar', RightToolbar)
 app.component('Editor', Editor)
 
+// 先注入 router/store，确保路由守卫与状态管理可在首屏生效
 app.use(router)
 app.use(store)
 app.use(plugins)

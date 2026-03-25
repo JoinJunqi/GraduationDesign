@@ -78,6 +78,7 @@ const isDoctor = computed(() => userStore.loginType === 'doctor')
 const isPatient = computed(() => userStore.loginType === 'patient')
 const isAdmin = computed(() => userStore.loginType === 'admin' || userStore.roles.includes('admin'))
 
+// 轮询初始化标记 + 快照：用于“增量检测”而不是每次全量弹通知
 const appointmentInited = ref(false)
 const auditInited = ref(false)
 const appointmentSnapshot = ref(new Map())
@@ -154,6 +155,7 @@ function checkAppointmentNotifications() {
     const nextMap = new Map(rows.map(item => [item.id, item]))
 
     if (!appointmentInited.value) {
+      // 首次轮询只建快照，不通知，避免页面初次加载时“历史数据刷屏”
       appointmentSnapshot.value = nextMap
       appointmentInited.value = true
       return
@@ -240,6 +242,7 @@ function checkAuditNotifications() {
 /** 检查跨端提醒 (轮询) */
 function checkCrossRoleNotifications() {
   if (userStore.loginType === 'guest') return
+  // 按角色各自检测：医生/患者看预约变化，管理员看审核变化
   checkAppointmentNotifications()
   checkAuditNotifications()
 }
