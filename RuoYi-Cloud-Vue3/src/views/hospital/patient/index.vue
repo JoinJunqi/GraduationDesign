@@ -136,6 +136,7 @@ const { proxy } = getCurrentInstance();
 const { parseTime } = proxy;
 const router = useRouter();
 
+// 患者管理页核心状态：列表、分页、多选、查询面板
 const patientList = ref([]);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -146,6 +147,7 @@ const total = ref(0);
 
 const data = reactive({
   queryParams: {
+    // includeDeleted 默认 false，回收站页面通过独立路由查看
     pageNum: 1,
     pageSize: 10,
     name: null,
@@ -164,12 +166,14 @@ const { queryParams } = toRefs(data);
 
 /** 回收站按钮操作 */
 function handleRecycle() {
+  // 软删除患者可在回收站恢复
   router.push("/hospital/recycle/patient");
 }
 
 /** 查询患者列表 */
 function getList() {
   loading.value = true;
+  // 主列表统一承载筛选 + 排序 + 分页
   listPatient(queryParams.value).then(response => {
     patientList.value = response.rows;
     total.value = response.total;
@@ -179,6 +183,7 @@ function getList() {
 
 /** 排序触发事件 */
 function handleSortChange(column) {
+  // 与后端保持约定：排序字段 + 顺序
   queryParams.value.orderByColumn = column.prop;
   queryParams.value.isAsc = column.order;
   getList();
@@ -198,6 +203,7 @@ function resetQuery() {
 
 /** 多选框选中数据 */
 function handleSelectionChange(selection) {
+  // 批量操作按钮依赖 ids/single/multiple
   ids.value = selection.map(item => item.id);
   single.value = selection.length != 1;
   multiple.value = !selection.length;
@@ -205,12 +211,14 @@ function handleSelectionChange(selection) {
 
 /** 新增按钮操作 */
 function handleAdd() {
+  // 新增走详情页，便于后续扩展更多患者字段
   router.push("/hospital/patient-detail/add");
 }
 
 /** 修改按钮操作 */
 function handleUpdate(row) {
   const id = row.id || ids.value;
+  // 与新增共用详情页，通过路由参数区分编辑
   router.push("/hospital/patient-detail/edit/" + id);
 }
 
@@ -227,6 +235,7 @@ function handleDelete(row) {
 
 /** 状态修改 */
 function handleStatusChange(row) {
+  // 状态切换采用确认弹窗，取消时回滚开关状态
   let text = row.isActive === 1 ? "启用" : "停用";
   proxy.$modal.confirm('确认要"' + text + '""' + row.name + '"吗？').then(function () {
     return updatePatient({ id: row.id, isActive: row.isActive });
@@ -239,6 +248,7 @@ function handleStatusChange(row) {
 
 /** 重置密码按钮操作 */
 function handleResetPwd(row) {
+  // 管理员可直接重置患者账号密码
   proxy.$prompt('请输入"' + row.name + '"的新密码', "提示", {
     confirmButtonText: "确定",
     cancelButtonText: "取消",

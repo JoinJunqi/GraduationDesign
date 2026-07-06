@@ -124,8 +124,10 @@ import useUserStore from "@/store/modules/user";
 const { proxy } = getCurrentInstance();
 const router = useRouter();
 const userStore = useUserStore();
+// 医生在回收站仅可查看，恢复权限由管理员执行
 const isDoctor = computed(() => userStore.roles.includes('doctor'));
 
+// 排班回收站页面状态：列表、筛选、分页与批量恢复
 const scheduleList = ref([]);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -137,6 +139,7 @@ const queryDoctorOptions = ref([]);
 
 const data = reactive({
   queryParams: {
+    // 固定查询软删除数据
     pageNum: 1,
     pageSize: 10,
     doctorName: null,
@@ -156,6 +159,7 @@ const { queryParams } = toRefs(data);
 
 /** 查询科室列表 */
 function getDepartmentList() {
+  // 科室筛选用于缩小回收站检索范围
   listDepartment().then(response => {
     departmentList.value = response.rows;
   });
@@ -182,6 +186,7 @@ function querySearchDoctor(queryString, cb) {
 
 /** 搜索栏科室变更加载医生列表 */
 function handleQueryDeptChange(deptId) {
+  // 科室变化后清空医生选择，避免脏条件
   queryParams.value.doctorId = null;
   queryDoctorOptions.value = [];
   if (deptId) {
@@ -195,6 +200,7 @@ function handleQueryDeptChange(deptId) {
 /** 查询排班列表 */
 function getList() {
   loading.value = true;
+  // 复用 listSchedule 接口，通过 params 进入“回收站模式”
   listSchedule(queryParams.value).then(response => {
     scheduleList.value = response.rows;
     total.value = response.total;
@@ -224,6 +230,7 @@ function resetQuery() {
 
 /** 多选框选中数据 */
 function handleSelectionChange(selection) {
+  // 批量恢复按钮禁用态
   ids.value = selection.map(item => item.id);
   multiple.value = !selection.length;
 }
@@ -236,6 +243,7 @@ function getTableIndex(index) {
 /** 恢复按钮操作 */
 function handleRecover(row) {
   const scheduleIds = row.id || ids.value;
+  // 恢复后排班重新回到主排班列表
   proxy.$modal.confirm('是否确认恢复排班编号为"' + scheduleIds + '"的数据项？').then(function () {
     return recoverSchedule(scheduleIds);
   }).then((res) => {

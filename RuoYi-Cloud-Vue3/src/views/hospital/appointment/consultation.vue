@@ -192,10 +192,12 @@ const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 
+// 由预约列表“开始就诊”跳转时携带 appointmentId
 const appointmentId = ref(route.query.appointmentId);
 const appointment = ref({});
 const loading = ref(false);
 
+// 右侧历史病历区：独立分页与详情弹窗状态
 const historyLoading = ref(false);
 const historyRecords = ref([]);
 const historyTotal = ref(0);
@@ -205,6 +207,7 @@ const historyDetailOpen = ref(false);
 const historyDetail = ref({});
 
 const form = ref({
+  // 病历主键：为空表示首次新增，非空表示更新当前预约已存在病历
   id: null,
   appointmentId: null,
   patientId: null,
@@ -216,6 +219,7 @@ const form = ref({
 });
 
 const rules = {
+  // 就诊页最小必填：诊断 + 处方
   diagnosis: [{ required: true, message: "诊断结果不能为空", trigger: "blur" }],
   prescription: [{ required: true, message: "处方信息不能为空", trigger: "blur" }]
 };
@@ -225,11 +229,13 @@ function getDetail() {
   if (!appointmentId.value) return;
   loading.value = true;
   getAppointment(appointmentId.value).then(response => {
+    // 预约信息作为病历编辑上下文，包含患者、科室、时段等
     appointment.value = response.data;
     form.value.appointmentId = appointment.value.id;
     form.value.patientId = appointment.value.patientId;
     form.value.doctorId = userStore.id;
     loading.value = false;
+    // 预约详情到位后再拉历史记录，保证上下文一致
     loadHistory();
   }).catch(() => {
     loading.value = false;
@@ -239,6 +245,7 @@ function getDetail() {
 function loadHistory() {
   if (!appointmentId.value) return;
   historyLoading.value = true;
+  // 这里按当前 appointmentId 拉病历历史，默认按就诊时间倒序
   const query = {
     pageNum: historyPageNum.value,
     pageSize: historyPageSize.value,
@@ -255,6 +262,7 @@ function loadHistory() {
     historyLoading.value = false;
 
     if (!form.value.id) {
+      // 若当前预约已存在病历，则回填到编辑表单，避免重复新增
       const current = historyRecords.value.find(r => String(r.appointmentId) === String(appointmentId.value));
       if (current) {
         form.value.id = current.id;
@@ -276,6 +284,7 @@ function openHistoryDetail(item) {
 
 function appendHistoryToNotes(item) {
   if (!item) return;
+  // 一键引用既往病历到医嘱，便于医生快速形成连续诊疗建议
   const header = `【既往就诊】${parseTime(item.visitTime)} ${item.deptName || ''} ${item.doctorName || ''}`.trim();
   const content = [
     header,
@@ -290,6 +299,7 @@ function appendHistoryToNotes(item) {
 function submitForm() {
   proxy.$refs["recordRef"].validate(valid => {
     if (valid) {
+      // 仅保存：不改变预约状态，可多次暂存
       const saveAction = form.value.id != null ? updateRecord(form.value) : addRecord(form.value);
       saveAction.then(response => {
         proxy.$modal.msgSuccess("保存成功");
@@ -304,7 +314,7 @@ function handleFinishConsultation() {
   proxy.$refs["recordRef"].validate(valid => {
     if (valid) {
       proxy.$modal.confirm('确认完成就诊并保存病历吗？').then(() => {
-        // 后端 MedicalRecordServiceImpl 已优化，addRecord 会同步更新预约状态为已完成
+        // 完成就诊：保存病历 + 后端同步预约状态为“已完成”
         const saveAction = form.value.id != null ? updateRecord(form.value) : addRecord(form.value);
         return saveAction;
       }).then(() => {
@@ -317,6 +327,7 @@ function handleFinishConsultation() {
 
 /** 返回列表 */
 function handleBack() {
+  // 完成或取消后统一回到预约列表
   router.push({ path: '/hospital/appointment' });
 }
 

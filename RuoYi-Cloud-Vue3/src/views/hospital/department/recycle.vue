@@ -64,6 +64,7 @@ import { useRouter } from "vue-router";
 const { proxy } = getCurrentInstance();
 const router = useRouter();
 
+// 科室回收站：仅展示已删除科室并支持恢复
 const departmentList = ref([]);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -73,6 +74,7 @@ const total = ref(0);
 
 const data = reactive({
   queryParams: {
+    // includeDeleted + onlyDeleted 组合成“回收站视图”
     pageNum: 1,
     pageSize: 10,
     name: null,
@@ -90,6 +92,7 @@ const { queryParams } = toRefs(data);
 /** 查询已删除科室列表 */
 function getList() {
   loading.value = true;
+  // 与主列表复用同一接口，通过 params 区分查询范围
   listDepartment(queryParams.value).then(response => {
     departmentList.value = response.rows;
     total.value = response.total;
@@ -99,6 +102,7 @@ function getList() {
 
 /** 排序触发事件 */
 function handleSortChange(column) {
+  // 排序字段直接透传到后端
   queryParams.value.orderByColumn = column.prop;
   queryParams.value.isAsc = column.order;
   getList();
@@ -118,6 +122,7 @@ function resetQuery() {
 
 /** 多选框选中数据 */
 function handleSelectionChange(selection) {
+  // 批量恢复按钮依赖 multiple
   ids.value = selection.map(item => item.id);
   multiple.value = !selection.length;
 }
@@ -125,6 +130,7 @@ function handleSelectionChange(selection) {
 /** 恢复按钮操作 */
 function handleRecover(row) {
   const deptIds = row.id || ids.value;
+  // 恢复后记录重新出现在科室主列表
   proxy.$modal.confirm('是否确认恢复科室编号为"' + deptIds + '"的数据项？').then(function () {
     return recoverDepartment(deptIds);
   }).then((res) => {

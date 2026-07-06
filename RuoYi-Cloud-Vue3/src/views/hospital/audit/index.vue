@@ -122,6 +122,7 @@ import { hasAdminPermi, AdminPermi } from "@/utils/adminPermi";
 
 const { proxy } = getCurrentInstance();
 
+// 审核中心核心状态：列表、分页、弹窗开关与标题
 const auditList = ref([]);
 const open = ref(false);
 const loading = ref(true);
@@ -132,12 +133,14 @@ const title = ref("");
 const data = reactive({
   form: {},
   queryParams: {
+    // 默认按分页拉取，过滤条件按需传
     pageNum: 1,
     pageSize: 10,
     auditStatus: undefined,
     requesterRole: undefined
   },
   rules: {
+    // 管理员必须明确给出“通过/驳回”与处理备注
     auditStatus: [{ required: true, message: "审核结果不能为空", trigger: "blur" }],
     auditRemark: [{ required: true, message: "审核备注不能为空", trigger: "blur" }]
   }
@@ -148,6 +151,7 @@ const { queryParams, form, rules } = toRefs(data);
 /** 查询审核列表 */
 function getList() {
   loading.value = true;
+  // 审核列表展示医生/患者发起的取消或排班变更申请
   listAudit(queryParams.value).then(response => {
     auditList.value = response.rows;
     total.value = response.total;
@@ -163,6 +167,7 @@ function cancel() {
 
 /** 表单重置 */
 function reset() {
+  // 重置为“默认通过”，管理员可手动改为驳回
   form.value = {
     id: undefined,
     auditStatus: 1,
@@ -173,6 +178,7 @@ function reset() {
 
 /** 搜索按钮操作 */
 function handleQuery() {
+  // 新条件检索要回到第一页，避免页码越界无数据
   queryParams.value.pageNum = 1;
   getList();
 }
@@ -186,6 +192,7 @@ function resetQuery() {
 /** 处理审核操作 */
 function handleProcess(row) {
   reset();
+  // 处理模式：只需要带上本条申请的核心展示字段
   form.value = {
     id: row.id,
     appointmentInfo: row.appointmentInfo,
@@ -201,7 +208,7 @@ function handleProcess(row) {
 function handleView(row) {
   getAudit(row.id).then(response => {
     form.value = response.data;
-    // 补全冗余字段用于展示
+    // 详情接口可能不返回列表上的冗余展示字段，这里从 row 回填
     form.value.requesterName = row.requesterName;
     form.value.appointmentInfo = row.appointmentInfo;
     open.value = true;
@@ -213,6 +220,7 @@ function handleView(row) {
 function submitForm() {
   proxy.$refs["auditRef"].validate(valid => {
     if (valid) {
+      // 审核提交后刷新列表，确保“待审核”数量和状态实时一致
       processAudit(form.value).then(response => {
         proxy.$modal.msgSuccess("处理成功");
         open.value = false;
@@ -223,14 +231,17 @@ function submitForm() {
 }
 
 function getStatusLabel(status) {
+  // 审核状态码 -> 中文标签
   const labels = { 0: "待审核", 1: "已通过", 2: "已驳回" };
   return labels[status] || "未知";
 }
 
 function getStatusType(status) {
+  // 审核状态码 -> Tag 颜色
   const types = { 0: "warning", 1: "success", 2: "danger" };
   return types[status] || "info";
 }
 
+// 页面初始化即拉取审核列表
 getList();
 </script>

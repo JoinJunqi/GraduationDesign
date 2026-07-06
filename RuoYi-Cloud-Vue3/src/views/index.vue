@@ -173,6 +173,7 @@ import AdminDashboard from './hospital/dashboard/index.vue'
 const userStore = useUserStore()
 const router = useRouter()
 
+// 管理员权限在首页里会影响：快捷入口、通知筛选、数据展示维度
 const isAdmin = computed(() => userStore.loginType === 'admin' || userStore.roles.includes('admin'))
 
 const currentDate = ref(parseTime(new Date(), '{y}年{m}月{d}日 星期{a}'))
@@ -186,15 +187,18 @@ const isMobile = computed(() => width.value <= 768)
 const dialogWidth = computed(() => (isMobile.value ? '92%' : '600px'))
 
 const filteredNoticeList = computed(() => {
+  // 非管理员看不到受众筛选，直接看当前角色可见通知
   if (!isAdmin.value || noticeAudienceFilter.value === '全部') {
     return noticeList.value
   }
+  // 管理员可按“目标受众”二次过滤
   return noticeList.value.filter(item => item.targetAudience === noticeAudienceFilter.value)
 })
 
 const loginType = userStore.loginType
 
 const functionList = computed(() => {
+  // 首页快捷入口总表：通过 roles 控制不同身份看到的能力入口
   const allFunctions = [
     { title: '预约挂号', icon: 'Calendar', path: '/hospital/register', color: '#409EFF', roles: ['patient', 'guest'] },
     { title: '我的预约', icon: 'List', path: '/hospital/appointment', color: '#67C23A', roles: ['patient', 'guest'] },
@@ -214,21 +218,25 @@ const functionList = computed(() => {
     { title: '医院信息管理', icon: 'Message', path: '/hospital/notice', color: '#909399', roles: ['admin'] },
     { title: '操作审核', icon: 'View', path: '/hospital/audit', color: '#F56C6C', roles: ['admin'] }
   ]
+  // 按当前登录类型过滤，得到最终渲染的功能卡片
   return allFunctions.filter(item => item.roles.includes(loginType))
 })
 
 onMounted(() => {
+  // 首页初始化：科室概览 + 通知列表
   getDeptList()
   getNoticeList()
 })
 
 function getDeptList() {
+  // 首页仅展示“带简介”的科室信息，便于首次访问快速了解业务
   listDepartmentWithIntro().then(res => {
     deptList.value = res.data
   })
 }
 
 function getNoticeList() {
+  // 前台用户仅拉取和自己身份匹配的通知；管理员拉全部
   const audienceMap = {
     'patient': '患者',
     'doctor': '医生',
@@ -243,6 +251,7 @@ function getNoticeList() {
 }
 
 function handleJump(path) {
+  // 访客限制：除挂号页外，其他业务入口需登录
   if (userStore.loginType === 'guest' && path !== '/hospital/register') {
     ElMessageBox.confirm('该功能需要登录后才能使用，是否立即登录？', '提示', {
       confirmButtonText: '去登录',
@@ -259,6 +268,7 @@ function handleJump(path) {
 }
 
 function viewNotice(notice) {
+  // 点击列表后再拉详情，避免首页首屏请求过重
   getNotice(notice.id).then(res => {
     currentNotice.value = res.data
     noticeVisible.value = true
@@ -266,6 +276,7 @@ function viewNotice(notice) {
 }
 
 function getNoticeTag(priority) {
+  // 通知优先级映射为 UI 标签颜色
   switch (priority) {
     case '紧急': return 'danger'
     case '重要': return 'warning'

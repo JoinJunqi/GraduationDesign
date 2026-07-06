@@ -103,8 +103,8 @@ security:
   # 验证码配置
   captcha:
   #压测关闭验证码
-    #enabled: true
-    enabled: false
+    enabled: true
+    #enabled: false
     type: math
   ignore:
     whites:

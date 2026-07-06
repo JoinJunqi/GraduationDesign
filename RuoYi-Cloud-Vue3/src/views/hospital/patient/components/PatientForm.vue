@@ -71,6 +71,7 @@ const router = useRouter();
 
 const data = reactive({
   form: {
+    // form.id 为空为新增，非空为编辑
     id: null,
     username: null,
     password: null,
@@ -80,6 +81,7 @@ const data = reactive({
     isActive: 1
   },
   rules: {
+    // 患者档案最小必填集：账号、姓名、手机号、身份证（新增时需密码）
     username: [
       { required: true, message: "登录账号不能为空", trigger: "blur" },
       { min: 4, max: 20, message: "账号长度必须在 4 到 20 个字符之间", trigger: "blur" }
@@ -104,10 +106,10 @@ const data = reactive({
 
 const { form, rules } = toRefs(data);
 
-// 获取参数
+// 路由参数：存在 id 表示编辑模式
 const patientId = route.params && route.params.id;
 
-// 初始化数据
+// 初始化数据：编辑模式回填详情
 if (patientId) {
   getPatient(patientId).then(response => {
     form.value = response.data;
@@ -115,6 +117,7 @@ if (patientId) {
 }
 
 function goBack() {
+  // 关闭当前页签并回到患者列表
   const obj = { path: "/hospital/patient" };
   proxy.$tab.closeOpenPage(obj);
 }
@@ -123,6 +126,7 @@ function goBack() {
 function submitForm() {
   proxy.$refs["patientRef"].validate(valid => {
     if (valid) {
+      // 统一入口分流新增/修改
       if (form.value.id != null) {
         updatePatient(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功");

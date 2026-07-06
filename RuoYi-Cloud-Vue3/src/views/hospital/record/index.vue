@@ -221,11 +221,16 @@ const { proxy } = getCurrentInstance();
 const userStore = useUserStore();
 const route = useRoute();
 
+// 病历页按登录类型分流：
+// - 管理员：可看全院并执行删/恢复
+// - 医生：重点维护自己相关病历
+// - 患者：仅查看与本人相关记录
 const loginType = computed(() => userStore.loginType);
 const isAdmin = computed(() => loginType.value === 'admin');
 const isDoctor = computed(() => loginType.value === 'doctor');
 const isPatient = computed(() => loginType.value === 'patient');
 
+// 页面状态：列表、弹窗、分页、筛选联动
 const recordList = ref([]);
 const open = ref(false);
 const openView = ref(false);
@@ -242,6 +247,7 @@ const queryDoctorOptions = ref([]);
 const data = reactive({
   form: {},
   queryParams: {
+    // 默认按就诊时间倒序，便于先查看最新病历
     pageNum: 1,
     pageSize: 10,
     appointmentId: null,
@@ -253,6 +259,7 @@ const data = reactive({
     orderByColumn: "visitTime",
     isAsc: "descending",
     params: {
+      // includeDeleted=true 时显示软删除记录，便于恢复
       includeDeleted: "false"
     }
   }
@@ -262,6 +269,7 @@ const { queryParams, form } = toRefs(data);
 
 /** 查询科室列表 */
 function getDepartmentList() {
+  // 查询区“科室 -> 医生”联动依赖该列表
   listDepartment().then(response => {
     departmentList.value = response.rows;
   });
@@ -270,6 +278,7 @@ function getDepartmentList() {
 /** 医生姓名输入建议 */
 function querySearchDoctor(queryString, cb) {
   if (queryString) {
+    // 自动补全支持按科室上下文过滤医生
     const query = { name: queryString };
     if (queryParams.value.deptId) {
       query.deptId = queryParams.value.deptId;
@@ -292,6 +301,7 @@ function querySearchDoctor(queryString, cb) {
 
 /** 搜索栏科室变更加载医生列表 */
 function handleQueryDeptChange(deptId) {
+  // 科室变化后清空已选医生，避免跨科室筛选污染
   queryParams.value.doctorId = null;
   queryDoctorOptions.value = [];
   if (deptId) {
@@ -304,12 +314,14 @@ function handleQueryDeptChange(deptId) {
 
 /** 排序触发事件 */
 function handleSortChange(column) {
+  // 对接后端排序参数
   queryParams.value.orderByColumn = column.prop;
   queryParams.value.isAsc = column.order;
   getList();
 }
 
 const rules = computed(() => ({
+  // 患者仅查看不能编辑诊断，故 diagnosis 必填受角色影响
   appointmentId: [
     { required: true, message: "预约ID不能为空", trigger: "blur" }
   ],
@@ -328,6 +340,7 @@ const rules = computed(() => ({
 function getList() {
     console.log('getList called with queryParams:', queryParams.value);
     loading.value = true;
+    // 主列表接口统一承载角色过滤 + 条件过滤 + 分页排序
     listRecord(queryParams.value).then(response => {
         recordList.value = response.rows;
         total.value = response.total;
@@ -346,6 +359,7 @@ function cancel() {
 
 // 表单重置
 function reset() {
+  // 病历编辑弹窗默认清空，避免复用上次详情数据
   form.value = {
     id: null,
     appointmentId: null,
@@ -365,6 +379,7 @@ function handleQuery() {
 }
 
 onMounted(() => {
+  // 访客拦截：允许浏览挂号，但“我的病历”必须登录
   if (userStore.loginType === 'guest') {
     ElMessageBox.confirm('您当前是访客模式，查看我的病历需要登录。是否前往登录？', '提示', {
       confirmButtonText: '去登录',
@@ -413,6 +428,7 @@ function resetQuery() {
 
 /** 多选框选中数据 */
 function handleSelectionChange(selection) {
+  // recoverMultiple 仅在“全是已删除记录”时可恢复
   ids.value = selection.map(item => item.id);
   multiple.value = !selection.length;
   recoverMultiple.value = !selection.length || selection.some(item => item.isDeleted !== 1);
@@ -427,6 +443,7 @@ function getTableIndex(index) {
 function handleView(row) {
   reset();
   const id = row.id || ids.value;
+  // 详情展示走单独接口，确保字段完整
   getRecord(id, queryParams.value.appointmentId).then(response => {
     form.value = response.data;
     openView.value = true;
@@ -448,6 +465,7 @@ function handleUpdate(row) {
 function submitForm() {
   proxy.$refs["recordRef"].validate(valid => {
     if (valid) {
+      // 统一入口分流新增/修改
       if (form.value.id != null) {
         updateRecord(form.value).then(response => {
           const msg = isDoctor.value ? "该病历保存修改成功" : "保存成功";
@@ -470,6 +488,7 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const recordIds = row.id || ids.value;
+  // 删除为软删除，可在 includeDeleted 模式下恢复
   proxy.$modal.confirm('是否确认删除病历编号为"' + recordIds + '"的数据项？').then(function() {
     return delRecord(recordIds);
   }).then((response) => {
@@ -485,6 +504,7 @@ function handleDelete(row) {
 /** 恢复按钮操作 */
 function handleRecover(row) {
   const recordIds = row?.id || ids.value;
+  // 恢复仅对已删除记录生效
   proxy.$modal.confirm('是否确认恢复病历编号为"' + recordIds + '"的数据项？').then(function() {
     return recoverRecord(recordIds);
   }).then((response) => {

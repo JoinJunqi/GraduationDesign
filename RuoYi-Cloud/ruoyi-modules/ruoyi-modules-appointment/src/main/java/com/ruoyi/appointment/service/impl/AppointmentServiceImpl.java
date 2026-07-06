@@ -43,6 +43,13 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     private static final String APPOINTMENT_SLOT_LOCK_KEY = "hospital:appointment:slot:lock:";
 
     /**
+     * 设计说明：
+     * 1) 本服务同时承担预约业务规则和号源一致性控制；
+     * 2) 号源优先走 Redis 原子操作，再同步到排班服务；
+     * 3) 在关键步骤失败时执行补偿（回增号源、释放时段锁）。
+     */
+
+    /**
      * 构建排班号源缓存 Key。
      */
     private String getScheduleRedisKey(Long scheduleId) {
@@ -50,7 +57,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     }
 
     /**
-     * 构建具体时段互斥锁 Key，用于同一时段并发抢占控制。
+     * 构建具体时段SetNX生成互斥锁 Key，用于同一时段并发抢占控制。  预约ID：预约时段
      */
     private String getAppointmentSlotLockKey(Long scheduleId, String appointmentTime) {
         return APPOINTMENT_SLOT_LOCK_KEY + scheduleId + ":" + appointmentTime;
@@ -151,6 +158,10 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         Set<String> roles = SecurityUtils.getLoginUser().getRoles();
         log.info("selectAppointmentList - userId: {}, roles: {}, appointment: {}", userId, roles, appointment);
 
+        // 数据权限入口：
+        // - 管理员：查看全量
+        // - 医生：仅查看自己接诊的预约
+        // - 患者/其他：仅查看自己的预约
         if (isAdminUser()) {
             // 管理员可以看所有
             log.info("Admin access: viewing all appointments");
@@ -173,6 +184,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
                  
         List<Appointment> list = appointmentMapper.selectAppointmentList(appointment);
         if (list != null) {
+            // 查询时顺带做一次过期状态刷新，避免前端看到“待就诊”但实际上已过时的脏状态
             for (Appointment appt : list) {
                 refreshExpireStatus(appt);
             }
@@ -202,6 +214,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
             throw new ServiceException("预约记录不存在");
         }
         
+        // 状态流转规则一：就诊完成仅允许发生在“当天预约”场景
         // 1. 如果是“已完成”操作，必须是当天的预约
         if ("已完成".equals(status)) {
             refreshExpireStatus(appointment);
@@ -217,6 +230,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
             }
         }
         
+        // 状态流转规则二：医生侧取消统一复用取消主流程，避免漏掉号源回补与锁释放
         // 2. 如果是“取消”操作 (医生端发起)
         if ("已取消".equals(status)) {
             // 复用 cancelAppointment 逻辑以处理号源恢复
@@ -385,6 +399,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         
         // 执行原子递减
         try {
+            // 1) DECR：先做总号源原子扣减
             remaining = redisService.redisTemplate.opsForValue().decrement(redisKey);
             log.info("Redis decrement result for key {}: {}", redisKey, remaining);
         } catch (Exception e) {
@@ -395,7 +410,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         }
         
         if (remaining != null && remaining < 0) {
-            // 递减后小于 0，说明刚才那一瞬间没号了
+            // 扣减后小于0，说明无号源，立即回滚并拒绝
             // 回退递减操作
             redisService.redisTemplate.opsForValue().increment(redisKey);
             log.warn("No slots available in Redis for schedule {}. Remaining was {}", scheduleId, remaining);
@@ -404,9 +419,11 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
             log.error("Redis decrement returned null for key {}", redisKey);
             throw new ServiceException("系统繁忙，请重试");
         }
-
+    // 2) SETNX：对“排班+时段”做互斥占位
         if (appointment.getAppointmentTime() != null && !appointment.getAppointmentTime().trim().isEmpty()) {
             slotLockKey = getAppointmentSlotLockKey(scheduleId, appointment.getAppointmentTime());
+            // 时段锁：同一 scheduleId + appointmentTime 只允许一个人成功占位
+            // TTL 与号源缓存一致，避免异常情况下长期死锁
             Boolean lockResult = redisService.redisTemplate.opsForValue().setIfAbsent(
                     slotLockKey,
                     String.valueOf(appointment.getPatientId()),
@@ -414,6 +431,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
                     java.util.concurrent.TimeUnit.HOURS
             );
             if (!Boolean.TRUE.equals(lockResult)) {
+                // 时段已被占，回滚刚才的库存扣减
                 redisService.redisTemplate.opsForValue().increment(redisKey);
                 throw new ServiceException("该具体时段已被预约，请选择其他时段");
             }
@@ -441,7 +459,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
             return saved;
         } catch (Exception e) {
             log.error("Error creating appointment, rolling back Redis slots...", e);
-            // 数据库更新失败，回退 Redis
+            // 任一环节失败都做补偿：回补号源 + 释放时段锁，尽量恢复到操作前状态
             redisService.redisTemplate.opsForValue().increment(redisKey);
             if (slotLocked && slotLockKey != null) {
                 redisService.deleteObject(slotLockKey);
@@ -472,7 +490,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
             throw new ServiceException("预约已取消，请勿重复操作");
         }
 
-        // 1. 恢复 Redis 号源
+        // 1. 恢复 Redis 号源（先恢复缓存可用值，失败时由事务回滚保证一致）
         Long scheduleId = appointment.getScheduleId();
         String redisKey = getScheduleRedisKey(scheduleId);
         Long remaining = redisService.redisTemplate.opsForValue().increment(redisKey);
@@ -514,7 +532,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
             throw new ServiceException("只有待就诊状态可以发起取消申请");
         }
         
-        // 创建审核记录
+        // 创建审核记录：该流程只入审核，不直接变更预约状态和号源
         com.ruoyi.appointment.domain.SysOperationAudit audit = new com.ruoyi.appointment.domain.SysOperationAudit();
         audit.setAuditType("APPOINTMENT_CANCEL");
         audit.setTargetId(appointmentId);
@@ -550,7 +568,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
             return true;
         }
 
-        // 2. 更新预约状态为已取消
+        // 2. 批量更新预约状态为已取消（排班失效后，相关预约统一失效）
         for (Appointment appointment : appointments) {
             appointment.setStatus("已取消");
         }
@@ -608,6 +626,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         log.info("Reassigning {} appointments from schedule {} to {}", count, oldScheduleId, newScheduleId);
         
         // 1. 获取原排班下的待就诊预约
+        // 注意：这里使用 LIMIT + 无显式排序，按数据库默认顺序迁移
         List<Appointment> appointments = this.list(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Appointment>()
                 .eq(Appointment::getScheduleId, oldScheduleId)
                 .eq(Appointment::getStatus, "待就诊")
@@ -650,6 +669,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         String doctorName = firstApp != null ? firstApp.getDoctorName() : "未知医生";
 
         // 3. 遍历更新时间并设置通知
+        // 当前策略按“上午/下午”做 +6/-6 小时的规则映射，适用于固定半天班次模型
         for (Appointment app : appointments) {
             String oldTime = app.getAppointmentTime();
             String newTime = oldTime;

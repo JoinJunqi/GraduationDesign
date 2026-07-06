@@ -212,6 +212,7 @@ const router = useRouter();
 const userStore = useUserStore();
 const loading = ref(false);
 const submitting = ref(false);
+// 0~4 对应页面上的五步流程：科室 -> 医生 -> 排班 -> 时段 -> 确认
 const activeStep = ref(0);
 
 const departmentList = ref([]);
@@ -223,8 +224,11 @@ const allScheduleList = ref([]); // 缓存所有排班
 const selectedDept = ref({});
 const selectedDoctor = ref({});
 const selectedSchedule = ref({});
+// 患者最终选中的具体就诊时段（精确到 15 分钟）
 const selectedTime = ref("");
+// 当前排班可展示的时段（会受班次、号源总数、过期时段影响）
 const availableTimeSlots = ref([]);
+// 当前排班下已被占用的时段（用于禁用按钮）
 const bookedTimeSlots = ref([]);
 
 const doctorFilterDate = ref("");
@@ -237,6 +241,7 @@ function disabledDate(time) {
 
 /** 生成时间段 */
 function generateTimeSlots(schedule) {
+  // 排班端定义了上午/下午/全天，这里根据班次生成基础时段池
   const slotType = schedule.timeSlot;
   const totalCapacity = schedule.totalCapacity;
   const baseSlots = [];
@@ -274,8 +279,9 @@ function generateTimeSlots(schedule) {
     }
   }
 
-  // 根据总号源数限制时段数量 (加上已过期的数量，确保剩余可用号源数等于 totalCapacity)
-  // 注意：不能超过 baseSlots 总长度
+  // 根据“总号源”限制可展示时段数量。
+  // 这里把已过期时段计入可切片长度，目的是保证“剩余可选时段数量”与后端号源逻辑对齐。
+  // 同时仍受 baseSlots 总长度约束，避免越界。
   const limit = Math.min(baseSlots.length, totalCapacity + expiredCount);
   
   return baseSlots.slice(0, limit);
@@ -329,7 +335,7 @@ function handleDoctorDateChange(date) {
   }
   
   loading.value = true;
-  // 查询该日期下有排班的医生
+  // 查询该日期下有排班的医生：通过排班反查医生，而不是直接查医生表
   const query = {
     deptId: selectedDept.value.id,
     workDate: date
@@ -337,9 +343,9 @@ function handleDoctorDateChange(date) {
   
   listSchedule(query).then(response => {
     const schedules = response.rows || [];
-    // 获取有排班的医生ID集合
+    // 获取有排班的医生 ID 集合
     const doctorIds = new Set(schedules.map(s => s.doctorId));
-    // 过滤医生列表
+    // 用 ID 集合过滤当前科室完整医生列表
     doctorList.value = allDoctorList.value.filter(d => doctorIds.has(d.id));
     loading.value = false;
   }).catch(err => {
@@ -371,7 +377,8 @@ function getScheduleList(doctorId) {
   listSchedule(query).then(response => {
     console.log('Schedule list response:', response);
     const rawList = response.rows || response.data || (Array.isArray(response) ? response : []);
-    // 仅过滤掉已取消的排班
+    // 前端只剔除“已取消”的排班。
+    // 其他状态（如有调整）仍允许展示给患者，便于继续预约可用号源。
     const validList = rawList.filter(s => s.status !== 2);
     allScheduleList.value = validList; // 缓存完整列表
     
@@ -431,7 +438,7 @@ function getScheduleTooltip(schedule) {
 
 /** 选择排班 */
 function handleSelectSchedule(schedule) {
-  // 访客拦截：选择排班（查看详情/下一步）时触发
+  // 访客拦截：允许访客浏览，但在真正进入“选号”步骤前要求登录
   if (userStore.loginType === 'guest') {
     ElMessageBox.confirm('您当前是访客模式，预约挂号需要登录。是否前往登录？', '提示', {
       confirmButtonText: '去登录',
@@ -446,12 +453,14 @@ function handleSelectSchedule(schedule) {
   }
 
   selectedSchedule.value = schedule;
+  // 生成本排班下可选时段（这一步仅决定“可展示”）
   availableTimeSlots.value = generateTimeSlots(schedule);
   selectedTime.value = "";
   
-  // 获取已预约的时段
+  // 获取已预约时段（这一步决定“可点击”）
   loading.value = true;
   listAppointment({ scheduleId: schedule.id }).then(response => {
+    // 已取消的预约不占用时段，因此这里要排除
     bookedTimeSlots.value = (response.rows || [])
       .filter(item => item.status !== '已取消')
       .map(item => item.appointmentTime);
@@ -482,7 +491,8 @@ function isTimeExpired(time) {
 
 /** 检查时段是否不可用 */
 function isSlotDisabled(time) {
-  // 1. 已被预约
+  // 按业务优先级逐层禁用：
+  // 1) 时段被占用 2) 号源耗尽 3) 排班状态异常 4) 时段已过期
   if (bookedTimeSlots.value.includes(time)) return true;
   // 2. 号源已满
   if (selectedSchedule.value.availableSlots <= 0) return true;
@@ -543,6 +553,7 @@ function confirmAppointment() {
 }
 
 onMounted(() => {
+  // 页面首次进入先拉科室，后续步骤都基于“科室->医生->排班”的逐层选择
   console.log('AppointmentRegister component mounted');
   getDeptList();
 });

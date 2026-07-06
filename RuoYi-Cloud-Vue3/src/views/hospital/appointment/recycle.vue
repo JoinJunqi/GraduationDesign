@@ -113,6 +113,7 @@ import { useRouter } from "vue-router";
 const { proxy } = getCurrentInstance();
 const router = useRouter();
 
+// 预约回收站状态：仅展示软删除预约，支持批量恢复
 const appointmentList = ref([]);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -124,6 +125,7 @@ const queryDoctorOptions = ref([]);
 
 const data = reactive({
   queryParams: {
+    // onlyDeleted=true + includeDeleted=true 表示“仅查回收站数据”
     pageNum: 1,
     pageSize: 10,
     patientName: null,
@@ -143,6 +145,7 @@ const { queryParams } = toRefs(data);
 
 /** 查询科室列表 */
 function getDepartmentList() {
+  // 回收站查询也支持“科室 -> 医生”联动筛选
   listDepartment().then(response => {
     departmentList.value = response.rows;
   });
@@ -169,6 +172,7 @@ function querySearchDoctor(queryString, cb) {
 
 /** 搜索栏科室变更加载医生列表 */
 function handleQueryDeptChange(deptId) {
+  // 科室变化后清空医生，防止筛选条件冲突
   queryParams.value.doctorId = null;
   queryDoctorOptions.value = [];
   if (deptId) {
@@ -182,6 +186,7 @@ function handleQueryDeptChange(deptId) {
 /** 查询预约列表 */
 function getList() {
   loading.value = true;
+  // 复用预约列表接口，通过 params 控制查询维度
   listAppointment(queryParams.value).then(response => {
     appointmentList.value = response.rows;
     total.value = response.total;
@@ -211,6 +216,7 @@ function resetQuery() {
 
 /** 多选框选中数据 */
 function handleSelectionChange(selection) {
+  // 批量恢复按钮依赖 multiple
   ids.value = selection.map(item => item.id);
   multiple.value = !selection.length;
 }
@@ -218,6 +224,7 @@ function handleSelectionChange(selection) {
 /** 恢复按钮操作 */
 function handleRecover(row) {
   const appointmentIds = row.id || ids.value;
+  // 恢复后记录会回到正常预约列表，不再出现在回收站
   proxy.$modal.confirm('是否确认恢复预约编号为"' + appointmentIds + '"的数据项？').then(function () {
     return recoverAppointment(appointmentIds);
   }).then((res) => {
@@ -232,6 +239,7 @@ function handleRecover(row) {
 
 /** 返回操作 */
 function handleBack() {
+  // 返回主预约页面继续管理
   router.push("/hospital/appointment");
 }
 

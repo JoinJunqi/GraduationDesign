@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="ruoyi-modules-doctor" />
+        <module name="ruoyi-modules-record" />
+        <module name="ruoyi-common-datascope" />
+        <module name="ruoyi-modules-patient" />
+        <module name="ruoyi-modules-appointment" />
+        <module name="ruoyi-api-hospital" />
+        <module name="ruoyi-modules-system" />
+        <module name="ruoyi-common-redis" />
+        <module name="ruoyi-api-system" />
+        <module name="ruoyi-common-swagger" />
+        <module name="ruoyi-common-core" />
+        <module name="ruoyi-common-security" />
+        <module name="ruoyi-common-sensitive" />
+        <module name="ruoyi-common-datasource" />
+        <module name="ruoyi-modules-department" />
+        <module name="ruoyi-modules-schedule" />
+        <module name="ruoyi-gateway" />
+        <module name="ruoyi-visual-monitor" />
+        <module name="ruoyi-common-seata" />
+        <module name="ruoyi-auth" />
+        <module name="ruoyi-common-log" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="ruoyi" target="17" />
+      <module name="ruoyi-api" target="17" />
+      <module name="ruoyi-api-hospital" target="17" />
+      <module name="ruoyi-api-system" target="17" />
+      <module name="ruoyi-auth" target="17" />
+      <module name="ruoyi-common" target="17" />
+      <module name="ruoyi-common-core" target="17" />
+      <module name="ruoyi-common-datascope" target="17" />
+      <module name="ruoyi-common-datasource" target="17" />
+      <module name="ruoyi-common-log" target="17" />
+      <module name="ruoyi-common-redis" target="17" />
+      <module name="ruoyi-common-seata" target="17" />
+      <module name="ruoyi-common-security" target="17" />
+      <module name="ruoyi-common-sensitive" target="17" />
+      <module name="ruoyi-common-swagger" target="17" />
+      <module name="ruoyi-gateway" target="17" />
+      <module name="ruoyi-modules" target="17" />
+      <module name="ruoyi-modules-appointment" target="17" />
+      <module name="ruoyi-modules-department" target="17" />
+      <module name="ruoyi-modules-doctor" target="17" />
+      <module name="ruoyi-modules-patient" target="17" />
+      <module name="ruoyi-modules-record" target="17" />
+      <module name="ruoyi-modules-schedule" target="17" />
+      <module name="ruoyi-modules-system" target="17" />
+      <module name="ruoyi-visual" target="17" />
+      <module name="ruoyi-visual-monitor" target="17" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

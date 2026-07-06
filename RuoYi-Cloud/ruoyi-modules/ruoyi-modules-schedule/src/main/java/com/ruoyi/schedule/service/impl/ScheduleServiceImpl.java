@@ -47,16 +47,26 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
     // 基础过期时间（秒）
     private static final long BASE_CACHE_EXPIRE = 24 * 60 * 60L; 
 
+    /**
+     * 生成排班号源 Redis 键。
+     */
     private String getRedisKey(Long scheduleId) {
         return SCHEDULE_SLOTS_KEY + scheduleId;
     }
     
+    /**
+     * 获取带随机抖动的缓存过期时间。
+     * 目的：让不同 key 的过期时刻分散，降低同一时刻集中失效风险。
+     */
     // 获取带有随机波动的过期时间，防止缓存雪崩
     private long getRandomExpire() {
         // 在基础过期时间上增加 0-3600 秒（1小时）的随机值
         return BASE_CACHE_EXPIRE + new Random().nextInt(3600);
     }
 
+    /**
+     * 判断当前用户是否拥有指定角色。
+     */
     private boolean hasRole(String role) {
         LoginUser loginUser = SecurityUtils.getLoginUser();
         if (loginUser == null) return false;
@@ -68,16 +78,26 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         return false;
     }
 
+    /**
+     * 判断当前用户是否为医生。
+     */
     private boolean isDoctor() {
         return hasRole("doctor");
     }
 
+    /**
+     * 判断当前用户是否为患者。
+     */
     private boolean isPatient() {
         return hasRole("patient");
     }
 
+    /**
+     * 查询排班列表：医生仅看本人，患者/匿名仅看可预约范围。
+     */
     @Override
     public List<Schedule> selectScheduleList(Schedule schedule) {
+        // 步骤1：按角色设置查询过滤条件
         if (isDoctor()) {
             Long userId = SecurityUtils.getUserId();
             log.info("Doctor role detected, filtering schedule by doctorId: {}", userId);
@@ -89,9 +109,13 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             schedule.getParams().put("forPatient", "true");
             schedule.getParams().put("daysFromToday", 7);
         }
+        // 步骤2：执行查询
         return scheduleMapper.selectScheduleList(schedule);
     }
 
+    /**
+     * 查询排班详情，并进行号源缓存读写与穿透保护。
+     */
     @Override
     public Schedule getById(java.io.Serializable id) {
         // 使用带有关联查询的方法获取详情
@@ -102,10 +126,11 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         String redisKey = getRedisKey((Long) id);
         Integer availableSlots = redisService.getCacheObject(redisKey);
         
-        // 缓存穿透保护：如果缓存中是特殊标记（如-1），说明数据库也不存在，直接返回 null 或抛异常
+        // 缓存穿透保护：缓存中的 -1 不是“真实号源”，而是“该排班不存在”的哨兵值
+        // 命中该值时直接返回 null，避免每次都回源数据库
         if (availableSlots != null && availableSlots == -1) {
              // 这里的处理取决于业务，如果 id 对应的排班真的不存在，应该返回 null
-             // 但 getById 的语义通常是查对象，如果号源是 -1，可能意味着排班对象缓存也空？
+             // 但 getById 的语义通常是查对象，如果号源是 -1，可能意味着排班对象缓存也空
              // 这里仅针对号源缓存。如果号源是-1，说明之前查过数据库不存在该排班。
              return null;
         }
@@ -127,8 +152,11 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         return schedule;
     }
 
-    // 校验号源上限逻辑
+    /**
+     * 校验当天排班可设置的号源上限（按当前时间与班次计算）。
+     */
     private void validateCapacityLimit(Schedule schedule) {
+        // 前置条件不足时不校验（由上层业务决定是否强制必填）
         if (schedule.getWorkDate() == null || schedule.getTotalCapacity() == null) {
             return;
         }
@@ -141,8 +169,8 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         if (!workDate.equals(today)) {
             if (workDate.isBefore(today)) {
                 // 过去的日期，理论上不允许新增排班，或者容量为0
-                // 这里暂不强制抛异常，除非业务要求严格禁止补录
             }
+            // 非当天直接放行：本方法仅处理“当天动态可放号上限”
             return;
         }
 
@@ -159,8 +187,10 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         // 计算上午剩余号源
         int amSlots = 0;
         if (now.isBefore(amEnd)) {
+            // 若当前时间早于开诊时间，按开诊时间算；否则从“当前时刻”开始算
             java.time.LocalTime start = now.isBefore(amStart) ? amStart : now;
             long minutes = java.time.Duration.between(start, amEnd).toMinutes();
+            // 按每 15 分钟一个可预约时段折算可放号数
             amSlots = (int) (minutes / 15);
         }
 
@@ -173,6 +203,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
                 start = pmStart;
             }
             long minutes = java.time.Duration.between(start, pmEnd).toMinutes();
+            // 与上午一致，下午也按 15 分钟粒度折算
             pmSlots = (int) (minutes / 15);
         }
 
@@ -183,6 +214,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         } else if ("全天".equals(timeSlot)) {
             maxCapacity = amSlots + pmSlots;
         }
+        // 若班次值非法（非上午/下午/全天），maxCapacity 会保持 0，后续会触发容量超限保护
 
         // 允许少量的误差或特殊情况？ 暂时严格校验
         if (schedule.getTotalCapacity() > maxCapacity) {
@@ -190,7 +222,11 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         }
     }
 
+    /**
+     * 根据班次与预约时间，计算对应的时段序号。
+     */
     private int calculateSlotIndexByTime(String timeSlot, String appointmentTime) {
+        // 非法时间字符串直接判定为无效时段
         if (appointmentTime == null || appointmentTime.length() < 5) {
             return 0;
         }
@@ -209,8 +245,10 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
 
         if ("上午".equals(timeSlot)) {
             if (time.isBefore(amStart) || time.isAfter(amLast)) {
+                // 返回 0 表示该预约时间不在班次可识别范围内
                 return 0;
             }
+            // +1 表示槽位序号从 1 开始，而非 0
             return (int) (java.time.Duration.between(amStart, time).toMinutes() / 15) + 1;
         }
 
@@ -226,6 +264,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
                 return (int) (java.time.Duration.between(amStart, time).toMinutes() / 15) + 1;
             }
             if (!time.isBefore(pmStart) && !time.isAfter(pmLast)) {
+                // 全天班次中，下午序号接在上午后面；14 表示上午共有 14 个 15 分钟时段
                 return 14 + (int) (java.time.Duration.between(pmStart, time).toMinutes() / 15) + 1;
             }
         }
@@ -233,7 +272,11 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         return 0;
     }
 
+    /**
+     * 根据最晚已预约时段，计算可调整的最小号源下限。
+     */
     private int getMinCapacityByLatestBookedSlot(Schedule current) {
+        // 通过预约服务查询“最晚已占用时段”，作为缩容下限依据
         ResultVO<String> latestBookedResult = remoteAppointmentService.getLatestBookedTime(current.getId());
         if (latestBookedResult == null || latestBookedResult.getCode() != ResultVO.SUCCESS) {
             throw new ServiceException("查询最晚预约时段失败");
@@ -241,16 +284,21 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
 
         String latestBookedTime = latestBookedResult.getData();
         if (latestBookedTime == null || latestBookedTime.trim().isEmpty()) {
+            // 没有任何已预约记录，则容量下限为 0
             return 0;
         }
 
         int minCapacity = calculateSlotIndexByTime(current.getTimeSlot(), latestBookedTime);
         if (minCapacity <= 0) {
+            // 最晚预约时间无法映射到合法槽位，视为数据异常
             throw new ServiceException("预约时段数据异常，无法调整号源");
         }
         return minCapacity;
     }
 
+    /**
+     * 判断两个日期是否为同一天（忽略时分秒）。
+     */
     private boolean isSameDate(Date d1, Date d2) {
         if (d1 == null || d2 == null) {
             return false;
@@ -263,6 +311,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean insertSchedule(Schedule schedule) {
+        // 步骤1：医生新增时强制绑定本人 doctorId，并进行容量时间校验
         if (isDoctor()) {
             Long userId = SecurityUtils.getUserId();
             log.info("Doctor role detected, setting doctorId to: {}", userId);
@@ -275,6 +324,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             validateCapacityLimit(schedule);
         }
         
+        // 步骤2：校验医生信息必须存在
         if (schedule.getDoctorId() == null) {
             throw new ServiceException("医生信息不能为空");
         }
@@ -289,12 +339,14 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             throw new ServiceException("该医生在 " + schedule.getWorkDate() + " 已有有效排班，请勿重复操作");
         }
 
+        // 步骤3：初始化可用号源与状态（医生新增默认待审核）
         schedule.setAvailableSlots(schedule.getTotalCapacity());
         if (isDoctor()) {
             schedule.setStatus(3);
         } else {
             schedule.setStatus(0);
         }
+        // 步骤4：保存并回写 Redis 缓存
         boolean saved = this.save(schedule);
         if (saved) {
             // 写入 Redis 缓存 (设置随机过期时间)
@@ -306,20 +358,25 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateSchedule(Schedule schedule) {
+        // 步骤1：读取当前排班，确保目标存在
         Schedule current = super.getById(schedule.getId());
         if (current == null) {
             throw new ServiceException("排班不存在");
         }
 
-        // 医生端特定逻辑：自动匹配状态
+        // 步骤2：医生端特定逻辑（识别取消申请/变更并自动映射审核状态）
         if (isDoctor()) {
+            // requestCancel=true 代表医生端显式将状态改为“已取消(2)”的请求
+            // 实际会先转成“待审核(3)”，由管理员审核通过后再真正变更
             boolean requestCancel = schedule.getStatus() != null && schedule.getStatus() == 2;
             boolean isChanged = false;
+            // 医生端只要改了“总号源/班次”，都视为排班变更，后续通常需要管理员审核
             if (schedule.getTotalCapacity() != null && !schedule.getTotalCapacity().equals(current.getTotalCapacity())) {
                 isChanged = true;
             }
             if (schedule.getTimeSlot() != null && !schedule.getTimeSlot().equals(current.getTimeSlot())) {
                 isChanged = true;
+                // 班次变化会影响已预约时间归属，先通知预约模块同步时段
                 remoteAppointmentService.syncTimeChange(current.getId(), current.getTimeSlot(), schedule.getTimeSlot());
             }
 
@@ -342,13 +399,15 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
                 // 医生取消排班时仅提交审核，审核通过后由管理员完成真正取消
                 schedule.setStatus(3);
             } else if (isChanged) {
+                // 医生修改关键字段也进入待审核
                 schedule.setStatus(3);
             } else {
+                // 无关键变更时维持原状态
                 schedule.setStatus(current.getStatus());
             }
         }
 
-        // 1. 检查号源是否已满 (针对调整或取消操作)
+        // 步骤3：检查号源是否已满（已满时限制调整日期或取消）
         // 从 Redis 获取最新号源数进行判断
         Integer currentAvailable = redisService.getCacheObject(getRedisKey(schedule.getId()));
         if (currentAvailable == null) {
@@ -360,13 +419,13 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         boolean changeToCancel = schedule.getStatus() != null && schedule.getStatus() == 2;
         if (isFull && (changeWorkDate || changeToCancel)) {
             // 注意：如果是取消预约导致的 availableSlots 增加，不应该拦截。但这里的 updateSchedule 是管理端/医生端发起的修改
-            // 如果是预约模块调用的 (schedule.getAvailableSlots() != null && schedule.getTotalCapacity() == null)，不拦截
+            // 如果是预约模块调用的“仅同步可用号源”更新，不属于人工调整，不拦截
             if (!(schedule.getAvailableSlots() != null && schedule.getTotalCapacity() == null)) {
                 throw new ServiceException("患者已预约满号源，不允许调整或取消");
             }
         }
 
-        // 2. 检查排班冲突：仅“正常(0)”和“有调整(1)”状态参与冲突判定
+        // 步骤4：检查排班冲突（仅正常/有调整状态参与冲突判定）
         if (schedule.getDoctorId() != null && schedule.getWorkDate() != null) {
             Long conflictCount = scheduleMapper.selectCount(new LambdaQueryWrapper<Schedule>()
                     .eq(Schedule::getDoctorId, schedule.getDoctorId())
@@ -378,7 +437,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             }
         }
         
-        // 3. 处理号源调整
+        // 步骤5：处理号源调整（含最晚预约时段下限校验与必要的预约迁移）
         if (schedule.getTotalCapacity() != null) {
             int minCapacityByLatestBookedSlot = getMinCapacityByLatestBookedSlot(current);
             if (schedule.getTotalCapacity() < minCapacityByLatestBookedSlot) {
@@ -386,6 +445,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             }
 
             int usedSlots = current.getTotalCapacity() - currentAvailable;
+            // usedSlots = 已占用号源数（总号源 - 可用号源）
             if (schedule.getTotalCapacity() < usedSlots) {
                 // 如果新容量小于已预约人数，尝试将多出的预约分配到该医生当天的其他排班
                 int toMoveCount = usedSlots - schedule.getTotalCapacity();
@@ -408,6 +468,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
                 for (Schedule other : otherSchedules) {
                     int moveCount = Math.min(remainingToMove, other.getAvailableSlots());
                     if (moveCount > 0) {
+                        // 调预约模块执行迁移，确保预约记录与排班容量保持一致
                         remoteAppointmentService.reassign(current.getId(), other.getId(), moveCount);
                         // 更新目标排班的可用号源
                         other.setAvailableSlots(other.getAvailableSlots() - moveCount);
@@ -421,6 +482,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
                 }
                 
                 if (remainingToMove > 0) {
+                    // 能进到这里说明“可迁移目标排班”总空位仍不够
                     throw new ServiceException("当天其他排班号源不足，无法分配多出的 " + remainingToMove + " 个预约");
                 }
                 
@@ -433,6 +495,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             redisService.setCacheObject(getRedisKey(schedule.getId()), schedule.getAvailableSlots(), getRandomExpire(), TimeUnit.SECONDS);
             
             // 如果状态还是正常(0)，则改为有调整(1)
+            // 注意：仅在本次请求未显式设置 status 时，才自动改状态，避免覆盖上层明确意图
             if (current.getStatus() == 0 && schedule.getStatus() == null) {
                 schedule.setStatus(1);
             }
@@ -441,13 +504,14 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             redisService.setCacheObject(getRedisKey(schedule.getId()), schedule.getAvailableSlots(), getRandomExpire(), TimeUnit.SECONDS);
         }
 
-        // 4. 处理状态变更
+        // 步骤6：处理状态变更（取消时级联取消预约并同步缓存）
         if (schedule.getStatus() != null) {
             // 如果变更为已取消(2)
             if (schedule.getStatus() == 2) {
                 // 级联取消所有预约
                 remoteAppointmentService.cancelByScheduleId(schedule.getId());
                 // 清理 Redis (或者将号源置为0，防止继续预约)
+                // 这里采用“置0并保留key”的方式，避免短时间内再次回源时出现不一致
                 redisService.setCacheObject(getRedisKey(schedule.getId()), 0, getRandomExpire(), TimeUnit.SECONDS);
                 schedule.setAvailableSlots(0);
             }
@@ -456,6 +520,9 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
         return updateById(schedule);
     }
 
+    /**
+     * 批量删除排班：医生提交删除申请，管理员执行逻辑删除。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean deleteScheduleByIds(Long[] ids) {
@@ -486,6 +553,7 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
             }
             
             // 4. 医生删除操作：状态改为 3 (待审核)，等待管理员审核
+            // 这里不做物理删除，保留记录供管理员审核与追踪
             boolean allUpdated = true;
             for (Schedule schedule : list) {
                 // 如果已经是待审核状态，不允许重复提交
@@ -508,14 +576,19 @@ public class ScheduleServiceImpl extends ServiceImpl<ScheduleMapper, Schedule> i
 
         // 管理员直接删除
         for (Long id : ids) {
+            // 先删缓存，避免逻辑删除后仍读取到旧号源
             redisService.deleteObject(getRedisKey(id));
         }
+        // 逻辑删除：仅打标记，便于回收站恢复
         return update(new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Schedule>()
                 .set("is_deleted", 1)
                 .set("deleted_at", new Date())
                 .in("id", Arrays.asList(ids)));
     }
 
+    /**
+     * 批量恢复已删除排班，并重建号源缓存。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean recoverScheduleByIds(Long[] ids) {

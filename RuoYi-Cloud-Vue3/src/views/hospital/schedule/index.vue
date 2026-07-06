@@ -315,11 +315,15 @@ const { proxy } = getCurrentInstance();
 const { parseTime } = proxy;
 const router = useRouter();
 
+// 页面角色能力拆分：
+// - 医生：只能维护自己的排班，关键操作需要走审核
+// - 管理员：可直接管理全院排班
 const isDoctor = computed(() => userStore.roles.includes('doctor'));
 const isAdmin = computed(() => userStore.loginType === 'admin');
 const isPatient = computed(() => userStore.roles.includes('patient'));
 const currentDoctorName = computed(() => userStore.nickName);
 const currentDoctorId = computed(() => userStore.id);
+// 当天超过可编辑时点后，禁用表单核心字段
 const isEditDisabled = ref(false);
 const { width } = useWindowSize()
 const isMobile = computed(() => width.value <= 768)
@@ -336,6 +340,7 @@ const multiple = ref(true);
 const title = ref("");
 const total = ref(0);
 const selectedDate = ref(new Date());
+// 用于对比“修改前后是否发生变更”，决定是否进入审核状态
 const originalTotalCapacity = ref(0);
 const originalTimeSlot = ref("");
 const departmentList = ref([]);
@@ -363,6 +368,7 @@ const data = reactive({
 const { queryParams, form } = toRefs(data);
 
 const rules = computed(() => {
+  // 公共规则：日期/班次/号源是排班最小必填集
   const baseRules = {
     workDate: [
       { required: true, message: "出诊日期不能为空", trigger: "blur" }
@@ -376,6 +382,7 @@ const rules = computed(() => {
   };
 
   if (isDoctor.value) {
+    // 医生模式下 doctorName 为只读展示，但仍保留校验避免空值提交
     return {
       ...baseRules,
       doctorName: [
@@ -383,6 +390,7 @@ const rules = computed(() => {
       ]
     };
   } else {
+    // 管理员模式必须明确科室+医生
     return {
       ...baseRules,
       deptId: [
@@ -397,6 +405,7 @@ const rules = computed(() => {
 
 onMounted(() => {
   if (!isDoctor.value) {
+    // 管理员默认筛今天，便于开屏先看当日排班情况
     queryParams.value.workDate = parseTime(new Date(), '{y}-{m}-{d}');
   }
   getList();
@@ -435,6 +444,7 @@ function querySearchDoctor(queryString, cb) {
 
 /** 排序触发事件 */
 function handleSortChange(column) {
+  // ElTable 排序字段映射到后端分页查询参数
   queryParams.value.orderByColumn = column.prop;
   queryParams.value.isAsc = column.order;
   getList();
@@ -444,14 +454,14 @@ function handleSortChange(column) {
 function calculateMaxCapacity(workDate, timeSlot) {
   if (!workDate || !timeSlot) return 28;
 
-  // 如果不是今天，返回标准容量
+  // 非当天使用固定上限：半天14个、全天28个（15分钟/号）
   const todayStr = parseTime(new Date(), '{y}-{m}-{d}');
   if (workDate !== todayStr) {
     if (timeSlot === '上午' || timeSlot === '下午') return 14;
     return 28;
   }
 
-  // 是今天，根据当前时间计算
+  // 当天则按“当前时刻剩余可预约时段”动态计算，避免生成不可执行号源
   const now = new Date();
   const currentHour = now.getHours();
   const currentMinute = now.getMinutes();
@@ -489,6 +499,7 @@ function calculateMaxCapacity(workDate, timeSlot) {
 
 /** 班次变更自动计算号源上限 */
 function handleTimeSlotChange(val) {
+  // 切班次时自动重算：总号源与剩余号源同步为新上限
   const max = calculateMaxCapacity(form.value.workDate, val);
   form.value.maxCapacity = max;
   form.value.totalCapacity = max;
@@ -521,6 +532,7 @@ function handleWorkDateChange(val) {
 /** 查询排班列表 */
 function getList() {
   loading.value = true;
+  // 列表数据本身已按角色隔离（后端），前端只做查询条件拼装
   listSchedule(queryParams.value).then(response => {
     scheduleList.value = response.rows;
     total.value = response.total;
@@ -540,15 +552,18 @@ function handleCancelSchedule(row) {
     proxy.$modal.msgError("已取消或过期的排班不允许操作");
     return;
   }
+  // total > available 说明已有患者占号，取消会影响患者就诊
   const hasBookedPatient = Number(row.totalCapacity || 0) > Number(row.availableSlots || 0);
   const confirmMsg = isDoctor.value && hasBookedPatient
     ? '已有患者预约该日期排班，是否取消？'
     : '取消排班将同时取消该排班下的所有预约，是否确认取消？';
 
   proxy.$modal.confirm(confirmMsg).then(function() {
+    // 先将排班状态置为“已取消”，后续医生端再补交审核记录
     return updateSchedule({ id: row.id, status: 2 });
   }).then(() => {
     if (isDoctor.value) {
+      // 医生操作统一走审核，管理员可直接生效
       return import("@/api/hospital/audit").then(module => {
         return module.submitAudit({
           auditType: 'SCHEDULE_CHANGE',
@@ -573,6 +588,7 @@ function cancel() {
 
 /** 表单重置 */
 function reset() {
+  // status 规则：医生默认 3(待审核)，管理员默认 0(正常)
   form.value = {
     id: null,
     deptId: null,
@@ -593,6 +609,7 @@ function reset() {
 
 /** 科室变更加载医生列表 */
 function handleDeptChange(deptId) {
+  // 新增/编辑表单里，科室变化必须刷新可选医生
   form.value.doctorId = null;
   doctorOptions.value = [];
   if (deptId) {
@@ -604,6 +621,7 @@ function handleDeptChange(deptId) {
 
 /** 搜索栏科室变更加载医生列表 */
 function handleQueryDeptChange(deptId) {
+  // 搜索栏逻辑同上：防止保留失效 doctorId
   queryParams.value.doctorId = null;
   queryDoctorOptions.value = [];
   if (deptId) {
@@ -655,7 +673,7 @@ function checkEditTime(workDate) {
   const targetDateStr = parseTime(workDate, '{y}-{m}-{d}');
   if (targetDateStr === todayStr) {
     const now = new Date();
-    // 17:30 = 17 * 60 + 30 = 1050 分钟
+    // 17:30 后不允许医生继续修改“当天”排班，避免临近门诊频繁改号
     const deadline = 17 * 60 + 30;
     const current = now.getHours() * 60 + now.getMinutes();
     return current > deadline;
@@ -674,6 +692,7 @@ function shouldHideDoctorRowActions(row) {
   today.setHours(0, 0, 0, 0);
   workDate.setHours(0, 0, 0, 0);
 
+  // 医生端隐藏规则：已取消 或 历史日期
   return status === 2 || workDate.getTime() < today.getTime();
 }
 
@@ -743,18 +762,21 @@ function submitForm() {
   proxy.$refs["scheduleRef"].validate(valid => {
     if (valid) {
       if (form.value.id != null) {
+        // 修改时：班次/号源变化会触发状态变化（医生待审核、管理员有调整）
         if (form.value.totalCapacity !== originalTotalCapacity.value || form.value.timeSlot !== originalTimeSlot.value) {
           if (form.value.status !== 2) {
             form.value.status = isDoctor.value ? 3 : 1;
           }
         }
-        // 修改时，如果调整了总号源，需要同步调整剩余号源
+        // 若调整总号源，则在当前可用号源基础上做差值平移
+        // 这样能尽量保留“已占号数量”不被破坏
         const diff = form.value.totalCapacity - originalTotalCapacity.value;
         if (diff !== 0) {
           form.value.availableSlots = Math.max(0, form.value.availableSlots + diff);
         }
         updateSchedule(form.value).then(response => {
           if (isDoctor.value) {
+            // 医生修改排班要补交审核记录
             import("@/api/hospital/audit").then(module => {
               const auditData = {
                 auditType: 'SCHEDULE_CHANGE',
@@ -776,6 +798,7 @@ function submitForm() {
       } else {
         addSchedule(form.value).then(response => {
           if (isDoctor.value) {
+            // 新增后再查询一次，拿到真实 scheduleId 供审核记录关联
             const query = {
               doctorId: currentDoctorId.value,
               workDate: form.value.workDate,
@@ -832,6 +855,7 @@ function handleDelete(row) {
   }
 
   proxy.$modal.confirm('是否确认删除排班编号为"' + scheduleIds + '"的数据项？').then(function() {
+    // 后端 delete 对医生语义实际上是“申请删除”状态流，不是立即物理删除
     return delSchedule(scheduleIds);
   }).then(() => {
     if (isDoctor.value) {

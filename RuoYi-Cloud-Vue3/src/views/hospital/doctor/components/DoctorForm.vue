@@ -82,10 +82,12 @@ const { proxy } = getCurrentInstance();
 const route = useRoute();
 const router = useRouter();
 
+// 科室下拉用于绑定医生所属科室
 const departmentOptions = ref([]);
 
 const data = reactive({
   form: {
+    // form.id 为空为新增，非空为编辑
     id: null,
     deptId: null,
     username: null,
@@ -95,6 +97,7 @@ const data = reactive({
     isActive: true
   },
   rules: {
+    // 医生档案最小必填集：科室、账号、姓名、职称（新增时额外需要密码）
     deptId: [
       { required: true, message: "所属科室不能为空", trigger: "change" }
     ],
@@ -119,6 +122,7 @@ const { form, rules } = toRefs(data);
 
 // 获取科室列表
 function getDepartmentList() {
+  // 详情页不做级联，直接拉全量科室供选择
   listDepartment().then(response => {
     departmentOptions.value = response.rows;
   });
@@ -126,10 +130,10 @@ function getDepartmentList() {
 
 getDepartmentList();
 
-// 获取参数
+// 路由参数：存在 id 表示编辑模式
 const doctorId = route.params && route.params.id;
 
-// 初始化数据
+// 初始化数据：编辑模式回填详情
 if (doctorId) {
   getDoctor(doctorId).then(response => {
     form.value = response.data;
@@ -137,6 +141,7 @@ if (doctorId) {
 }
 
 function goBack() {
+  // 关闭当前页签并回到医生列表
   const obj = { path: "/hospital/doctor" };
   proxy.$tab.closeOpenPage(obj);
 }
@@ -145,6 +150,7 @@ function goBack() {
 function submitForm() {
   proxy.$refs["doctorRef"].validate(valid => {
     if (valid) {
+      // 统一入口分流新增/修改
       if (form.value.id != null) {
         updateDoctor(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功");

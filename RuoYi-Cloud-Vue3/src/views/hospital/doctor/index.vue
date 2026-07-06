@@ -185,6 +185,7 @@ import { hasAdminPermi, AdminPermi } from "@/utils/adminPermi";
 const { proxy } = getCurrentInstance();
 const router = useRouter();
 
+// 医生管理页状态：列表分页 + 查询条件 + 批量选择
 const doctorList = ref([]);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -197,6 +198,7 @@ const queryDoctorOptions = ref([]);
 
 const data = reactive({
   queryParams: {
+    // includeDeleted 默认 false，回收站页面再切到 true
     pageNum: 1,
     pageSize: 10,
     name: null,
@@ -216,6 +218,7 @@ const { queryParams } = toRefs(data);
 
 /** 医生状态修改 */
 function handleStatusChange(row) {
+  // 开关切换采用“先改 UI、后确认、失败回滚”的交互方式
   let text = row.isActive ? "启用" : "停用";
   proxy.$modal.confirm('确认要"' + text + '""' + row.name + '"医生吗？').then(function () {
     return updateDoctor({ id: row.id, isActive: row.isActive });
@@ -228,6 +231,7 @@ function handleStatusChange(row) {
 
 /** 查询科室列表 */
 function getDepartmentList() {
+  // 查询区“科室 -> 医生”联动依赖该列表
   listDepartment().then(response => {
     departmentOptions.value = response.rows;
   });
@@ -235,6 +239,7 @@ function getDepartmentList() {
 
 /** 科室变动时更新医生列表 */
 function handleQueryDeptChange(deptId) {
+  // 科室变化后必须清空旧医生，避免跨科室脏筛选
   queryParams.value.id = null;
   queryDoctorOptions.value = [];
   if (deptId) {
@@ -248,6 +253,7 @@ function handleQueryDeptChange(deptId) {
 /** 医生姓名输入建议 */
 function querySearchDoctor(queryString, cb) {
   if (queryString) {
+    // 自动补全使用模糊姓名查询，不影响主列表分页
     listDoctor({ name: queryString }).then(response => {
       const results = response.rows.map(item => {
         return {
@@ -267,6 +273,7 @@ function querySearchDoctor(queryString, cb) {
 /** 查询医生列表 */
 function getList() {
   loading.value = true;
+  // 主列表接口统一承载：关键词、科室、状态、排序、分页
   listDoctor(queryParams.value).then(response => {
     doctorList.value = response.rows;
     total.value = response.total;
@@ -276,6 +283,7 @@ function getList() {
 
 /** 排序触发事件 */
 function handleSortChange(column) {
+  // 与后端约定：orderByColumn + isAsc
   queryParams.value.orderByColumn = column.prop;
   queryParams.value.isAsc = column.order;
   getList();
@@ -289,6 +297,7 @@ function handleQuery() {
 
 /** 重置按钮操作 */
 function resetQuery() {
+  // 重置时同时清空级联医生选项，避免保留上次科室子集
   queryDoctorOptions.value = [];
   proxy.resetForm("queryRef");
   handleQuery();
@@ -296,12 +305,14 @@ function resetQuery() {
 
 /** 多选框选中数据 */
 function handleSelectionChange(selection) {
+  // 批量操作依赖 ids；single/multiple 控制按钮禁用态
   ids.value = selection.map(item => item.id);
   single.value = selection.length != 1;
   multiple.value = !selection.length;
 }
 
 const isAllSelected = computed(() => {
+  // 仅计算当前页“全选”状态，不跨页
   return ids.value.length > 0 && ids.value.length === doctorList.value.length;
 });
 
@@ -310,17 +321,20 @@ const isIndeterminate = computed(() => {
 });
 
 function handleSelectAllChange(val) {
+  // 直接委托给 el-table 内置全选行为
   proxy.$refs["tableRef"].toggleAllSelection();
 }
 
 /** 新增按钮操作 */
 function handleAdd() {
+  // 明细页负责医生完整档案录入（含更复杂字段）
   router.push("/hospital/doctor-detail/add");
 }
 
 /** 修改按钮操作 */
 function handleUpdate(row) {
   const id = row.id || ids.value;
+  // 与新增共用 detail 页面，以路由参数区分编辑模式
   router.push("/hospital/doctor-detail/edit/" + id);
 }
 

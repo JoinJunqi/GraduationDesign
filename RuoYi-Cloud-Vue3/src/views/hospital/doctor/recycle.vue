@@ -111,6 +111,7 @@ import { useRouter } from "vue-router";
 const { proxy } = getCurrentInstance();
 const router = useRouter();
 
+// 医生回收站：展示已删除医生并支持恢复
 const doctorList = ref([]);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -122,6 +123,7 @@ const queryDoctorOptions = ref([]);
 
 const data = reactive({
   queryParams: {
+    // 回收站查询固定 includeDeleted=true 且 onlyDeleted=true
     pageNum: 1,
     pageSize: 10,
     name: null,
@@ -140,6 +142,7 @@ const { queryParams } = toRefs(data);
 
 /** 查询科室列表 */
 function getDepartmentList() {
+  // 回收站也支持“科室 -> 医生”级联筛选
   listDepartment().then(response => {
     departmentOptions.value = response.rows;
   });
@@ -147,6 +150,7 @@ function getDepartmentList() {
 
 /** 科室变动时更新医生列表 */
 function handleQueryDeptChange(deptId) {
+  // 科室变化后清空旧医生，避免筛选条件冲突
   queryParams.value.id = null;
   queryDoctorOptions.value = [];
   if (deptId) {
@@ -179,6 +183,7 @@ function querySearchDoctor(queryString, cb) {
 /** 查询医生列表 */
 function getList() {
   loading.value = true;
+  // 复用 listDoctor，通过 params 控制回收站维度
   listDoctor(queryParams.value).then(response => {
     doctorList.value = response.rows;
     total.value = response.total;
@@ -208,6 +213,7 @@ function resetQuery() {
 
 /** 多选框选中数据 */
 function handleSelectionChange(selection) {
+  // 批量恢复按钮禁用态
   ids.value = selection.map(item => item.id);
   multiple.value = !selection.length;
 }
@@ -215,6 +221,7 @@ function handleSelectionChange(selection) {
 /** 恢复按钮操作 */
 function handleRecover(row) {
   const doctorIds = row.id || ids.value;
+  // 恢复后记录回到医生主列表
   proxy.$modal.confirm('是否确认恢复医生编号为"' + doctorIds + '"的数据项？').then(function () {
     return recoverDoctor(doctorIds);
   }).then((res) => {

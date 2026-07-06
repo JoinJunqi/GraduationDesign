@@ -277,6 +277,7 @@ const { proxy } = getCurrentInstance();
 const userStore = useUserStore();
 const route = useRoute();
 const router = useRouter();
+// 基于登录类型做角色分流：同一页面在患者/医生/管理员下展示不同操作
 const loginType = computed(() => userStore.loginType);
 const isPatient = computed(() => loginType.value === 'patient');
 const isDoctor = computed(() => loginType.value === 'doctor');
@@ -291,10 +292,13 @@ const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const title = ref("");
+// 用于“新预约高亮”：来自通知点击跳转时会带 newId
 const newAppointmentId = ref(null);
+// 医生端日历默认选中今天，切换日期后会自动触发查询
 const calendarDate = ref(new Date());
 const departmentList = ref([]);
 const queryDoctorOptions = ref([]);
+// 前端状态枚举：用于渲染筛选项与表格 tag 颜色
 const appointmentStatusOptions = [
   { label: '待就诊', value: '待就诊', type: 'warning' },
   { label: '已取消', value: '已取消', type: 'info' },
@@ -305,6 +309,7 @@ const appointmentStatusOptions = [
 
 function getAppointmentStatusTagType(status) {
   const statusItem = appointmentStatusOptions.find(item => item.value === status);
+  // 未识别状态时给 warning，避免 tag 无样式
   return statusItem ? statusItem.type : 'warning';
 }
 
@@ -333,6 +338,7 @@ function isTodayDate(date) {
 
 /** 开始就诊 */
 function handleStartConsultation(row) {
+  // 将 appointmentId 带到就诊页，供后续病历/处方流程关联当前预约
   router.push({
     path: '/hospital/consultation/index',
     query: {
@@ -377,6 +383,7 @@ function handleRegister() {
 watch(() => route.query.newId, (newId) => {
   if (newId) {
     newAppointmentId.value = parseInt(newId);
+    // 清空旧筛选，确保能看到目标记录
     resetQuery();
     
     // 5秒后移除高亮
@@ -414,6 +421,7 @@ function querySearchDoctor(queryString, cb) {
 
 /** 搜索栏科室变更加载医生列表 */
 function handleQueryDeptChange(deptId) {
+  // 科室变化后必须重置已选医生，避免跨科室脏数据
   queryParams.value.doctorId = null;
   queryDoctorOptions.value = [];
   if (deptId) {
@@ -426,6 +434,7 @@ function handleQueryDeptChange(deptId) {
 
 /** 排序触发事件 */
 function handleSortChange(column) {
+  // 表格排序统一转换为后端需要的 orderByColumn/isAsc
   queryParams.value.orderByColumn = column.prop;
   queryParams.value.isAsc = column.order;
   getList();
@@ -433,6 +442,7 @@ function handleSortChange(column) {
 
 function getList() {
   loading.value = true;
+  // 统一走分页接口，兼容角色差异（患者看自己的、医生看自己的、管理员看全部）
   listAppointment(queryParams.value).then(response => {
     appointmentList.value = response.rows;
     total.value = response.total;
@@ -452,6 +462,7 @@ function tableRowClassName({ row }) {
 }
 
 onMounted(() => {
+  // 预约列表允许游客浏览挂号页，但“我的预约”需要登录
   if (userStore.loginType === 'guest') {
     ElMessageBox.confirm('您当前是访客模式，查看我的预约需要登录。是否前往登录？', '提示', {
       confirmButtonText: '去登录',
@@ -468,7 +479,7 @@ onMounted(() => {
   }
 
   getDepartmentList();
-  // 如果是医生且没有特定ID查询，默认显示今天的预约
+  // 医生端默认只看“今天”，更符合门诊当日工作场景
   if (isDoctor.value && !route.query.newId && !queryParams.value.workDate) {
     queryParams.value.workDate = parseTime(new Date(), '{y}-{m}-{d}');
   }
@@ -483,6 +494,7 @@ function cancel() {
 
 /** 表单重置 */
 function reset() {
+  // 管理员弹窗默认状态置为“待就诊”，避免新增时状态为空
   form.value = {
     id: null,
     patientId: null,
@@ -500,6 +512,7 @@ function handleQuery() {
 
 /** 重置按钮操作 */
 function resetQuery() {
+  // 这里显式逐项清空，而非仅 resetForm，避免某些控件残留值
   queryDoctorOptions.value = [];
   proxy.resetForm("queryRef");
   queryParams.value.patientName = null;
@@ -567,14 +580,13 @@ function handleRequestCancel(row) {
     inputPattern: /\S+/,
     inputErrorMessage: '原因不能为空'
   }).then(({ value }) => {
-    // 构造审核申请数据
+    // 取消不是直接改预约状态，而是进入审核流（APPOINTMENT_CANCEL）
     const auditData = {
       auditType: 'APPOINTMENT_CANCEL',
       targetId: id,
       requestReason: value
     };
-    // 这里我们可以直接调用我们新写的 audit.js 中的接口，或者通过 appointment.js 转发
-    // 为了简单起见，我直接在这里导入并使用 submitAudit
+    // 采用动态导入，避免页面初始加载把审核模块一起打入首屏包
     import("@/api/hospital/audit").then(module => {
       module.submitAudit(auditData).then(response => {
         getList();
@@ -586,6 +598,7 @@ function handleRequestCancel(row) {
 
 /** 撤销取消申请 */
 function handleRevokeRequest(row) {
+  // 仅“取消审核中”可撤回，撤回后预约恢复到原待就诊流程
   proxy.$modal.confirm('确认撤销取消预约申请吗？').then(function() {
     return cancelRequest(row.id);
   }).then(() => {

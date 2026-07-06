@@ -111,43 +111,50 @@ import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import * as echarts from 'echarts';
 import { getDashboardStats } from "@/api/hospital/appointment";
 
+// 看板数据：后端一次返回统计卡片 + 多图表数据
 const stats = ref({});
 const trendChartRef = ref(null);
 const statusChartRef = ref(null);
 const deptChartRef = ref(null);
+// 可选日期：为空表示“总览”，有值表示“指定日期视图”
 const selectedDate = ref(null);
 
 let trendChart = null;
 let statusChart = null;
 let deptChart = null;
 
+// 图表实例是否已经创建完成
 const chartsReady = ref(false);
 
 // 处理总览
 const handleOverview = () => {
+  // 清空日期即切回总览
   selectedDate.value = null;
   loadData();
 };
 
 // 处理日期变更
 const handleDateChange = (val) => {
+  // 日期变化后按新条件重新请求统计
   loadData();
 };
 
 // 初始化图表
 const initCharts = () => {
+  // 首屏布局未稳定时容器宽度可能为 0，这里做延迟重试
   if (!trendChartRef.value || trendChartRef.value.clientWidth === 0) {
     setTimeout(initCharts, 100);
     return;
   }
 
   try {
+    // 三张图分别对应：趋势、状态分布、科室分布
     trendChart = echarts.init(trendChartRef.value);
     statusChart = echarts.init(statusChartRef.value);
     deptChart = echarts.init(deptChartRef.value);
     chartsReady.value = true;
 
-    // 如果数据已经加载，则更新图表
+    // 如果数据比图表更早返回，初始化后立即回填
     if (stats.value && Object.keys(stats.value).length > 0) {
       updateCharts(stats.value);
     }
@@ -160,6 +167,7 @@ const initCharts = () => {
 
 const handleResize = () => {
   if (chartsReady.value) {
+    // 统一响应窗口变化，避免图表拉伸错位
     trendChart?.resize();
     statusChart?.resize();
     deptChart?.resize();
@@ -168,6 +176,7 @@ const handleResize = () => {
 
 const loadData = async () => {
   try {
+    // date 为空时后端返回总览数据；有值时返回该日维度
     const res = await getDashboardStats({ date: selectedDate.value });
     if (res.code === 200) {
       stats.value = res.data;
@@ -183,7 +192,7 @@ const loadData = async () => {
 const updateCharts = (data) => {
   if (!chartsReady.value || !trendChart || !statusChart || !deptChart) return;
   
-  // 1. 趋势图 (折线图)
+  // 1) 趋势图：展示近期预约变化
   const trendData = data.trend || [];
   trendChart.setOption({
     tooltip: {
@@ -221,7 +230,7 @@ const updateCharts = (data) => {
     }]
   });
 
-  // 2. 状态分布 (环形饼图)
+  // 2) 状态分布：待就诊/已完成/已取消等比例
   const statusData = data.statusDistribution || [];
   statusChart.setOption({
     tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
@@ -238,7 +247,7 @@ const updateCharts = (data) => {
     }]
   });
 
-  // 3. 科室分布 (横向柱状图)
+  // 3) 科室分布：按预约量排序，便于识别高峰科室
   const deptData = (data.deptDistribution || []).sort((a, b) => a.value - b.value);
   deptChart.setOption({
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
@@ -267,12 +276,14 @@ const updateCharts = (data) => {
 
 onMounted(() => {
   nextTick(() => {
+    // 先初始化图表容器，再加载数据
     initCharts();
     loadData();
   });
 });
 
 onUnmounted(() => {
+  // 销毁时移除监听并释放 echarts 实例，避免内存泄漏
   window.removeEventListener('resize', handleResize);
   trendChart?.dispose();
   statusChart?.dispose();

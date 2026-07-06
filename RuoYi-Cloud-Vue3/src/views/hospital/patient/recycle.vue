@@ -73,6 +73,7 @@ import { useRouter } from "vue-router";
 const { proxy } = getCurrentInstance();
 const router = useRouter();
 
+// 患者回收站：仅展示已删除患者并支持恢复
 const patientList = ref([]);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -82,6 +83,7 @@ const total = ref(0);
 
 const data = reactive({
   queryParams: {
+    // includeDeleted + onlyDeleted 组合得到回收站结果集
     pageNum: 1,
     pageSize: 10,
     name: null,
@@ -100,6 +102,7 @@ const { queryParams } = toRefs(data);
 /** 查询已删除患者列表 */
 function getList() {
   loading.value = true;
+  // 与主列表复用 listPatient 接口
   listPatient(queryParams.value).then(response => {
     patientList.value = response.rows;
     total.value = response.total;
@@ -109,6 +112,7 @@ function getList() {
 
 /** 排序触发事件 */
 function handleSortChange(column) {
+  // 直接透传排序参数
   queryParams.value.orderByColumn = column.prop;
   queryParams.value.isAsc = column.order;
   getList();
@@ -128,6 +132,7 @@ function resetQuery() {
 
 /** 多选框选中数据 */
 function handleSelectionChange(selection) {
+  // 批量恢复按钮禁用态由 multiple 控制
   ids.value = selection.map(item => item.id);
   multiple.value = !selection.length;
 }
@@ -135,6 +140,7 @@ function handleSelectionChange(selection) {
 /** 恢复按钮操作 */
 function handleRecover(row) {
   const patientIds = row.id || ids.value;
+  // 恢复后记录将回到患者主列表
   proxy.$modal.confirm('是否确认恢复患者编号为"' + patientIds + '"的数据项？').then(function () {
     return recoverPatient(patientIds);
   }).then((res) => {

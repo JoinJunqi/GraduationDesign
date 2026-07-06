@@ -179,6 +179,7 @@ const currentUser = computed(() => userStore.user);
 const { proxy } = getCurrentInstance();
 const { parseTime } = proxy;
 
+// 管理员管理页核心状态：列表、弹窗、分页、选择态
 const adminList = ref([]);
 const open = ref(false);
 const loading = ref(true);
@@ -189,6 +190,8 @@ const multiple = ref(true);
 const title = ref("");
 const total = ref(0);
 
+// 普通管理员采用“位运算权限”组合授权
+// 例如 1|2|8 表示可管理 科室+医生+排班
 const permissionOptions = [
   { label: "科室信息管理", value: 1 },
   { label: "医生管理", value: 2 },
@@ -203,6 +206,7 @@ const permissionOptions = [
 const data = reactive({
   form: {},
   queryParams: {
+    // includeDeleted = true 时，列表会展示软删除数据
     pageNum: 1,
     pageSize: 10,
     userName: null,
@@ -214,6 +218,7 @@ const data = reactive({
     }
   },
   rules: {
+    // 新增管理员时必须设置账号/密码/姓名/等级/状态
     userName: [
       { required: true, message: "登录账号不能为空", trigger: "blur" }
     ],
@@ -237,6 +242,7 @@ const { queryParams, form, rules } = toRefs(data);
 /** 查询管理员列表 */
 function getList() {
   loading.value = true;
+  // 后端会按当前登录管理员权限裁剪可见数据
   listAdmin(queryParams.value).then(response => {
     adminList.value = response.rows;
     total.value = response.total;
@@ -252,6 +258,7 @@ function cancel() {
 
 /** 表单重置 */
 function reset() {
+  // 新增默认：普通管理员 + 启用 + 无权限位
   form.value = {
     userId: null,
     userName: null,
@@ -267,6 +274,7 @@ function reset() {
 
 /** 排序触发事件 */
 function handleSortChange(column) {
+  // 前端列名与后端字段名并非完全一致，这里做映射
   const sortMap = {
     userId: 'id',
     userName: 'username',
@@ -288,6 +296,7 @@ function handleSortChange(column) {
 
 /** 搜索按钮操作 */
 function handleQuery() {
+  // 搜索一般配合当前页保留；若想强制第一页可在此重置 pageNum
   getList();
 }
 
@@ -299,6 +308,7 @@ function resetQuery() {
 
 /** 多选框选中数据 */
 function handleSelectionChange(selection) {
+  // 选中项用于批量修改/删除
   ids.value = selection.map(item => item.userId);
   single.value = selection.length != 1;
   multiple.value = !selection.length;
@@ -317,7 +327,7 @@ function handleUpdate(row) {
   const userId = row.userId || ids.value;
   getAdmin(userId).then(response => {
     form.value = response.data;
-    // 将 bitmask 转换为数组
+    // 回显时将 bitmask 转成复选框数组
     const permissions = form.value.permissions || 0;
     form.value.selectedPermissions = permissionOptions
       .filter(opt => (permissions & opt.value) === opt.value)
@@ -331,11 +341,12 @@ function handleUpdate(row) {
 function submitForm() {
   proxy.$refs["adminRef"].validate(valid => {
     if (valid) {
-      // 将数组转换为 bitmask
+      // 提交前把复选框数组压缩为 bitmask，便于后端存储
       if (form.value.adminLevel === 0) {
         form.value.permissions = form.value.selectedPermissions.reduce((acc, val) => acc + val, 0);
       } else {
-        form.value.permissions = 0; // 超级管理员不需要特定权限位，他们拥有所有权限
+        // 超级管理员默认拥有全权限，不需要单独配置位图
+        form.value.permissions = 0;
       }
       
       if (form.value.userId != null) {

@@ -128,13 +128,17 @@ import {
 
 const visible = ref(false);
 const loading = ref(false);
+// 原始预约数据源（仅保留待就诊 + 当日已过期）
 const appointments = ref([]);
+// 每秒倒计时刷新定时器
 const timer = ref(null);
+// 每5分钟拉取数据同步定时器
 const reminderInterval = ref(null);
 
 /** 计算属性：最新的已过期预约 (当日) */
 const latestExpired = computed(() => {
   const today = parseTime(new Date(), '{y}-{m}-{d}');
+  // 只统计“今天已过期”，历史过期不在侧边栏展示
   const todayExpired = appointments.value.filter(item => 
     item.status === '已过期' && parseTime(item.workDate, '{y}-{m}-{d}') === today
   );
@@ -146,6 +150,7 @@ const pendingList = computed(() => {
   return appointments.value
     .filter(item => item.status === '待就诊')
     .sort((a, b) => {
+      // 有时段变更提醒的记录优先置顶，减少患者漏看调整通知
       if (a.timeChangeNotice && !b.timeChangeNotice) return -1;
       if (!a.timeChangeNotice && b.timeChangeNotice) return 1;
       return new Date(a.workDate) - new Date(b.workDate);
@@ -164,6 +169,7 @@ const otherExpiredList = computed(() => {
 /** 获取预约列表 */
 function getAppointments() {
   loading.value = true;
+  // 侧边栏只需要近实时提醒，固定拉最近 100 条足够覆盖当日场景
   const query = {
     pageNum: 1,
     pageSize: 100,
@@ -175,7 +181,8 @@ function getAppointments() {
     const allRows = response.rows || [];
     const today = parseTime(new Date(), '{y}-{m}-{d}');
     
-    // 过滤出：1. 待就诊 2. 当日的已过期
+    // 过滤出：1) 待就诊 2) 当日已过期
+    // 这样既保留提醒价值，又避免侧栏信息过载
     appointments.value = allRows
       .filter(item => {
         const isPending = item.status === '待就诊';
@@ -184,6 +191,7 @@ function getAppointments() {
       })
       .map(item => ({
         ...item,
+        // 倒计时字段为前端运行时计算，不依赖后端返回
         countdown: null
       }));
       
@@ -218,6 +226,7 @@ function updateCountdowns() {
   const now = new Date();
   
   appointments.value.forEach(item => {
+    // 仅待就诊需要倒计时/提醒
     if (item.status !== '待就诊') return;
 
     // 组合就诊时间
@@ -245,6 +254,7 @@ function updateCountdowns() {
       
       // 如果从未提醒过，或者距离上次提醒超过30分钟
       if (!lastRemindTime || (now.getTime() - lastRemindTime.getTime()) >= 30 * 60 * 1000) {
+        // 节流提醒：避免每秒都弹窗
         showReminder(item);
         sessionStorage.setItem(lastRemindKey, now.toISOString());
       }
@@ -277,11 +287,13 @@ function startTimers() {
 }
 
 onMounted(() => {
+  // 组件挂载后立刻拉一次数据，再启动双定时器
   getAppointments();
   startTimers();
 });
 
 onUnmounted(() => {
+  // 避免组件销毁后定时器泄漏
   if (timer.value) clearInterval(timer.value);
   if (reminderInterval.value) clearInterval(reminderInterval.value);
 });

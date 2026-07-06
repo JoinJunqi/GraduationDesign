@@ -74,6 +74,9 @@ const settingsStore = useSettingsStore()
 const router = useRouter()
 
 let pollingTimer = null
+// 顶栏通知按登录类型分流：
+// - 医生/患者：关注预约新增与状态变化
+// - 管理员：关注新的待审核申请
 const isDoctor = computed(() => userStore.loginType === 'doctor')
 const isPatient = computed(() => userStore.loginType === 'patient')
 const isAdmin = computed(() => userStore.loginType === 'admin' || userStore.roles.includes('admin'))
@@ -85,6 +88,7 @@ const appointmentSnapshot = ref(new Map())
 const pendingAuditSnapshot = ref(new Set())
 
 function goAppointmentList(query = {}) {
+  // 注入时间戳，确保同一路由重复点击也会触发页面刷新逻辑
   router.push({
     path: '/hospital/appointment',
     query: {
@@ -95,6 +99,7 @@ function goAppointmentList(query = {}) {
 }
 
 function goAuditList() {
+  // 同上：通过 _t 强制刷新审核页
   router.push({
     path: '/hospital/audit',
     query: { _t: Date.now() }
@@ -104,6 +109,7 @@ function goAuditList() {
 function notifyStatusChange(prev, curr) {
   if (!prev || !curr || prev.status === curr.status) return
 
+  // 状态从“非已取消”变为“已取消”：区分“管理员同意申请”与“管理员直接取消”
   if (curr.status === '已取消') {
     const approvedByAdmin = prev.status === '取消审核中'
     const message = isPatient.value
@@ -127,6 +133,7 @@ function notifyStatusChange(prev, curr) {
   }
 
   if (prev.status === '取消审核中' && curr.status === '待就诊') {
+    // 表示取消申请被驳回，预约恢复
     const notification = ElNotification({
       title: '取消申请结果',
       message: `您的预约取消申请未通过，预约已恢复为待就诊。`,
@@ -162,6 +169,7 @@ function checkAppointmentNotifications() {
     }
 
     if (isDoctor.value) {
+      // 医生端仅对“新增待就诊”做提醒，避免对历史数据重复打扰
       const newAppointments = rows.filter(item => {
         return item.status === '待就诊' && !appointmentSnapshot.value.has(item.id)
       })
@@ -182,7 +190,9 @@ function checkAppointmentNotifications() {
 
     rows.forEach(item => {
       const prev = appointmentSnapshot.value.get(item.id)
+      // 通用状态变化提醒（医生/患者都要看）
       notifyStatusChange(prev, item)
+      // 独立提醒：就诊时段发生变更
       if (prev && prev.timeChangeNotice !== item.timeChangeNotice && item.timeChangeNotice) {
         const notification = ElNotification({
           title: '就诊时段调整',
@@ -221,6 +231,7 @@ function checkAuditNotifications() {
     }
 
     const newAudits = rows.filter(item => !pendingAuditSnapshot.value.has(item.id))
+    // 管理员只提醒新增待审核，避免每轮都提示同一批数据
     newAudits.slice(0, 3).forEach(item => {
       const roleText = item.requesterRole === 'doctor' ? '医生' : '患者'
       const notification = ElNotification({
@@ -249,7 +260,9 @@ function checkCrossRoleNotifications() {
 
 onMounted(() => {
   if (userStore.loginType === 'guest') return
+  // 进入系统后立即检查一次，再启动轮询
   checkCrossRoleNotifications()
+  // 10 秒一次：兼顾实时性与后端压力
   pollingTimer = setInterval(checkCrossRoleNotifications, 10000)
 })
 
@@ -260,6 +273,7 @@ onUnmounted(() => {
 })
 
 function goToLogin() {
+  // 访客模式点击右上角昵称区，统一弹窗引导登录
   ElMessageBox.confirm('当前为访客模式，是否前往登录？', '提示', {
     confirmButtonText: '去登录',
     cancelButtonText: '取消',
@@ -277,6 +291,7 @@ function toggleSideBar() {
 }
 
 function toggleTheme() {
+  // 主题切换状态由 settings store 持久化
   settingsStore.toggleTheme()
 }
 

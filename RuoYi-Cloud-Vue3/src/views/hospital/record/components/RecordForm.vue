@@ -67,6 +67,7 @@ const route = useRoute();
 
 const data = reactive({
   form: {
+    // form.id 为空为新增，非空为编辑
     id: null,
     appointmentId: null,
     patientId: null,
@@ -77,6 +78,7 @@ const data = reactive({
     visitTime: null
   },
   rules: {
+    // 病历最小必填集：预约、患者、医生、诊断、就诊时间
     appointmentId: [
       { required: true, message: "预约ID不能为空", trigger: "blur" }
     ],
@@ -97,10 +99,10 @@ const data = reactive({
 
 const { form, rules } = toRefs(data);
 
-// 获取参数
+// 路由参数：存在 id 表示编辑模式
 const recordId = route.params && route.params.id;
 
-// 初始化数据
+// 初始化数据：编辑模式回填病历详情
 if (recordId) {
   getRecord(recordId).then(response => {
     form.value = response.data;
@@ -108,6 +110,7 @@ if (recordId) {
 }
 
 function goBack() {
+  // 关闭当前页签并返回病历列表
   const obj = { path: "/hospital/record" };
   proxy.$tab.closeOpenPage(obj);
 }
@@ -116,6 +119,7 @@ function goBack() {
 function submitForm() {
   proxy.$refs["recordRef"].validate(valid => {
     if (valid) {
+      // 统一入口分流新增/修改
       if (form.value.id != null) {
         updateRecord(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功");

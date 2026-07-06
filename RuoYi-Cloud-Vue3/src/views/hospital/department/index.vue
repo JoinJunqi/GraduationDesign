@@ -148,6 +148,7 @@ const { proxy } = getCurrentInstance();
 const { parseTime } = proxy;
 const router = useRouter();
 
+// 科室管理核心状态：基础信息列表 + 介绍编辑弹窗 + 分页选择态
 const departmentList = ref([]);
 const open = ref(false);
 const introOpen = ref(false);
@@ -164,6 +165,7 @@ const data = reactive({
   form: {},
   introForm: {},
   queryParams: {
+    // includeDeleted=false 时仅看有效数据，回收站页看删除数据
     pageNum: 1,
     pageSize: 10,
     name: null,
@@ -184,11 +186,13 @@ const { queryParams, form, introForm, rules } = toRefs(data);
 
 /** 回收站按钮操作 */
 function handleRecycle() {
+  // 科室软删除后统一进入回收站恢复
   router.push("/hospital/recycle/department");
 }
 
 /** 排序触发事件 */
 function handleSortChange(column) {
+  // 对接后端排序参数
   queryParams.value.orderByColumn = column.prop;
   queryParams.value.isAsc = column.order;
   getList();
@@ -197,6 +201,7 @@ function handleSortChange(column) {
 /** 查询科室列表 */
 function getList() {
   loading.value = true;
+  // 科室列表仅展示基础信息，详细介绍由 handleIntro 单独加载
   listDepartment(queryParams.value).then(response => {
     departmentList.value = response.rows;
     total.value = response.total;
@@ -209,8 +214,10 @@ function handleIntro(row) {
   const deptId = row.id;
   getDepartmentIntro(deptId).then(response => {
     if (response.data) {
+      // 已存在介绍时，直接回填编辑
       introForm.value = response.data;
     } else {
+      // 首次维护时，构造默认介绍结构
       introForm.value = {
         deptId: deptId,
         overview: '',
@@ -221,7 +228,7 @@ function handleIntro(row) {
         isActive: 1
       };
     }
-    // 添加科室基础信息以便显示和修改
+    // 补充基础字段：介绍弹窗里允许顺便修改科室名称
     introForm.value.deptName = row.name;
     introForm.value.createdAt = row.createdAt;
     
@@ -232,14 +239,14 @@ function handleIntro(row) {
 
 /** 提交介绍表单 */
 function submitIntroForm() {
-  // 1. 先保存科室基础信息（如果名称有变）
+  // 1) 先保存科室基础信息（名称）
   const deptData = {
     id: introForm.value.deptId,
     name: introForm.value.deptName
   };
   
   updateDepartment(deptData).then(() => {
-    // 2. 再保存科室介绍详情
+    // 2) 再保存科室介绍详情
     return saveDepartmentIntro(introForm.value);
   }).then(response => {
     proxy.$modal.msgSuccess("保存成功");
@@ -256,6 +263,7 @@ function cancel() {
 
 /** 表单重置 */
 function reset() {
+  // 基础弹窗仅维护“科室名称”
   form.value = {
     id: null,
     name: null
@@ -276,6 +284,7 @@ function resetQuery() {
 
 /** 多选框选中数据 */
 function handleSelectionChange(selection) {
+  // 多选用于批量修改/删除
   ids.value = selection.map(item => item.id);
   single.value = selection.length != 1;
   multiple.value = !selection.length;

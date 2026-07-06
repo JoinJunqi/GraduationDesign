@@ -292,6 +292,7 @@ const { proxy } = getCurrentInstance();
 const { parseTime } = proxy;
 const userStore = useUserStore();
 
+// 通知管理页状态：列表、分页、查询区、编辑弹窗
 const noticeList = ref([]);
 const open = ref(false);
 const loading = ref(true);
@@ -306,6 +307,7 @@ const dateRangePublishTime = ref([]);
 const data = reactive({
   form: {},
   queryParams: {
+    // 默认按创建时间倒序，便于管理员先处理最新通知
     pageNum: 1,
     pageSize: 10,
     orderByColumn: 'createdAt',
@@ -317,10 +319,12 @@ const data = reactive({
     isTop: null,
     isActive: null,
     params: {
+      // includeDeleted=true 时允许查看已删除通知记录
       includeDeleted: "false"
     }
   },
   rules: {
+    // 标题/类型/内容/发布时间为发通知最小必填集
     title: [{ required: true, message: "标题不能为空", trigger: "blur" }],
     noticeType: [{ required: true, message: "类型不能为空", trigger: "change" }],
     content: [{ required: true, message: "内容不能为空", trigger: "blur" }],
@@ -331,12 +335,14 @@ const data = reactive({
 const { queryParams, form, rules } = toRefs(data);
 
 onMounted(() => {
+  // 页面初始化加载通知列表
   getList();
 });
 
 /** 查询通知列表 */
 function getList() {
   loading.value = true;
+  // 使用 addDateRange 将发布时间区间拼装到 params，避免手动处理 begin/end 字段
   listNotice(proxy.addDateRange(queryParams.value, dateRangePublishTime.value, 'PublishTime')).then(response => {
     noticeList.value = response.rows;
     total.value = response.total;
@@ -352,6 +358,7 @@ function cancel() {
 
 /** 表单重置 */
 function reset() {
+  // 新增默认值：系统公告 + 全部受众 + 普通优先级 + 生效
   form.value = {
     id: null,
     title: null,
@@ -376,6 +383,7 @@ function handleQuery() {
 
 /** 重置按钮操作 */
 function resetQuery() {
+  // 重置时恢复排序、分页、删除过滤、时间区间，保证查询状态干净
   queryParams.value.pageNum = 1;
   queryParams.value.pageSize = 10;
   queryParams.value.orderByColumn = 'createdAt';
@@ -388,6 +396,7 @@ function resetQuery() {
 
 /** 排序触发 */
 function handleSortChange({ prop, order }) {
+  // 当取消排序时回落到 createdAt desc
   queryParams.value.orderByColumn = order ? prop : 'createdAt';
   queryParams.value.isAsc = order === 'ascending' ? 'asc' : order === 'descending' ? 'desc' : 'desc';
   getList();
@@ -395,6 +404,7 @@ function handleSortChange({ prop, order }) {
 
 /** 多选框选中数据 */
 function handleSelectionChange(selection) {
+  // 单选/多选按钮禁用态由 single/multiple 驱动
   ids.value = selection.map(item => item.id);
   single.value = selection.length != 1;
   multiple.value = !selection.length;
@@ -411,6 +421,7 @@ function handleAdd() {
 function handleUpdate(row) {
   reset();
   const id = row.id || ids.value;
+  // 编辑时重新拉详情，确保内容与后端一致
   getNotice(id).then(response => {
     form.value = response.data;
     open.value = true;
@@ -422,6 +433,7 @@ function handleUpdate(row) {
 function submitForm() {
   proxy.$refs["noticeRef"].validate(valid => {
     if (valid) {
+      // 统一在这里分流新增/修改
       if (form.value.id != null) {
         updateNotice(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功");
@@ -442,6 +454,7 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const noticeIds = row.id || ids.value;
+  // 删除为软删除，配合 includeDeleted 可追溯历史记录
   proxy.$modal.confirm('是否确认删除通知编号为"' + noticeIds + '"的数据项？').then(function() {
     return delNotice(noticeIds);
   }).then(() => {
@@ -452,6 +465,7 @@ function handleDelete(row) {
 
 /** 获取通知类型标签 */
 function getNoticeTypeTag(type) {
+  // 通知类型 -> 标签色
   const map = {
     '系统公告': 'primary',
     '医院动态': 'success',
@@ -464,6 +478,7 @@ function getNoticeTypeTag(type) {
 
 /** 获取优先级标签 */
 function getPriorityTag(priority) {
+  // 优先级 -> 标签色
   const map = {
     '普通': 'info',
     '重要': 'warning',
